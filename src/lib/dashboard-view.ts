@@ -1,0 +1,753 @@
+import { format, parseISO, subDays, getDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { getMonthRange, getWeekRange, formatCurrency } from "@/lib/utils";
+import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
+import {
+  averageTicket,
+  computeGoalProgress,
+  computeGrowth,
+  itemsSoldFromEmbedded,
+  paymentBreakdown,
+  productQuantityBreakdownFromEmbedded,
+  sumProfit,
+  sumRevenue,
+  sumReceivedRevenue,
+  sumPendingRevenue,
+  uniqueCustomerCount,
+} from "@/lib/analytics-engine/client";
+import type { TemporalViewContext } from "@/stores/temporal-context-store";
+
+export interface DashboardSaleItem {
+  quantity: number;
+  productId: string;
+  subtotal: number;
+  profit: number;
+  product?: { id: string; name: string } | null;
+}
+
+export interface DashboardSale {
+  id: string;
+  businessId: string;
+  date: string;
+  time: string;
+  clientId: string | null;
+  paymentMethod: string;
+  paymentStatus?: "paid" | "pending" | "partial" | string | null;
+  amountReceived?: number | null;
+  totalAmount: number;
+  profit: number;
+  notes?: string | null;
+  client?: { id: string; name: string } | null;
+  items: DashboardSaleItem[];
+}
+
+export interface DiaryDayContext {
+  dailyGoalUnits?: number;
+  quantitySold?: number;
+  quantityLost?: number;
+  lossReason?: string;
+  revenue?: { received: number; pending: number; total: number };
+  profit?: number;
+  manualInsights?: string;
+  commercialIntelligence?: {
+    whatWeLearnedToday: string[];
+    conclusion?: string;
+  };
+  suggestedActions?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+  }>;
+}
+
+export interface DayTimelineEntry {
+  id: string;
+  time: string;
+  clientName: string;
+  products: string;
+  paymentLabel: string;
+  amount: number;
+  statusLabel: string;
+  statusTone: "success" | "warning" | "neutral";
+}
+
+export interface DayTimelineGroup {
+  period: "morning" | "lunch" | "afternoon";
+  label: string;
+  entries: DayTimelineEntry[];
+}
+
+export interface DayExecutiveSummary {
+  goalUnits: number | null;
+  soldUnits: number;
+  revenue: number;
+  profit: number;
+  pendingCount: number;
+  pendingAmount: number;
+  losses: number;
+  lossReason?: string;
+}
+
+export interface DashboardActionableAlert {
+  id: string;
+  message: string;
+  severity: "warning" | "info" | "opportunity";
+}
+
+export interface DashboardPriority {
+  id: string;
+  label: string;
+}
+
+export interface CustomerDayInsight {
+  uniqueBuyers: number;
+  topBuyer: { name: string; total: number } | null;
+  summary: string;
+}
+
+export interface OperationResult {
+  headline: string;
+  percent: number;
+  summary: string;
+  tone: "success" | "warning" | "neutral";
+}
+
+export interface DashboardViewMetrics {
+  revenueToday: number;
+  profitToday: number;
+  revenueWeek: number;
+  revenueMonth: number;
+  itemsSoldToday: number;
+  currentStock: number;
+  dailyGoal: number;
+  goalProgress: number;
+  customersToday: number;
+  pixTotal: number;
+  cardTotal: number;
+  cashTotal: number;
+  averageTicket: number;
+  growthVsYesterday: number;
+  hasOperations: boolean;
+  goalRevenue: number;
+}
+
+export interface DashboardChartPoint {
+  label: string;
+  value: number;
+  revenue?: number;
+  profit?: number;
+}
+
+export interface DashboardViewData {
+  metrics: DashboardViewMetrics;
+  charts: {
+    revenue: DashboardChartPoint[];
+    sales: DashboardChartPoint[];
+    payments: DashboardChartPoint[];
+    flavors: DashboardChartPoint[];
+  };
+  isGeneralView: boolean;
+  profitGrowthVsYesterday: number;
+  operationResult: OperationResult;
+  daySummary: DayExecutiveSummary | null;
+  timeline: DayTimelineGroup[];
+  alerts: DashboardActionableAlert[];
+  priorities: DashboardPriority[];
+  customerInsight: CustomerDayInsight;
+  topProductsSubtitle: string;
+  dayComparison: DayComparisonContext;
+}
+
+export interface DayComparisonContext {
+  /** Exibir trend vs dia anterior operacional */
+  enabled: boolean;
+  /** Rótulo do período comparado — ex: "vs sexta", "vs ontem" */
+  label: string;
+  /** Data selecionada cai em sábado ou domingo (Salgados não opera) */
+  isNonOperationalDay: boolean;
+}
+
+export function findLastOperationalDate(sales: DashboardSale[]): string | null {
+  if (sales.length === 0) return null;
+  const dates = Array.from(new Set(sales.map((s) => s.date))).sort();
+  return dates.at(-1) ?? null;
+}
+
+function isWeekendDate(date: string): boolean {
+  const day = getDay(parseISO(date));
+  return day === 0 || day === 6;
+}
+
+function salgadosSkipsWeekends(businessId?: string): boolean {
+  return businessId === SALGADOS_BUSINESS_ID;
+}
+
+/** Último dia útil anterior — pula sábado e domingo para Salgados. */
+function getComparisonDate(viewDate: string, businessId?: string): string {
+  let cursor = subDays(parseISO(viewDate), 1);
+  if (!salgadosSkipsWeekends(businessId)) {
+    return format(cursor, "yyyy-MM-dd");
+  }
+  while (getDay(cursor) === 0 || getDay(cursor) === 6) {
+    cursor = subDays(cursor, 1);
+  }
+  return format(cursor, "yyyy-MM-dd");
+}
+
+function formatComparisonLabel(viewDate: string, compareDate: string): string {
+  const calendarYesterday = format(subDays(parseISO(viewDate), 1), "yyyy-MM-dd");
+  if (compareDate === calendarYesterday) return "vs ontem";
+  const compareDay = getDay(parseISO(compareDate));
+  if (compareDay === 5) return "vs sexta";
+  return `vs ${format(parseISO(compareDate), "dd/MM", { locale: ptBR })}`;
+}
+
+function buildDayComparison(
+  viewDate: string,
+  businessId?: string,
+): DayComparisonContext {
+  if (salgadosSkipsWeekends(businessId) && isWeekendDate(viewDate)) {
+    return {
+      enabled: false,
+      label: "",
+      isNonOperationalDay: true,
+    };
+  }
+
+  const compareDate = getComparisonDate(viewDate, businessId);
+  return {
+    enabled: true,
+    label: formatComparisonLabel(viewDate, compareDate),
+    isNonOperationalDay: false,
+  };
+}
+
+function salesOnDate(sales: DashboardSale[], date: string): DashboardSale[] {
+  return sales.filter((s) => s.date === date);
+}
+
+function buildChartsForDates(
+  sales: DashboardSale[],
+  dates: string[],
+): { revenue: DashboardChartPoint[]; sales: DashboardChartPoint[] } {
+  const revenue: DashboardChartPoint[] = [];
+  const salesChart: DashboardChartPoint[] = [];
+  for (const date of dates) {
+    const dSales = salesOnDate(sales, date);
+    const rev = sumRevenue(dSales);
+    const profit = sumProfit(dSales);
+    revenue.push({
+      label: format(parseISO(date), "dd/MM"),
+      value: rev,
+      revenue: rev,
+      profit,
+    });
+    salesChart.push({ label: format(parseISO(date), "dd/MM"), value: itemsSoldFromEmbedded(dSales) });
+  }
+  return { revenue, sales: salesChart };
+}
+
+function allOperationalDates(sales: DashboardSale[]): string[] {
+  return Array.from(new Set(sales.map((s) => s.date))).sort();
+}
+
+function flavorBreakdown(salesList: DashboardSale[]): DashboardChartPoint[] {
+  const counts = productQuantityBreakdownFromEmbedded(salesList);
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value]) => ({ label, value }));
+}
+
+const PAYMENT_LABELS: Record<string, string> = {
+  pix: "PIX",
+  card: "Cartão",
+  cash: "Dinheiro",
+};
+
+function parseHour(time: string): number {
+  const [h] = time.split(":");
+  return parseInt(h ?? "0", 10);
+}
+
+function timelinePeriod(hour: number): DayTimelineGroup["period"] {
+  if (hour < 11) return "morning";
+  if (hour < 14) return "lunch";
+  return "afternoon";
+}
+
+const PERIOD_LABELS: Record<DayTimelineGroup["period"], string> = {
+  morning: "Manhã",
+  lunch: "Almoço",
+  afternoon: "Tarde",
+};
+
+function formatSaleProducts(sale: DashboardSale): string {
+  return sale.items
+    .map((item) => {
+      const name = item.product?.name ?? "Produto";
+      return item.quantity > 1 ? `${item.quantity}× ${name}` : name;
+    })
+    .join(", ");
+}
+
+function resolveSaleStatus(sale: DashboardSale): { label: string; tone: DayTimelineEntry["statusTone"] } {
+  if (sale.paymentStatus === "pending") {
+    return { label: "Pendente", tone: "warning" };
+  }
+  if (sale.paymentStatus === "partial") {
+    return { label: "Parcial", tone: "warning" };
+  }
+  const notes = (sale.notes ?? "").toLowerCase();
+  if (notes.includes("fiado") || notes.includes("devendo") || notes.includes("pendente")) {
+    return { label: "Pendente", tone: "warning" };
+  }
+  if (notes.includes("henrique") || notes.includes("pai")) {
+    return { label: "Recebido", tone: "success" };
+  }
+  return { label: "Pago", tone: "success" };
+}
+
+function buildDayTimeline(daySales: DashboardSale[]): DayTimelineGroup[] {
+  const sorted = [...daySales].sort((a, b) => a.time.localeCompare(b.time));
+  const grouped = new Map<DayTimelineGroup["period"], DayTimelineEntry[]>();
+
+  for (const sale of sorted) {
+    const period = timelinePeriod(parseHour(sale.time));
+    const status = resolveSaleStatus(sale);
+    const entry: DayTimelineEntry = {
+      id: sale.id,
+      time: sale.time,
+      clientName: sale.client?.name ?? "Sem cliente",
+      products: formatSaleProducts(sale) || "—",
+      paymentLabel: PAYMENT_LABELS[sale.paymentMethod] ?? sale.paymentMethod,
+      amount: sale.totalAmount,
+      statusLabel: status.label,
+      statusTone: status.tone,
+    };
+    const list = grouped.get(period) ?? [];
+    list.push(entry);
+    grouped.set(period, list);
+  }
+
+  return (["morning", "lunch", "afternoon"] as const)
+    .filter((p) => (grouped.get(p)?.length ?? 0) > 0)
+    .map((period) => ({
+      period,
+      label: PERIOD_LABELS[period],
+      entries: grouped.get(period) ?? [],
+    }));
+}
+
+function resolveAnonymousBuyerName(sale: DashboardSale): string {
+  const notes = (sale.notes ?? "").toLowerCase();
+  if (notes.includes("henrique") || notes.includes("pai")) return "Henrique";
+  if (notes.includes("fiado") || notes.includes("devendo")) {
+    return sale.client?.name?.split(" ")[0] ?? "Cliente fiado";
+  }
+  return "Cliente avulso";
+}
+
+function buildCustomerDayInsight(daySales: DashboardSale[]): CustomerDayInsight {
+  if (daySales.length === 0) {
+    return {
+      uniqueBuyers: 0,
+      topBuyer: null,
+      summary: "Nenhuma venda registrada",
+    };
+  }
+
+  const ranked: Array<{ name: string; total: number }> = [];
+  const byClient = new Map<string, { name: string; total: number }>();
+
+  for (const sale of daySales) {
+    if (sale.clientId && sale.client) {
+      const existing = byClient.get(sale.clientId);
+      if (existing) {
+        existing.total += sale.totalAmount;
+      } else {
+        byClient.set(sale.clientId, { name: sale.client.name, total: sale.totalAmount });
+      }
+    } else {
+      ranked.push({
+        name: resolveAnonymousBuyerName(sale),
+        total: sale.totalAmount,
+      });
+    }
+  }
+
+  for (const entry of Array.from(byClient.values())) {
+    ranked.push(entry);
+  }
+
+  ranked.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "pt-BR"));
+  const topBuyer = ranked[0] ?? null;
+
+  const identifiedCount = byClient.size;
+  const anonymousCount = daySales.filter((s) => !s.clientId).length;
+
+  let summary: string;
+  if (topBuyer) {
+    const firstName = topBuyer.name.split(" ")[0];
+    summary = `${firstName} foi o maior comprador do dia`;
+  } else {
+    summary = "Nenhuma venda registrada";
+  }
+
+  return {
+    uniqueBuyers: identifiedCount + anonymousCount,
+    topBuyer,
+    summary,
+  };
+}
+
+function buildDayExecutiveSummary(
+  daySales: DashboardSale[],
+  metrics: DashboardViewMetrics,
+  diary?: DiaryDayContext | null,
+): DayExecutiveSummary {
+  const pendingSales = daySales.filter((s) => resolveSaleStatus(s).label === "Pendente");
+
+  return {
+    goalUnits: diary?.dailyGoalUnits ?? null,
+    soldUnits: diary?.quantitySold ?? metrics.itemsSoldToday,
+    revenue: diary?.revenue?.received ?? sumReceivedRevenue(daySales),
+    profit: diary?.profit ?? metrics.profitToday,
+    pendingCount: pendingSales.length || (diary?.revenue?.pending ? 1 : 0),
+    pendingAmount: diary?.revenue?.pending ?? sumPendingRevenue(daySales),
+    losses: diary?.quantityLost ?? 0,
+    lossReason: diary?.lossReason,
+  };
+}
+
+function buildOperationResult(
+  metrics: DashboardViewMetrics,
+  diary?: DiaryDayContext | null,
+): OperationResult {
+  const unitGoal = diary?.dailyGoalUnits;
+  const sold = diary?.quantitySold ?? metrics.itemsSoldToday;
+
+  if (unitGoal && unitGoal > 0) {
+    const percent = Math.min(Math.round((sold / unitGoal) * 100), 999);
+    const diff = sold - unitGoal;
+    if (diff >= 0) {
+      return {
+        headline: "Meta batida",
+        percent,
+        summary: `${sold} de ${unitGoal} unidades — operação concluída`,
+        tone: "success",
+      };
+    }
+    return {
+      headline: "Quase lá",
+      percent,
+      summary: `Faltam ${unitGoal - sold} unidade${unitGoal - sold > 1 ? "s" : ""} para a meta`,
+      tone: percent >= 70 ? "warning" : "neutral",
+    };
+  }
+
+  if (metrics.dailyGoal > 0) {
+    const percent = Math.round(metrics.goalProgress);
+    if (percent >= 100) {
+      return {
+        headline: "Meta financeira atingida",
+        percent,
+        summary: "Receita do dia dentro do objetivo",
+        tone: "success",
+      };
+    }
+    return {
+      headline: "Em andamento",
+      percent,
+      summary: `${percent}% da meta financeira`,
+      tone: percent >= 70 ? "warning" : "neutral",
+    };
+  }
+
+  return {
+    headline: sold > 0 ? "Operação ativa" : "Sem operação",
+    percent: sold > 0 ? 100 : 0,
+    summary: sold > 0 ? `${sold} unidades vendidas` : "Nenhuma venda registrada",
+    tone: sold > 0 ? "success" : "neutral",
+  };
+}
+
+function buildActionableAlerts(
+  daySales: DashboardSale[],
+  diary?: DiaryDayContext | null,
+): DashboardActionableAlert[] {
+  const alerts: DashboardActionableAlert[] = [];
+
+  const pending = daySales.filter((s) => resolveSaleStatus(s).label === "Pendente");
+  for (const sale of pending) {
+    const name = sale.client?.name ?? "Cliente";
+    alerts.push({
+      id: `pending-${sale.id}`,
+      message: `${name} possui pagamento pendente de ${sale.totalAmount.toFixed(2).replace(".", ",")} reais.`,
+      severity: "warning",
+    });
+  }
+
+  if (diary?.quantityLost && diary.quantityLost > 0) {
+    alerts.push({
+      id: "loss",
+      message: `Você perdeu ${diary.quantityLost} salgado${diary.quantityLost > 1 ? "s" : ""}${diary.lossReason ? ` (${diary.lossReason})` : ""}.`,
+      severity: "warning",
+    });
+  }
+
+  if (diary?.manualInsights?.toLowerCase().includes("pastel esgotou")) {
+    alerts.push({
+      id: "pastel-soldout",
+      message: "Pastel esgotou rapidamente — considere aumentar no mix de amanhã.",
+      severity: "opportunity",
+    });
+  }
+
+  const qrIssue = diary?.commercialIntelligence?.whatWeLearnedToday?.some(
+    (line) => line.toLowerCase().includes("qr code") && line.toLowerCase().includes("zerado"),
+  );
+  if (qrIssue) {
+    alerts.push({
+      id: "qr-price",
+      message: "O QR Code ainda não informa o preço — clientes perguntam antes de comprar.",
+      severity: "warning",
+    });
+  }
+
+  if (diary?.commercialIntelligence?.conclusion?.toLowerCase().includes("atrito")) {
+    alerts.push({
+      id: "sale-friction",
+      message: "Existe atrito no processo de venda — revise a placa e o fluxo de pagamento.",
+      severity: "info",
+    });
+  }
+
+  return alerts;
+}
+
+function buildPriorities(diary?: DiaryDayContext | null): DashboardPriority[] {
+  const items: DashboardPriority[] = [];
+
+  if (diary?.revenue?.pending && diary.revenue.pending > 0) {
+    items.push({ id: "collect-mikely", label: "Cobrar pagamento pendente (Mikely)." });
+  }
+
+  for (const action of diary?.suggestedActions ?? []) {
+    if (action.status === "planned" || action.status === "in_progress") {
+      items.push({ id: action.id, label: action.title });
+    }
+  }
+
+  if (diary?.manualInsights?.toLowerCase().includes("pastel esgotou")) {
+    items.push({ id: "buy-pastel", label: "Comprar mais Pastéis amanhã." });
+  }
+
+  return items;
+}
+
+function buildGeneralDashboardView(
+  sales: DashboardSale[],
+  currentStock: number,
+  dailyGoal: number,
+  totalRegisteredClients: number,
+): DashboardViewData {
+  const totalRevenue = sumRevenue(sales);
+  const totalProfit = sumProfit(sales);
+  const totalUnits = itemsSoldFromEmbedded(sales);
+  const payments = paymentBreakdown(sales);
+  const dates = allOperationalDates(sales);
+  const charts = buildChartsForDates(sales, dates);
+
+  const today = new Date();
+  const { start: weekStart, end: weekEnd } = getWeekRange(today);
+  const { start: monthStart, end: monthEnd } = getMonthRange(today);
+  const weekSales = sales.filter((s) => s.date >= weekStart && s.date <= weekEnd);
+  const monthSales = sales.filter((s) => s.date >= monthStart && s.date <= monthEnd);
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const todayRevenue = sumRevenue(salesOnDate(sales, todayStr));
+  const uniqueBuyers = uniqueCustomerCount(sales);
+
+  return {
+    isGeneralView: true,
+    metrics: {
+      revenueToday: totalRevenue,
+      profitToday: totalProfit,
+      revenueWeek: sumRevenue(weekSales),
+      revenueMonth: sumRevenue(monthSales),
+      itemsSoldToday: totalUnits,
+      currentStock,
+      dailyGoal,
+      goalProgress: computeGoalProgress(todayRevenue, dailyGoal),
+      goalRevenue: todayRevenue,
+      customersToday: totalRegisteredClients > 0 ? totalRegisteredClients : uniqueBuyers,
+      pixTotal: payments.pix,
+      cardTotal: payments.card,
+      cashTotal: payments.cash,
+      averageTicket: averageTicket(totalRevenue, sales.length),
+      growthVsYesterday: 0,
+      hasOperations: sales.length > 0,
+    },
+    charts: {
+      revenue: charts.revenue,
+      sales: charts.sales,
+      payments: [
+        { label: "PIX", value: payments.pix },
+        { label: "Cartão", value: payments.card },
+        { label: "Dinheiro", value: payments.cash },
+      ],
+      flavors: flavorBreakdown(sales),
+    },
+    profitGrowthVsYesterday: 0,
+    operationResult: buildOperationResult(
+      {
+        revenueToday: totalRevenue,
+        profitToday: totalProfit,
+        itemsSoldToday: totalUnits,
+        dailyGoal,
+        goalProgress: computeGoalProgress(todayRevenue, dailyGoal),
+        goalRevenue: todayRevenue,
+      } as DashboardViewMetrics,
+    ),
+    daySummary: null,
+    timeline: [],
+    alerts: [],
+    priorities: [],
+    customerInsight: {
+      uniqueBuyers: totalRegisteredClients > 0 ? totalRegisteredClients : uniqueBuyers,
+      topBuyer: null,
+      summary:
+        totalRegisteredClients > 0
+          ? `${totalRegisteredClients} clientes cadastrados`
+          : `${uniqueBuyers} compradores únicos no histórico`,
+    },
+    topProductsSubtitle: "Histórico completo",
+    dayComparison: { enabled: false, label: "", isNonOperationalDay: false },
+  };
+}
+
+export function buildDashboardView(
+  sales: DashboardSale[],
+  context: TemporalViewContext,
+  currentStock: number,
+  dailyGoal: number,
+  totalRegisteredClients = 0,
+  diary?: DiaryDayContext | null,
+  businessId?: string,
+): DashboardViewData {
+  if (context.mode === "general") {
+    return buildGeneralDashboardView(sales, currentStock, dailyGoal, totalRegisteredClients);
+  }
+
+  const viewDate = context.viewDate;
+  const anchor = parseISO(viewDate);
+  const dayComparison = buildDayComparison(viewDate, businessId);
+  const compareDate = getComparisonDate(viewDate, businessId);
+  const { start: weekStart, end: weekEnd } = getWeekRange(anchor);
+  const { start: monthStart, end: monthEnd } = getMonthRange(anchor);
+
+  const daySales = salesOnDate(sales, viewDate);
+  const compareSales = salesOnDate(sales, compareDate);
+  const weekSales = sales.filter((s) => s.date >= weekStart && s.date <= weekEnd);
+  const monthSales = sales.filter((s) => s.date >= monthStart && s.date <= monthEnd);
+
+  const revenueToday = sumReceivedRevenue(daySales);
+  const profitToday = sumProfit(daySales);
+  const revenueWeek = sumReceivedRevenue(weekSales);
+  const revenueMonth = sumReceivedRevenue(monthSales);
+  const revenueCompare = sumReceivedRevenue(compareSales);
+  const profitCompare = sumProfit(compareSales);
+
+  const itemsSoldToday = itemsSoldFromEmbedded(daySales);
+  const customersToday = uniqueCustomerCount(daySales);
+  const payments = paymentBreakdown(daySales);
+
+  const revenueChart: DashboardChartPoint[] = [];
+  const salesChart: DashboardChartPoint[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const date = format(subDays(anchor, i), "yyyy-MM-dd");
+    const dSales = salesOnDate(sales, date);
+    const revenue = sumReceivedRevenue(dSales);
+    const profit = sumProfit(dSales);
+    const label = format(parseISO(date), "dd/MM");
+    revenueChart.push({ label, value: revenue, revenue, profit });
+    salesChart.push({ label, value: itemsSoldFromEmbedded(dSales) });
+  }
+
+  const metrics: DashboardViewMetrics = {
+    revenueToday,
+    profitToday,
+    revenueWeek,
+    revenueMonth,
+    itemsSoldToday,
+    currentStock,
+    dailyGoal,
+    goalProgress: computeGoalProgress(revenueToday, dailyGoal),
+    goalRevenue: revenueToday,
+    customersToday,
+    pixTotal: payments.pix,
+    cardTotal: payments.card,
+    cashTotal: payments.cash,
+    averageTicket: averageTicket(revenueToday, daySales.length),
+    growthVsYesterday: dayComparison.enabled
+      ? computeGrowth(revenueToday, revenueCompare)
+      : 0,
+    hasOperations: daySales.length > 0,
+  };
+
+  const unitGoal = diary?.dailyGoalUnits;
+  const metaProgress =
+    unitGoal && unitGoal > 0
+      ? Math.min(Math.round(((diary?.quantitySold ?? itemsSoldToday) / unitGoal) * 100), 999)
+      : metrics.goalProgress;
+
+  return {
+    isGeneralView: false,
+    metrics: {
+      ...metrics,
+      goalProgress: metaProgress,
+    },
+    charts: {
+      revenue: revenueChart,
+      sales: salesChart,
+      payments: [
+        { label: "PIX", value: payments.pix },
+        { label: "Cartão", value: payments.card },
+        { label: "Dinheiro", value: payments.cash },
+      ],
+      flavors: flavorBreakdown(daySales),
+    },
+    profitGrowthVsYesterday: dayComparison.enabled
+      ? computeGrowth(profitToday, profitCompare)
+      : 0,
+    operationResult: buildOperationResult(metrics, diary),
+    daySummary: buildDayExecutiveSummary(daySales, metrics, diary),
+    timeline: buildDayTimeline(daySales),
+    alerts: buildActionableAlerts(daySales, diary),
+    priorities: buildPriorities(diary),
+    customerInsight: buildCustomerDayInsight(daySales),
+    topProductsSubtitle: isViewingTodayContext(context) ? "Hoje" : format(anchor, "dd/MM/yyyy"),
+    dayComparison,
+  };
+}
+
+export function formatViewDateLabel(context: TemporalViewContext): string {
+  if (context.mode === "general") {
+    return "Visão executiva — histórico completo";
+  }
+  if (isViewingTodayContext(context)) {
+    return format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
+  }
+  return format(parseISO(context.viewDate), "EEEE, dd 'de' MMMM", { locale: ptBR });
+}
+
+export function formatContextSelectorLabel(context: TemporalViewContext): string {
+  if (context.mode === "general") return "Geral";
+  if (isViewingTodayContext(context)) return "Hoje";
+  return format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR });
+}
+
+function isViewingTodayContext(context: TemporalViewContext): boolean {
+  return context.mode === "day" && context.viewDate === format(new Date(), "yyyy-MM-dd");
+}

@@ -1,0 +1,66 @@
+import { NextRequest, NextResponse } from "next/server";
+import { format } from "date-fns";
+import { executeSaleOperation } from "@/domains/sales/sale-operation-handler";
+import { MSG, apiError } from "@/shared/api-messages";
+import { isEngineError } from "@/shared/errors/engine-errors";
+import { parseBusinessIdParam, requireSpecificBusinessId } from "@/lib/business-units";
+import { listSalesEnriched, getSaleProduct } from "@/platform/db/repositories/sale-repository";
+
+export async function GET(request: NextRequest) {
+  try {
+    const businessId = parseBusinessIdParam(request.nextUrl.searchParams.get("businessId"));
+    return NextResponse.json(await listSalesEnriched(businessId));
+  } catch (error) {
+    console.error("Sales GET error:", error);
+    return apiError(MSG.LOAD_SALES);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const businessId = requireSpecificBusinessId(body.businessId);
+    const { date, time, clientId, department, productId, quantity, paymentMethod, notes, paymentStatus } =
+      body;
+
+    if (!productId) {
+      return apiError(MSG.SALE_NO_PRODUCT, 400);
+    }
+
+    const product = await getSaleProduct(productId);
+    if (!product) {
+      return apiError(MSG.SALE_NO_PRODUCT, 400);
+    }
+    if (product.businessId !== businessId) {
+      return apiError("Produto não pertence à operação selecionada.", 400);
+    }
+
+    const qty = Number(quantity);
+    if (!qty || qty <= 0) {
+      return apiError(MSG.SALE_INVALID_QTY, 400);
+    }
+
+    const result = await executeSaleOperation({
+      productId,
+      quantity: qty,
+      clientId: clientId || null,
+      paymentMethod: paymentMethod || "pix",
+      paymentStatus: paymentStatus || undefined,
+      date: date ?? format(new Date(), "yyyy-MM-dd"),
+      time: time ?? format(new Date(), "HH:mm"),
+      department: department || null,
+      notes: notes || null,
+    });
+
+    return NextResponse.json({ id: result.saleId, success: true }, { status: 201 });
+  } catch (error) {
+    console.error("Sales POST error:", error);
+    if (error instanceof Error && error.message.includes("operação específica")) {
+      return apiError(error.message, 400);
+    }
+    if (isEngineError(error) && error.code === "EXECUTION_FAILED") {
+      return apiError(error.message, 400);
+    }
+    return apiError(MSG.CREATE_SALE);
+  }
+}

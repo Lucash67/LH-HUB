@@ -1,0 +1,137 @@
+"use client";
+
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { AppShell } from "@/components/layout/app-shell";
+import { PageLoader } from "@/components/ui/loading";
+import { ChartCard } from "@/components/charts/chart-card";
+import { ExecutiveSummary } from "@/components/executive/executive-summary";
+import { SectionPanel } from "@/components/executive/section-panel";
+import { Button } from "@/components/ui/button";
+import { KpiCard } from "@/components/dashboard/kpi-card";
+import { useBusinessScope } from "@/hooks/use-business-scope";
+import { formatCurrency, formatPercent } from "@/lib/utils";
+import type { PerformanceView } from "@/lib/performance-service";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, ShoppingCart, Receipt } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export default function DesempenhoPage() {
+  const { activeBusinessId, withQuery } = useBusinessScope();
+  const [period, setPeriod] = useState<"weekly" | "monthly">("weekly");
+  const [offset, setOffset] = useState(0);
+
+  const { data, isLoading } = useQuery<PerformanceView>({
+    queryKey: ["performance", activeBusinessId, period, offset],
+    queryFn: () =>
+      fetch(withQuery(`/api/performance?period=${period}&offset=${offset}`)).then((r) => r.json()),
+  });
+
+  if (isLoading || !data) {
+    return (
+      <AppShell title="Desempenho" subtitle="Receita, lucro e custos por período">
+        <PageLoader />
+      </AppShell>
+    );
+  }
+
+  const growthIcon = (value: number) =>
+    value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
+
+  const RevenueGrowthIcon = growthIcon(data.comparison.revenueGrowth);
+  const ProfitGrowthIcon = growthIcon(data.comparison.profitGrowth);
+
+  return (
+    <AppShell title="Desempenho" subtitle="Visão semanal e mensal da operação">
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex rounded-xl border border-surface-border bg-surface-card p-1">
+            {(["weekly", "monthly"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  setPeriod(p);
+                  setOffset(0);
+                }}
+                className={cn(
+                  "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  period === p
+                    ? "bg-brand-orange text-white"
+                    : "text-text-secondary hover:text-text-primary",
+                )}
+              >
+                {p === "weekly" ? "Semanal" : "Mensal"}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setOffset((o) => o - 1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[180px] text-center text-sm font-medium text-text-primary">
+              {data.periodLabel}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setOffset((o) => o + 1)}
+              disabled={offset >= 0}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <ExecutiveSummary
+          theme="performance"
+          title="Resumo do período"
+          conclusion={`Comparado a ${data.comparison.previousLabel}: receita ${formatPercent(data.comparison.revenueGrowth)} · lucro ${formatPercent(data.comparison.profitGrowth)}.`}
+          items={[
+            { label: "Receita", value: formatCurrency(data.metrics.revenue), highlight: true },
+            { label: "Lucro", value: formatCurrency(data.metrics.profit), highlight: true },
+            { label: "Custos", value: formatCurrency(data.metrics.costs) },
+            { label: "Margem", value: formatPercent(data.metrics.margin) },
+          ]}
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard title="Faturamento" value={data.metrics.revenue} icon={RevenueGrowthIcon} trend={data.comparison.revenueGrowth} />
+          <KpiCard title="Lucro" value={data.metrics.profit} icon={ProfitGrowthIcon} trend={data.comparison.profitGrowth} variant="profit" />
+          <KpiCard title="Ticket médio" value={data.metrics.averageTicket} icon={Receipt} />
+          <KpiCard title="Vendas" value={data.metrics.salesCount} icon={ShoppingCart} subtitle={`${data.metrics.itemsSold} itens`} format="number" />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ChartCard
+            title="Evolução diária"
+            subtitle={`${data.period === "weekly" ? "Semana" : "Mês"} · receita e lucro`}
+            data={data.dailyChart}
+            type="area"
+            showLegend
+          />
+          <ChartCard
+            title="Segunda a sexta"
+            subtitle="Faturamento por dia da semana (dias úteis)"
+            data={data.weekdayChart}
+            type="area"
+            showLegend
+          />
+        </div>
+
+        <SectionPanel theme="performance" title="Comparativo" subtitle="Período anterior">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl bg-surface-elevated p-4">
+              <p className="text-xs text-text-muted">Receita anterior</p>
+              <p className="text-xl font-bold">{formatCurrency(data.comparison.previousRevenue)}</p>
+            </div>
+            <div className="rounded-xl bg-surface-elevated p-4">
+              <p className="text-xs text-text-muted">Lucro anterior</p>
+              <p className="text-xl font-bold text-brand-green">{formatCurrency(data.comparison.previousProfit)}</p>
+            </div>
+          </div>
+        </SectionPanel>
+      </div>
+    </AppShell>
+  );
+}

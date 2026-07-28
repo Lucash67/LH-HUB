@@ -1,0 +1,261 @@
+/**
+ * Métricas compostas — orquestra queries + aggregates.
+ */
+import { format, subDays, parseISO, getDay } from "date-fns";
+import { getWeekRange, getMonthRange, goalProgress } from "@/lib/utils";
+import { getDailyGoalTarget } from "@/lib/goals-service";
+import { ALL_BUSINESSES_ID } from "@/lib/business-units";
+import {
+  averageProductCost,
+  averageProductPrice,
+  averageTicket,
+  computeGrowth,
+  computeGoalProgress,
+  itemsSoldFromItems,
+  paymentBreakdown,
+  productQuantityBreakdown,
+  revenueByDate,
+  revenueByDayOfWeek,
+  salesCountByHour,
+  sumProfit,
+  sumRevenue,
+  sumReceivedRevenue,
+  totalStock,
+  uniqueCustomerCount,
+  productStatsFromItems,
+  percentageOf,
+} from "./aggregates";
+import {
+  fetchItemsForSales,
+  fetchScopedProducts,
+  fetchScopedSales,
+  loadRankingsDataset,
+} from "./queries";
+import type {
+  DashboardMetricsResult,
+  DayReportResult,
+  ProjectionScenario,
+  RankingsResult,
+} from "./types";
+
+export async function computeDashboardMetrics(
+  businessId: string = ALL_BUSINESSES_ID,
+): Promise<DashboardMetricsResult> {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+  const { start: weekStart } = getWeekRange();
+  const { start: monthStart } = getMonthRange();
+
+  const todaySales = await fetchScopedSales({ businessId, dateEq: today });
+  const yesterdaySales = await fetchScopedSales({ businessId, dateEq: yesterday });
+  const weekSales = await fetchScopedSales({ businessId, dateGte: weekStart });
+  const monthSales = await fetchScopedSales({ businessId, dateGte: monthStart });
+
+  const revenueToday = sumReceivedRevenue(todaySales);
+  const profitToday = sumProfit(todaySales);
+  const revenueWeek = sumReceivedRevenue(weekSales);
+  const revenueMonth = sumReceivedRevenue(monthSales);
+  const revenueYesterday = sumReceivedRevenue(yesterdaySales);
+
+  const todaySaleIds = todaySales.map((s) => s.id).filter(Boolean) as string[];
+  const todayItems = await fetchItemsForSales(todaySaleIds);
+  const itemsSoldToday = itemsSoldFromItems(todayItems);
+
+  const productRows = await fetchScopedProducts(businessId);
+  const currentStock = totalStock(productRows);
+  const dailyGoal = await getDailyGoalTarget(businessId);
+  const progress = computeGoalProgress(revenueToday, dailyGoal);
+  const customersToday = uniqueCustomerCount(todaySales);
+  const payments = paymentBreakdown(todaySales);
+
+  return {
+    revenueToday,
+    profitToday,
+    revenueWeek,
+    revenueMonth,
+    itemsSoldToday,
+    currentStock,
+    dailyGoal,
+    goalProgress: progress,
+    customersToday,
+    pixTotal: payments.pix,
+    cardTotal: payments.card,
+    cashTotal: payments.cash,
+    averageTicket: averageTicket(revenueToday, todaySales.length),
+    growthVsYesterday: computeGrowth(revenueToday, revenueYesterday),
+  };
+}
+
+export async function computeDayReport(
+  date: string,
+  businessId: string = ALL_BUSINESSES_ID,
+): Promise<DayReportResult> {
+  const daySales = await fetchScopedSales({ businessId, dateEq: date });
+  const saleIds = daySales.map((s) => s.id).filter(Boolean) as string[];
+  const allItems = await fetchItemsForSales(saleIds);
+  const allProducts = await fetchScopedProducts(ALL_BUSINESSES_ID);
+  const productMap = new Map(allProducts.map((p) => [p.id, p.name]));
+
+  const revenue = sumRevenue(daySales);
+  const profit = sumProfit(daySales);
+  const itemsSold = itemsSoldFromItems(allItems);
+  const payments = paymentBreakdown(daySales);
+  const productBreakdown = productQuantityBreakdown(allItems, (id) => productMap.get(id) ?? "Desconhecido");
+
+  return {
+    date,
+    revenue,
+    profit,
+    itemsSold,
+    salesCount: daySales.length,
+    averageTicket: averageTicket(revenue, daySales.length),
+    paymentBreakdown: payments,
+    productBreakdown,
+    sales: daySales,
+  };
+}
+
+export async function computeRankings(
+  businessId: string = ALL_BUSINESSES_ID,
+): Promise<RankingsResult> {
+  const { sales: allSales, items: allItems, products: allProducts, clients: allClients } =
+    await loadRankingsDataset(businessId);
+
+  const productMap = new Map(allProducts.map((p) => [p.id, p]));
+  const clientMap = new Map(allClients.map((c) => [c.id, c]));
+
+  const productSales: Record<
+    string,
+    { name: string; quantity: number; revenue: number; profit: number }
+  > = {};
+  for (const item of allItems) {
+    const product = productMap.get(item.productId);
+    if (!product) continue;
+    if (!productSales[product.id]) {
+      productSales[product.id] = { name: product.name, quantity: 0, revenue: 0, profit: 0 };
+    }
+    productSales[product.id].quantity += item.quantity;
+    productSales[product.id].revenue += item.subtotal ?? 0;
+    productSales[product.id].profit += item.profit ?? 0;
+  }
+
+  const clientPurchases: Record<
+    string,
+    { name: string; count: number; total: number; favorite: string }
+  > = {};
+  for (const sale of allSales) {
+    if (!sale.clientId) continue;
+    const client = clientMap.get(sale.clientId);
+    if (!client) continue;
+    if (!clientPurchases[client.id]) {
+      clientPurchases[client.id] = { name: client.name, count: 0, total: 0, favorite: "" };
+    }
+    clientPurchases[client.id].count += 1;
+    clientPurchases[client.id].total += sale.totalAmount;
+  }
+
+  for (const [clientId, data] of Object.entries(clientPurchases)) {
+    const clientSaleIds = allSales.filter((s) => s.clientId === clientId).map((s) => s.id);
+    const clientItems = allItems.filter((i) => clientSaleIds.includes(i.saleId));
+    const productCounts: Record<string, number> = {};
+    for (const item of clientItems) {
+      const product = productMap.get(item.productId);
+      if (product) {
+        productCounts[product.name] = (productCounts[product.name] ?? 0) + item.quantity;
+      }
+    }
+    data.favorite = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
+  }
+
+  const dayRevenue = revenueByDate(allSales);
+  const hourSales = salesCountByHour(allSales);
+  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const dayOfWeekSales = revenueByDayOfWeek(allSales, (date) => getDay(parseISO(date)));
+
+  return {
+    topProducts: Object.values(productSales).sort((a, b) => b.quantity - a.quantity).slice(0, 10),
+    topClients: Object.values(clientPurchases).sort((a, b) => b.total - a.total).slice(0, 10),
+    bestDays: Object.entries(dayRevenue)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([d, revenue]) => ({ date: d, revenue })),
+    bestHours: Object.entries(hourSales)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([hour, count]) => ({ hour: `${hour}:00`, count })),
+    bestDaysOfWeek: Object.entries(dayOfWeekSales)
+      .sort((a, b) => b[1] - a[1])
+      .map(([dow, revenue]) => ({ day: dayNames[parseInt(dow, 10)], revenue })),
+    highestRevenue: Object.entries(dayRevenue).sort((a, b) => b[1] - a[1])[0],
+    highestProfit: [...allSales].sort((a, b) => b.profit - a.profit)[0],
+    highestTicket: [...allSales].sort((a, b) => b.totalAmount - a.totalAmount)[0],
+  };
+}
+
+export interface ProductCatalogStat {
+  productId: string;
+  soldQuantity: number;
+  revenueGenerated: number;
+  salesShare: number;
+  lastSaleDate: string | null;
+}
+
+export async function computeProductCatalogStats(
+  businessId: string = ALL_BUSINESSES_ID,
+): Promise<ProductCatalogStat[]> {
+  const { sales: allSales, items: allItems, products: allProducts } =
+    await loadRankingsDataset(businessId);
+  const productMap = new Map(allProducts.map((p) => [p.id, p]));
+  const stats = productStatsFromItems(allItems, (id) => productMap.get(id));
+  const totalQty = stats.reduce((s, r) => s + r.quantity, 0);
+
+  const lastSaleByProduct = new Map<string, string>();
+  for (const sale of allSales) {
+    for (const item of allItems.filter((i) => i.saleId === sale.id)) {
+      const current = lastSaleByProduct.get(item.productId);
+      if (!current || sale.date > current) {
+        lastSaleByProduct.set(item.productId, sale.date);
+      }
+    }
+  }
+
+  return allProducts.map((p) => {
+    const stat = stats.find((s) => s.productId === p.id);
+    const qty = stat?.quantity ?? 0;
+    return {
+      productId: p.id,
+      soldQuantity: qty,
+      revenueGenerated: stat?.revenue ?? 0,
+      salesShare: percentageOf(qty, totalQty),
+      lastSaleDate: lastSaleByProduct.get(p.id) ?? null,
+    };
+  });
+}
+
+export async function computeProjections(
+  businessId: string = ALL_BUSINESSES_ID,
+): Promise<ProjectionScenario[]> {
+  const dailyScenarios = [10, 15, 20, 25, 30, 40, 50];
+  const productRows = await fetchScopedProducts(businessId);
+  const avgPrice = averageProductPrice(productRows);
+  const avgCost = averageProductCost(productRows);
+  const avgProfit = avgPrice - avgCost;
+  const workingDays = 22;
+
+  return dailyScenarios.map((units) => ({
+    dailyUnits: units,
+    monthlyRevenue: units * avgPrice * workingDays,
+    monthlyProfit: units * avgProfit * workingDays,
+    monthlyUnits: units * workingDays,
+  }));
+}
+
+export function computeCalendarDayStatus(
+  revenue: number,
+  target: number,
+): "hit" | "close" | "miss" {
+  const progress = goalProgress(revenue, target);
+  if (progress >= 100) return "hit";
+  if (progress >= 70) return "close";
+  return "miss";
+}

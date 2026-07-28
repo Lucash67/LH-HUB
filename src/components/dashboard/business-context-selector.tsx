@@ -1,0 +1,119 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, Building2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { ALL_BUSINESSES_ID } from "@/lib/business-units";
+import {
+  formatBusinessSelectorLabel,
+  useActiveBusinessId,
+  useBusinessContextStore,
+  type BusinessesApiResponse,
+} from "@/stores/business-context-store";
+
+interface BusinessContextSelectorProps {
+  variant?: "inline" | "sidebar";
+}
+
+export function BusinessContextSelector({ variant = "inline" }: BusinessContextSelectorProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const activeBusinessId = useActiveBusinessId();
+  const setActiveBusiness = useBusinessContextStore((s) => s.setActiveBusiness);
+
+  const { data } = useQuery<BusinessesApiResponse>({
+    queryKey: ["businesses"],
+    queryFn: () => fetch("/api/businesses").then((r) => r.json()),
+    staleTime: 300_000,
+  });
+
+  const label = formatBusinessSelectorLabel(activeBusinessId);
+  const options = [
+    { id: data?.all.id ?? ALL_BUSINESSES_ID, name: data?.all.name ?? "Todos" },
+    ...(data?.units ?? []),
+  ];
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  function selectBusiness(businessId: string) {
+    setActiveBusiness(businessId);
+    setOpen(false);
+    queryClient.invalidateQueries();
+  }
+
+  const isSidebar = variant === "sidebar";
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative",
+        isSidebar ? "w-full px-5 pb-4" : "inline-flex items-center gap-2 text-sm",
+      )}
+    >
+      {isSidebar ? (
+        <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-text-muted">Operação</p>
+      ) : (
+        <span className="text-text-muted">Operação:</span>
+      )}
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className={cn(
+          "gap-1.5 border-surface-border bg-surface-elevated/50 font-normal",
+          isSidebar ? "h-9 w-full justify-between px-3 text-[13px]" : "h-8",
+        )}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className="flex items-center gap-1.5 truncate">
+          <Building2 className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+          {label}
+        </span>
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 shrink-0 text-text-muted transition-transform", open && "rotate-180")}
+        />
+      </Button>
+
+      {open && (
+        <div
+          className={cn(
+            "absolute z-50 rounded-xl border border-surface-border bg-surface-elevated py-1 shadow-lg",
+            isSidebar ? "left-5 right-5 top-full mt-1" : "left-0 top-full mt-2 min-w-[200px]",
+          )}
+          role="listbox"
+        >
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              role="option"
+              aria-selected={activeBusinessId === option.id}
+              onClick={() => selectBusiness(option.id)}
+              className={cn(
+                "flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover text-text-secondary hover:text-text-primary",
+                activeBusinessId === option.id && "text-brand-orange",
+              )}
+            >
+              {option.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
