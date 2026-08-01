@@ -33,18 +33,28 @@ interface DaySummaryResponse {
 export function TemporalDayBanner() {
   const context = useTemporalViewContext();
   const { activeBusinessId, withQuery } = useBusinessScope();
-
-  if (isViewingGeneral(context) || isAllBusinesses(activeBusinessId)) return null;
+  const dayScoped = !isViewingGeneral(context) && !isAllBusinesses(activeBusinessId);
 
   const { data, isLoading } = useQuery<DaySummaryResponse>({
     queryKey: ["temporal-day-summary", activeBusinessId, context.viewDate],
-    queryFn: () =>
-      fetch(withQuery(`/api/temporal/day-summary?date=${context.viewDate}`)).then((r) =>
-        r.json(),
-      ),
+    queryFn: async () => {
+      const r = await fetch(withQuery(`/api/temporal/day-summary?date=${context.viewDate}`));
+      const json = await r.json();
+      if (!r.ok || json.error) {
+        throw new Error(json.error || "Não foi possível carregar o resumo do dia.");
+      }
+      return json;
+    },
+    enabled: dayScoped,
+    staleTime: 120_000,
   });
 
+  if (!dayScoped) return null;
+
   const dateLabel = format(parseISO(context.viewDate), "dd/MM/yyyy (EEEE)", { locale: ptBR });
+  // Só exibe KPIs quando a resposta bate com o dia selecionado (evita flash de outro dia).
+  const metricsReady =
+    !isLoading && data && data.date === context.viewDate;
 
   return (
     <div className="space-y-4 mb-6">
@@ -58,7 +68,11 @@ export function TemporalDayBanner() {
         </Link>
       </div>
 
-      {!isLoading && data && (
+      {isLoading && (
+        <p className="text-sm text-text-muted px-1">Carregando resumo do dia…</p>
+      )}
+
+      {metricsReady && (
         <>
           <ExecutiveSummary
             theme="dashboard"

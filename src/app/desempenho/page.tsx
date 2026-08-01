@@ -22,13 +22,18 @@ export default function DesempenhoPage() {
 
   const { data, isLoading } = useQuery<PerformanceView>({
     queryKey: ["performance", activeBusinessId, period, offset],
-    queryFn: () =>
-      fetch(withQuery(`/api/performance?period=${period}&offset=${offset}`)).then((r) => r.json()),
+    queryFn: async () => {
+      const r = await fetch(withQuery(`/api/performance?period=${period}&offset=${offset}`));
+      const json = await r.json();
+      if (!r.ok || json.error) {
+        throw new Error(json.error || "Não foi possível carregar o desempenho.");
+      }
+      return json;
+    },
     staleTime: 120_000,
-    placeholderData: (prev) => prev,
   });
 
-  if (isLoading && !data) {
+  if (isLoading || !data) {
     return (
       <ModuleShell title="Desempenho" subtitle="Receita, lucro e custos por período">
         <PageLoader />

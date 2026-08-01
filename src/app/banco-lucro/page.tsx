@@ -28,7 +28,6 @@ export default function BancoLucroPage() {
       return json;
     },
     staleTime: 120_000,
-    placeholderData: (prev) => prev,
   });
 
   const [saveRate, setSaveRate] = useState(100);
@@ -60,7 +59,7 @@ export default function BancoLucroPage() {
     return { points, summary: simulationSummary(points) };
   }, [data, saveRate, monthlyWithdrawal, horizonDays, context, scopedBalance, scopedAvg]);
 
-  if (isLoading && !data) {
+  if (isLoading || !data) {
     return (
       <ModuleShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
         <PageLoader />

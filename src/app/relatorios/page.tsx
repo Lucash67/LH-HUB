@@ -158,7 +158,7 @@ export default function RelatoriosPage() {
     };
   }, [data, goals, effectiveType]);
 
-  if (isLoading && !data) {
+  if (isLoading || !data) {
     return (
       <ModuleShell title="Relatórios">
         <PageLoader />

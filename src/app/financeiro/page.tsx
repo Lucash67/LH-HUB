@@ -68,14 +68,27 @@ export default function FinanceiroPage() {
     ? withQuery("/api/financial")
     : withQuery(`/api/financial?date=${context.viewDate}&viewMode=day`);
 
-  const { data, isLoading } = useQuery<FinancialData>({
+  const { data, isLoading, isError, error } = useQuery<FinancialData>({
     queryKey: ["financial", activeBusinessId, context.mode, context.viewDate],
-    queryFn: () => fetch(financialUrl).then((r) => r.json()),
-    staleTime: 60_000,
-    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      const r = await fetch(financialUrl);
+      const json = await r.json();
+      if (!r.ok || json.error) {
+        throw new Error(json.error || "Não foi possível carregar o financeiro.");
+      }
+      return json;
+    },
+    staleTime: 120_000,
   });
 
-  if (isLoading && !data) {
+  const scopeMatches =
+    !data?.scope ||
+    (context.mode === "general" && data.scope.mode === "general") ||
+    (context.mode === "day" &&
+      data.scope.mode === "day" &&
+      (!data.scope.date || data.scope.date === context.viewDate));
+
+  if (isLoading || !data || !scopeMatches) {
     return (
       <ModuleShell title="Financeiro" subtitle="Visão executiva das finanças">
         <PageLoader />
@@ -83,10 +96,12 @@ export default function FinanceiroPage() {
     );
   }
 
-  if (!data) {
+  if (isError) {
     return (
       <ModuleShell title="Financeiro" subtitle="Visão executiva das finanças">
-        <p className="text-text-muted">Não foi possível carregar o financeiro.</p>
+        <p className="text-text-muted">
+          {error instanceof Error ? error.message : "Não foi possível carregar o financeiro."}
+        </p>
       </ModuleShell>
     );
   }

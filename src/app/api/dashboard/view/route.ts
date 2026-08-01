@@ -61,11 +61,21 @@ export async function GET(request: NextRequest) {
           diaryContext,
           businessId,
         );
-        return NextResponse.json({ data, diaryEntry, autoInsights });
+        return NextResponse.json({
+          data,
+          diaryEntry,
+          autoInsights,
+          context: { mode: viewMode, viewDate },
+        });
       }
 
       const data = buildDashboardView(normalizeDashboardSales(sales), context, 0, dailyGoal, 0, null, businessId);
-      return NextResponse.json({ data, diaryEntry: null, autoInsights: [] });
+      return NextResponse.json({
+        data,
+        diaryEntry: null,
+        autoInsights: [],
+        context: { mode: viewMode, viewDate },
+      });
     });
   } catch (error) {
     console.error("Dashboard view GET error:", error);

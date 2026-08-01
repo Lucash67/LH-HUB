@@ -11,11 +11,13 @@ import { LhHoldingIcon } from "@/components/hub/lh-hub-logo";
 import { resolveTheme, THEME_META } from "@/lib/theme-config";
 import { clearHubSession } from "@/lib/hub-session";
 import { useBusinessContextStore } from "@/stores/business-context-store";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -30,6 +32,7 @@ export function Sidebar() {
       await fetch("/api/auth/logout", { method: "POST" });
       clearHubSession();
       resetBusinessContext(null);
+      queryClient.clear();
       router.push("/login");
       router.refresh();
     } finally {

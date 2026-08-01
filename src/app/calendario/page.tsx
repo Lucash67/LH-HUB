@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ModuleShell } from "@/components/layout/module-shell";
@@ -13,7 +13,7 @@ import { ChevronLeft, ChevronRight, LayoutDashboard } from "lucide-react";
 import { useTemporalContextStore, useViewDate } from "@/stores/temporal-context-store";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
-import { format, getDaysInMonth, startOfMonth, getDay } from "date-fns";
+import { format, getDaysInMonth, parseISO, startOfMonth, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface CalendarData {
@@ -50,6 +50,15 @@ export default function CalendarioPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(viewDate);
 
+  // Mantém o painel do dia alinhado ao seletor temporal do header.
+  useEffect(() => {
+    setSelectedDate(viewDate);
+    const parsed = parseISO(viewDate);
+    if (!Number.isNaN(parsed.getTime())) {
+      setCurrentDate(parsed);
+    }
+  }, [viewDate]);
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
 
@@ -64,32 +73,42 @@ export default function CalendarioPage() {
     staleTime: 120_000,
   });
 
-  const { data: dayReport } = useQuery<DayReport>({
+  const { data: dayReport, isLoading: dayReportLoading } = useQuery<DayReport>({
     queryKey: ["day-report", selectedDate, activeBusinessId],
-    queryFn: () => fetch(withQuery(`/api/calendar?date=${selectedDate}`)).then((r) => r.json()),
+    queryFn: async () => {
+      const r = await fetch(withQuery(`/api/calendar?date=${selectedDate}`));
+      const json = await r.json();
+      if (!r.ok || json.error) throw new Error(json.error || "Não foi possível carregar o dia.");
+      return json;
+    },
     enabled: !!selectedDate,
+    staleTime: 120_000,
   });
 
+  // Garante que o painel lateral só usa dados do dia efetivamente selecionado.
+  const matchedDayReport =
+    dayReport && selectedDate && dayReport.date === selectedDate ? dayReport : null;
+
   const daySummary = useMemo(() => {
-    if (!dayReport || !calendar) return null;
-    const pct = calendar.target > 0 ? (dayReport.revenue / calendar.target) * 100 : 0;
-    const status = calendar.dayData[dayReport.date]?.status;
+    if (!matchedDayReport || !calendar) return null;
+    const pct = calendar.target > 0 ? (matchedDayReport.revenue / calendar.target) * 100 : 0;
+    const status = calendar.dayData[matchedDayReport.date]?.status;
 
     let conclusion: string;
-    if (dayReport.salesCount === 0) {
+    if (matchedDayReport.salesCount === 0) {
       conclusion = "Nenhuma venda registrada neste dia.";
     } else if (status === "hit") {
-      conclusion = `Meta batida com ${formatPercent(pct)} de aproveitamento. ${dayReport.salesCount} vendas e ticket médio de ${formatCurrency(dayReport.averageTicket)}.`;
+      conclusion = `Meta batida com ${formatPercent(pct)} de aproveitamento. ${matchedDayReport.salesCount} vendas e ticket médio de ${formatCurrency(matchedDayReport.averageTicket)}.`;
     } else if (status === "close") {
-      conclusion = `Próximo da meta (${formatPercent(pct)}). Faltaram ${formatCurrency(Math.max(calendar.target - dayReport.revenue, 0))} para atingir o objetivo.`;
+      conclusion = `Próximo da meta (${formatPercent(pct)}). Faltaram ${formatCurrency(Math.max(calendar.target - matchedDayReport.revenue, 0))} para atingir o objetivo.`;
     } else {
-      conclusion = `Meta não atingida — ${formatCurrency(dayReport.revenue)} de ${formatCurrency(calendar.target)}. Revise produção e horários.`;
+      conclusion = `Meta não atingida — ${formatCurrency(matchedDayReport.revenue)} de ${formatCurrency(calendar.target)}. Revise produção e horários.`;
     }
 
     return { pct, conclusion };
-  }, [dayReport, calendar]);
+  }, [matchedDayReport, calendar]);
 
-  if (isLoading && !calendar) {
+  if (isLoading || !calendar) {
     return (
       <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
         <PageLoader />
@@ -184,16 +203,16 @@ export default function CalendarioPage() {
           </SectionPanel>
 
           <div>
-            {dayReport && daySummary ? (
+            {matchedDayReport && daySummary ? (
               <div className="space-y-4">
                 <ExecutiveSummary
                   theme="goals"
                   title={formatDate(selectedDate!)}
                   conclusion={daySummary.conclusion}
                   items={[
-                    { label: "Receita", value: formatCurrency(dayReport.revenue), highlight: true },
-                    { label: "Vendas", value: String(dayReport.salesCount) },
-                    { label: "Itens", value: String(dayReport.itemsSold) },
+                    { label: "Receita", value: formatCurrency(matchedDayReport.revenue), highlight: true },
+                    { label: "Vendas", value: String(matchedDayReport.salesCount) },
+                    { label: "Itens", value: String(matchedDayReport.itemsSold) },
                     {
                       label: "Meta",
                       value: calendar.target > 0 ? formatPercent(daySummary.pct) : "—",
@@ -206,18 +225,18 @@ export default function CalendarioPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="rounded-lg bg-surface-elevated p-3">
                         <p className="label-upper">Lucro</p>
-                        <p className="font-bold text-brand-green">{formatCurrency(dayReport.profit)}</p>
+                        <p className="font-bold text-brand-green">{formatCurrency(matchedDayReport.profit)}</p>
                       </div>
                       <div className="rounded-lg bg-surface-elevated p-3">
                         <p className="label-upper">Clientes</p>
-                        <p className="font-bold">{dayReport.salesCount}</p>
+                        <p className="font-bold">{matchedDayReport.salesCount}</p>
                       </div>
                       <div className="col-span-2 rounded-lg bg-surface-elevated p-3">
                         <p className="label-upper">Ticket médio</p>
-                        <p className="font-bold">{formatCurrency(dayReport.averageTicket)}</p>
+                        <p className="font-bold">{formatCurrency(matchedDayReport.averageTicket)}</p>
                       </div>
                     </div>
-                    {dayReport.salesCount > 0 && selectedDate && (
+                    {matchedDayReport.salesCount > 0 && selectedDate && (
                       <Button
                         className="mt-4 w-full"
                         onClick={() => {
@@ -234,7 +253,11 @@ export default function CalendarioPage() {
               </div>
             ) : (
               <Card className="flex h-64 items-center justify-center border-dashed border-purple-500/20">
-                <p className="text-sm text-text-muted">Selecione um dia para ver o resumo</p>
+                <p className="text-sm text-text-muted">
+                  {dayReportLoading || (selectedDate && !matchedDayReport)
+                    ? "Carregando resumo do dia…"
+                    : "Selecione um dia para ver o resumo"}
+                </p>
               </Card>
             )}
           </div>

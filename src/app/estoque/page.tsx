@@ -53,7 +53,7 @@ export default function EstoquePage() {
     onError: (error: Error) => setFormError(error.message),
   });
 
-  if (isLoading && !data) {
+  if (isLoading || !data) {
     return (
       <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
         <PageLoader />

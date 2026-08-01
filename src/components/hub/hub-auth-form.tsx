@@ -9,6 +9,7 @@ import { HUB_COPY } from "@/constants/hub-brand";
 import { LhHoldingLogo } from "@/components/hub/lh-hub-logo";
 import { markHubSession } from "@/lib/hub-session";
 import { useBusinessContextStore } from "@/stores/business-context-store";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AuthTab = "login" | "register" | "forgot" | "reset";
 
@@ -27,6 +28,7 @@ function validateEmail(email: string): boolean {
 export function HubAuthForm({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const resetBusinessContext = useBusinessContextStore((s) => s.resetBusinessContext);
   const [tab, setTab] = useState<AuthTab>("login");
   const [resetToken, setResetToken] = useState("");
@@ -126,8 +128,9 @@ export function HubAuthForm({ compact = false }: { compact?: boolean }) {
         return;
       }
 
-      // Drop previous account's selected operation from localStorage.
+      // Drop previous account's selected operation + cached KPIs from another session.
       resetBusinessContext(data.user?.id ?? null);
+      queryClient.clear();
 
       markHubSession({
         email: data.user?.email ?? email.trim(),

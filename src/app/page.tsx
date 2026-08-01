@@ -19,6 +19,7 @@ interface DashboardViewPayload {
   data: DashboardViewData;
   diaryEntry: OperationalDiaryEntry | null;
   autoInsights: DiaryAutoInsight[];
+  context?: { mode: "day" | "general"; viewDate: string };
 }
 
 export default function DashboardPage() {
@@ -51,7 +52,7 @@ export default function DashboardPage() {
       return json;
     },
     staleTime: 120_000,
-    placeholderData: (prev) => prev,
+    // Sem placeholder: evita mostrar lucro/receita do dia/operação anterior.
     refetchInterval: shouldPoll ? 60_000 : false,
   });
 
@@ -75,7 +76,12 @@ export default function DashboardPage() {
     </>
   );
 
-  if (isLoading && !payload) {
+  const contextMatches =
+    !!payload?.context &&
+    payload.context.mode === context.mode &&
+    (context.mode === "general" || payload.context.viewDate === context.viewDate);
+
+  if (isLoading || !payload || (payload.context && !contextMatches)) {
     return (
       <ModuleShell title="Dashboard" subtitle={<span className="capitalize">{dayLabel}</span>} temporalChip={false}>
         <PageLoader />

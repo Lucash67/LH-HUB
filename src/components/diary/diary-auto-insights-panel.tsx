@@ -24,12 +24,16 @@ const categoryLabel: Record<DiaryAutoInsight["category"], string> = {
 };
 
 export function DiaryAutoInsightsPanel({ date }: { date: string }) {
-  const { withQuery } = useBusinessScope();
+  const { activeBusinessId, withQuery } = useBusinessScope();
 
   const { data: insights = [], isLoading } = useQuery<DiaryAutoInsight[]>({
-    queryKey: ["diary-auto-insights", date],
-    queryFn: () =>
-      fetch(withQuery(`/api/diary/auto-insights?date=${date}`)).then((r) => r.json()),
+    queryKey: ["diary-auto-insights", activeBusinessId, date],
+    queryFn: async () => {
+      const r = await fetch(withQuery(`/api/diary/auto-insights?date=${date}`));
+      const json = await r.json();
+      return Array.isArray(json) ? json : [];
+    },
+    staleTime: 120_000,
   });
 
   if (isLoading) {

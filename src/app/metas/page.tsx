@@ -27,7 +27,6 @@ export default function MetasPage() {
     },
     enabled: !isAggregated,
     staleTime: 120_000,
-    placeholderData: (prev) => prev,
     refetchInterval: 120_000,
   });
 
@@ -42,7 +41,7 @@ export default function MetasPage() {
     );
   }
 
-  if (isLoading && !view) {
+  if (isLoading || !view) {
     return (
       <ModuleShell
         title="Metas Inteligentes"

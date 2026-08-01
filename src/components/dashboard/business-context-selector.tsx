@@ -46,8 +46,9 @@ export function BusinessContextSelector({ variant = "inline" }: BusinessContextS
   function selectBusiness(businessId: string) {
     setActiveBusiness(businessId);
     setOpen(false);
-    // Invalidate module data only — keep auth/businesses cache warm.
-    void queryClient.invalidateQueries({
+    // Remove cached module data so a troca de operação nunca reutiliza KPIs antigos.
+    // Mantém auth/businesses aquecidos.
+    void queryClient.removeQueries({
       predicate: (q) => {
         const key = q.queryKey[0];
         return key !== "auth" && key !== "businesses";

@@ -45,7 +45,6 @@ export default function ProjecoesPage() {
         withQuery(`/api/projections?period=${period}&offset=${offset}`),
       )) as PeriodProjectionView,
     staleTime: 120_000,
-    placeholderData: (prev) => prev,
     retry: 1,
   });
 
@@ -56,7 +55,7 @@ export default function ProjecoesPage() {
     staleTime: 300_000,
   });
 
-  if (isLoading && !data) {
+  if (isLoading || !data) {
     return (
       <ModuleShell title="Projeções" subtitle="Semana e mês com base no ritmo atual">
         <PageLoader />

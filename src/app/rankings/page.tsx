@@ -36,12 +36,18 @@ export default function RankingsPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
   const { data, isLoading } = useQuery<RankingsData>({
     queryKey: ["rankings", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/rankings")).then((r) => r.json()),
-    staleTime: 90_000,
-    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      const r = await fetch(withQuery("/api/rankings"));
+      const json = await r.json();
+      if (!r.ok || json.error) {
+        throw new Error(json.error || "Não foi possível carregar os rankings.");
+      }
+      return json;
+    },
+    staleTime: 120_000,
   });
 
-  if (isLoading && !data) {
+  if (isLoading || !data) {
     return (
       <ModuleShell title="Rankings">
         <PageLoader />
