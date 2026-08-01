@@ -3,6 +3,7 @@ import { listDiaryEntries } from "@/lib/diary-service";
 import { deriveDiaryTotalProfit } from "@/lib/diary/types";
 import { fetchMetricSales } from "@/platform/db/data-access/metrics";
 import { isOperationalDay } from "@/lib/operational-calendar";
+import { isAllBusinesses } from "@/lib/business-units";
 import { sumReceivedRevenue, sumProfit } from "@/lib/analytics-engine/client";
 import { deriveOperationalCostBasis } from "@/lib/day-registration/operational-profit";
 
@@ -11,15 +12,24 @@ export interface OperationalDayMetrics {
   revenue: number;
   profit: number;
   costs: number;
+  units?: number;
   source: "diary" | "sales";
+}
+
+function calendarScopeId(businessId: string): string {
+  return isAllBusinesses(businessId) ? "salgados" : businessId;
 }
 
 /** Lucro/receita por dia — diário homologado tem prioridade sobre soma de vendas. */
 export async function buildOperationalDayMetrics(
   businessId: string,
 ): Promise<Map<string, OperationalDayMetrics>> {
+  const calId = calendarScopeId(businessId);
   const [diaryEntries, sales] = await Promise.all([
-    listDiaryEntries(businessId),
+    listDiaryEntries(businessId).catch((error) => {
+      console.error("buildOperationalDayMetrics diary error:", error);
+      return [];
+    }),
     fetchMetricSales({ businessId }),
   ]);
 
@@ -27,7 +37,7 @@ export async function buildOperationalDayMetrics(
   const salesByDate = new Map<string, typeof sales>();
 
   for (const sale of sales) {
-    if (!isOperationalDay(sale.date, businessId)) continue;
+    if (!isOperationalDay(sale.date, calId)) continue;
     const bucket = salesByDate.get(sale.date) ?? [];
     bucket.push(sale);
     salesByDate.set(sale.date, bucket);
@@ -51,6 +61,7 @@ export async function buildOperationalDayMetrics(
         revenue,
         profit,
         costs: deriveOperationalCostBasis(revenue, profit),
+        units: diary.quantitySold,
         source: "diary",
       });
       continue;

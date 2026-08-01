@@ -31,6 +31,11 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Projections GET error:", error);
-    return apiError(MSG.LOAD_PROJECTIONS);
+    const detail = error instanceof Error ? error.message : String(error);
+    return apiError(
+      process.env.NODE_ENV === "development"
+        ? `${MSG.LOAD_PROJECTIONS} (${detail})`
+        : MSG.LOAD_PROJECTIONS,
+    );
   }
 }

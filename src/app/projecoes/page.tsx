@@ -38,7 +38,7 @@ export default function ProjecoesPage() {
   const [offset, setOffset] = useState(0);
   const [showSimulator, setShowSimulator] = useState(false);
 
-  const { data, isLoading, isError, error } = useQuery<PeriodProjectionView>({
+  const { data, isLoading, isError, error, refetch } = useQuery<PeriodProjectionView>({
     queryKey: ["period-projections", activeBusinessId, period, offset],
     queryFn: async () =>
       (await fetchJson(
@@ -46,6 +46,7 @@ export default function ProjecoesPage() {
       )) as PeriodProjectionView,
     staleTime: 120_000,
     placeholderData: (prev) => prev,
+    retry: 1,
   });
 
   const { data: scenarios = [] } = useQuery<SimulatorScenario[]>({
@@ -66,9 +67,12 @@ export default function ProjecoesPage() {
   if (isError || !data) {
     return (
       <ModuleShell title="Projeções" subtitle="Semana e mês com base no ritmo atual">
-        <p className="text-text-muted">
+        <p className="mb-3 text-text-muted">
           {error instanceof Error ? error.message : "Não foi possível carregar as projeções."}
         </p>
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>
+          Tentar novamente
+        </Button>
       </ModuleShell>
     );
   }

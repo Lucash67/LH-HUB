@@ -2,7 +2,6 @@ import { addMonths, addWeeks, eachDayOfInterval, format, parseISO } from "date-f
 import { ptBR } from "date-fns/locale";
 import { fetchMetricSaleItems, fetchMetricSales, fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
-import { listDiaryEntries } from "@/lib/diary-service";
 import {
   countOperationalDaysInRange,
   isOperationalDay,
@@ -84,12 +83,15 @@ function round2(n: number): number {
 }
 
 function calendarBusinessId(businessId: string): string {
-  // Visão consolidada segue o calendário operacional dos Salgados (seg–sex).
   return isAllBusinesses(businessId) ? "salgados" : businessId;
 }
 
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
 function buildInsight(view: Omit<PeriodProjectionView, "insight">): string {
-  const { actual, projected, goal, gap, operationalDays, isCurrentPeriod } = view;
+  const { actual, goal, gap, operationalDays, isCurrentPeriod } = view;
 
   if (operationalDays.elapsed === 0) {
     return "Ainda não há dias operacionais neste período — a projeção começa quando houver o primeiro registro.";
@@ -125,10 +127,6 @@ function buildInsight(view: Omit<PeriodProjectionView, "insight">): string {
   return parts.join(" ");
 }
 
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
-
 export async function getPeriodProjectionView(
   businessId: string = ALL_BUSINESSES_ID,
   period: PeriodProjectionPeriod = "weekly",
@@ -141,24 +139,19 @@ export async function getPeriodProjectionView(
   const effectiveEnd = range.end < today ? range.end : today;
   const isCurrentPeriod = offset === 0 && range.start <= today && today <= range.end;
 
-  const [dayMetrics, sales, goals, diaryEntries] = await Promise.all([
+  const [dayMetrics, sales, goals] = await Promise.all([
     buildOperationalDayMetrics(businessId),
     fetchMetricSales({ businessId, dateGte: range.start, dateLte: range.end }),
     fetchMetricGoals(businessId),
-    listDiaryEntries(businessId),
   ]);
 
   const saleIds = sales.map((s) => s.id).filter((id): id is string => Boolean(id));
-  const items = await fetchMetricSaleItems(saleIds);
+  const items = saleIds.length > 0 ? await fetchMetricSaleItems(saleIds) : [];
   const unitsBySale = new Map<string, number>();
   for (const item of items) {
     if (!item.saleId) continue;
     unitsBySale.set(item.saleId, (unitsBySale.get(item.saleId) ?? 0) + item.quantity);
   }
-
-  const diaryUnitsByDate = new Map(
-    diaryEntries.map((e) => [e.date, e.quantitySold] as const),
-  );
 
   const unitsByDate = new Map<string, number>();
   for (const sale of sales) {
@@ -166,18 +159,24 @@ export async function getPeriodProjectionView(
     const saleUnits = sale.id ? (unitsBySale.get(sale.id) ?? 0) : 0;
     unitsByDate.set(sale.date, (unitsByDate.get(sale.date) ?? 0) + saleUnits);
   }
-  for (const [date, units] of Array.from(diaryUnitsByDate.entries())) {
-    if (date < range.start || date > range.end) continue;
-    if (!isOperationalDay(date, calId)) continue;
-    // Diário homologado prevalece nas unidades do dia.
-    if (units > 0) unitsByDate.set(date, units);
+
+  // Diário homologado prevalece nas unidades quando disponível.
+  for (const [date, metrics] of Array.from(dayMetrics.entries())) {
+    if (metrics.source === "diary" && typeof metrics.units === "number" && metrics.units > 0) {
+      unitsByDate.set(date, metrics.units);
+    }
   }
 
   let actualRevenue = 0;
   let actualProfit = 0;
   let actualUnits = 0;
 
-  for (const day of eachDayOfInterval({ start: parseISO(range.start), end: parseISO(effectiveEnd) })) {
+  const elapsedDays = eachDayOfInterval({
+    start: parseISO(range.start),
+    end: parseISO(effectiveEnd),
+  });
+
+  for (const day of elapsedDays) {
     const key = format(day, "yyyy-MM-dd");
     if (!isOperationalDay(key, calId)) continue;
     const metrics = dayMetrics.get(key);
@@ -190,7 +189,6 @@ export async function getPeriodProjectionView(
 
   const totalOpDays = countOperationalDaysInRange(range.start, range.end, calId);
   const elapsedOpDays = countOperationalDaysInRange(range.start, effectiveEnd, calId);
-  // Inclui o dia de referência — o ritmo sugerido vale para hoje + próximos dias úteis.
   const remainingOpDays = isCurrentPeriod
     ? countOperationalDaysInRange(today, range.end, calId)
     : 0;
@@ -309,5 +307,4 @@ export async function getPeriodProjectionView(
   };
 }
 
-/** Mantido para o simulador estático legado. */
 export { resolveRange as resolvePeriodProjectionRange };

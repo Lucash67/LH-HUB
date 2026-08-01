@@ -1,6 +1,8 @@
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { getPostgresDb, runInTransactionAsync } from "@/platform/db";
 import { fromDbBusinessId, toDbBusinessId } from "@/platform/db/business-id";
+import { getTenantDbIds } from "@/lib/auth/tenant-context";
+import { isAllBusinesses } from "@/lib/business-units";
 import { ensureOperationDayId } from "@/platform/db/repositories/operation-day-repository";
 import { listProducts } from "@/platform/db/repositories/product-repository";
 import { queryAll, queryOne, queryRun, toNumber } from "@/platform/db/query";
@@ -366,7 +368,17 @@ export async function listDiaryEntryRecords(
   to?: string,
 ): Promise<DiaryRecord[]> {
   const db = await getPostgresDb();
-  const conditions = [eq(operationDays.businessId, toDbBusinessId(businessSlug))];
+  const conditions = [];
+
+  if (isAllBusinesses(businessSlug)) {
+    const tenantIds = getTenantDbIds();
+    // Sem escopo de tenant não listamos diários de todos — evita vazamento e UUID inválido.
+    if (!tenantIds || tenantIds.length === 0) return [];
+    conditions.push(inArray(operationDays.businessId, tenantIds));
+  } else {
+    conditions.push(eq(operationDays.businessId, toDbBusinessId(businessSlug)));
+  }
+
   if (from) conditions.push(gte(operationDays.operationDate, from));
   if (to) conditions.push(lte(operationDays.operationDate, to));
 
@@ -375,7 +387,7 @@ export async function listDiaryEntryRecords(
       .select({ day: operationDays, diary: diaryEntries })
       .from(operationDays)
       .innerJoin(diaryEntries, eq(diaryEntries.operationDayId, operationDays.id))
-      .where(and(...conditions))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(operationDays.operationDate)),
   );
 
