@@ -3,14 +3,14 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loading";
 import { ExecutiveSummary } from "@/components/executive/executive-summary";
 import { SectionPanel } from "@/components/executive/section-panel";
 import { ChevronLeft, ChevronRight, LayoutDashboard } from "lucide-react";
-import { useTemporalContextStore } from "@/stores/temporal-context-store";
+import { useTemporalContextStore, useViewDate } from "@/stores/temporal-context-store";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
 import { format, getDaysInMonth, startOfMonth, getDay } from "date-fns";
@@ -44,10 +44,11 @@ const statusLabels = {
 
 export default function CalendarioPage() {
   const router = useRouter();
+  const viewDate = useViewDate();
   const setViewDate = useTemporalContextStore((s) => s.setViewDate);
   const { activeBusinessId, withQuery } = useBusinessScope();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(viewDate);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -84,9 +85,9 @@ export default function CalendarioPage() {
 
   if (isLoading || !calendar) {
     return (
-      <AppShell title="Calendário" subtitle="Metas e desempenho diário">
+      <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
@@ -99,7 +100,7 @@ export default function CalendarioPage() {
   for (let d = 1; d <= daysInMonth; d++) days.push(d);
 
   return (
-    <AppShell title="Calendário" subtitle="Metas e desempenho diário">
+    <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="icon" onClick={() => setCurrentDate(new Date(year, month - 2, 1))}>
@@ -140,7 +141,10 @@ export default function CalendarioPage() {
                       <button
                         key={day}
                         type="button"
-                        onClick={() => setSelectedDate(dateStr)}
+                        onClick={() => {
+                          setSelectedDate(dateStr);
+                          setViewDate(dateStr);
+                        }}
                         className={`relative flex min-h-[64px] flex-col items-center justify-center rounded-xl p-2 transition-all hover:scale-[1.03] ${
                           selectedDate === dateStr ? "ring-2 ring-purple-400 bg-purple-500/5" : "bg-surface-elevated"
                         }`}
@@ -217,6 +221,6 @@ export default function CalendarioPage() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

@@ -26,6 +26,8 @@ export type DiaryRecord = OperationalDiaryEntry & { id: string; createdAt: strin
 type DiaryNarrative = {
   sales?: OperationalDiaryEntry["sales"];
   lossReason?: string;
+  bonusIncome?: number;
+  bonusIncomeDescription?: string;
 };
 
 interface OperationDayRow {
@@ -164,6 +166,8 @@ function assembleDiaryRecord(
       total: toNumber(diary.revenueTotal),
     },
     profit: toNumber(diary.operationalProfit),
+    bonusIncome: narrative.bonusIncome,
+    bonusIncomeDescription: narrative.bonusIncomeDescription,
     quantitySold: diary.quantitySold,
     quantityLost: diary.quantityLost,
     lossReason: narrative.lossReason ?? related.losses[0]?.reason ?? undefined,
@@ -415,6 +419,8 @@ export async function upsertDiaryEntryRecord(entry: OperationalDiaryEntry): Prom
     const narrative: DiaryNarrative = {
       sales: validated.sales,
       lossReason: validated.lossReason,
+      bonusIncome: validated.bonusIncome,
+      bonusIncomeDescription: validated.bonusIncomeDescription,
     };
 
     const existing = await queryOne(

@@ -450,6 +450,35 @@ function migrateOperationalIntelligence(sqlite: Database.Database) {
   `);
 }
 
+function initUsersTable(sqlite: Database.Database) {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+  `);
+}
+
+function initPasswordResetTable(sqlite: Database.Database) {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_password_reset_token_hash ON password_reset_tokens(token_hash);
+    CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id);
+  `);
+}
+
 function migrateInvestmentSourceColumns(sqlite: Database.Database) {
   const columns = sqlite.prepare("PRAGMA table_info(investments)").all() as { name: string }[];
   const existing = new Set(columns.map((c) => c.name));
@@ -468,6 +497,8 @@ function initTables(sqlite: Database.Database) {
   migrateLegacyBusinessIdColumns(sqlite);
   migrateOperationalIntelligence(sqlite);
   migrateInvestmentSourceColumns(sqlite);
+  initUsersTable(sqlite);
+  initPasswordResetTable(sqlite);
   seedBusinessUnits(sqlite);
   seedBrigadeirosGoalsIfMissing(sqlite);
   seedSalgadosAdditionalInvestmentIfMissing(sqlite);

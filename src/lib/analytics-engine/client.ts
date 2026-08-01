@@ -26,6 +26,8 @@ export {
   computePeriodMetrics,
   productQuantityBreakdown,
   productQuantityBreakdownFromEmbedded,
+  flavorQuantityBreakdown,
+  flavorQuantityBreakdownFromEmbedded,
   topProductByQuantity,
   bottomProductByQuantity,
   computeGoalProgress,

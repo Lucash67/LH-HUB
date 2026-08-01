@@ -1,5 +1,6 @@
 import { format, getDay, parseISO } from "date-fns";
-import { computeGrowth, productQuantityBreakdown } from "@/lib/analytics-engine/client";
+import { computeGrowth, flavorQuantityBreakdown } from "@/lib/analytics-engine/client";
+import { isUnidentifiedFlavorProduct } from "@/lib/salgados-flavors";
 import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 
 export type PurchasePlanningMode = "auto" | "manual_total" | "manual_distribution";
@@ -82,9 +83,10 @@ function flavorBreakdownByDate(
   for (const sale of input.sales) {
     if (!isOperationalDay(sale.date, input.businessId) || !sale.id) continue;
     const dayItems = itemsBySale.get(sale.id) ?? [];
-    const breakdown = productQuantityBreakdown(dayItems, input.productNameById);
+    const breakdown = flavorQuantityBreakdown(dayItems, input.productNameById);
     const existing = map.get(sale.date) ?? {};
     for (const [name, qty] of Object.entries(breakdown)) {
+      if (isUnidentifiedFlavorProduct(name)) continue;
       const key = name.toLowerCase().includes("pastel")
         ? "pastel"
         : name.toLowerCase().includes("misto")

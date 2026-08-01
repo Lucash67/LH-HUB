@@ -7,12 +7,15 @@ import { getBusinessEngine } from "@/core/engine";
 import { operationRepository } from "@/platform/db/repositories/operation-repository";
 import { generateCorrelationId } from "@/shared/ids/generate-id";
 import { MSG, apiError } from "@/shared/api-messages";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 function isDevOnly(): boolean {
   return process.env.NODE_ENV === "development";
 }
 
 export async function GET() {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   if (!isDevOnly()) {
     return apiError("Recurso não disponível.", 404);
   }
@@ -27,6 +30,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   if (process.env.ENGINE_ENABLED === "false") {
     return apiError(MSG.OPERATIONS_DISABLED, 503);
   }

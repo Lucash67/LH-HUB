@@ -13,6 +13,7 @@ import {
   Settings,
   TrendingUp,
   PiggyBank,
+  ClipboardPaste,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,11 +39,12 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/insights", label: "Insights", icon: Sparkles },
   { href: "/relatorios", label: "Relatórios", icon: FileText },
   { href: "/diario", label: "Diário Operacional", icon: BookOpen },
+  { href: "/registro-dia", label: "Registro do Dia", icon: ClipboardPaste },
   { href: "/calendario", label: "Calendário", icon: Calendar },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 export const SIDEBAR_WIDTH = 240;
 
-export const APP_NAME = "Lucas Business";
-export const APP_TAGLINE = "Painel Inteligente";
+export const APP_NAME = "LH Hub";
+export const APP_TAGLINE = "Centro operacional";

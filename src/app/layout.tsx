@@ -10,8 +10,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Lucas Business — Painel Inteligente",
-  description: "Painel Inteligente de Gestão e Crescimento",
+  title: "LH Hub — Centro Operacional | LH Empreendimentos",
+  description: "Centro operacional de gestão — vendas, financeiro, metas e indicadores da LH Empreendimentos.",
+  icons: {
+    icon: "/brand/lh-empreendimentos-favicon.png?v=3",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

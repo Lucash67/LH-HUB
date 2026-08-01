@@ -3,6 +3,7 @@
  * Sem acesso a banco, hooks ou componentes.
  */
 import { calcGrowth, goalProgress } from "@/lib/utils";
+import { excludeUnidentifiedFlavors } from "@/lib/salgados-flavors";
 import type { MetricSale, MetricSaleItem, PaymentBreakdown, PeriodMetrics } from "./types";
 
 export function sumRevenue(sales: Array<{ totalAmount: number }>): number {
@@ -127,6 +128,20 @@ export function productQuantityBreakdownFromEmbedded(
     }
   }
   return breakdown;
+}
+
+/** Breakdown de sabores para gráficos — exclui vendas sem sabor identificado. */
+export function flavorQuantityBreakdownFromEmbedded(
+  sales: Array<{ items?: MetricSaleItem[] }>,
+): Record<string, number> {
+  return excludeUnidentifiedFlavors(productQuantityBreakdownFromEmbedded(sales));
+}
+
+export function flavorQuantityBreakdown(
+  items: MetricSaleItem[],
+  resolveName: (productId: string) => string,
+): Record<string, number> {
+  return excludeUnidentifiedFlavors(productQuantityBreakdown(items, resolveName));
 }
 
 export function topProductByQuantity(

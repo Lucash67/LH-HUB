@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
+import { DiaryAutoInsightsPanel } from "@/components/diary/diary-auto-insights-panel";
 import { BusinessWriteNotice } from "@/components/business/business-write-notice";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,7 @@ import { SectionPanel } from "@/components/executive/section-panel";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { isAllBusinesses, getBusinessUnitName } from "@/lib/business-units";
 import { formatCurrency } from "@/lib/utils";
+import { useTemporalContextStore, useViewDate } from "@/stores/temporal-context-store";
 import type { OperationalDiaryEntry } from "@/lib/diary/types";
 import {
   BookOpen,
@@ -181,7 +184,8 @@ function DiaryView({ entry }: { entry: DiaryEntry }) {
 export default function DiarioPage() {
   const queryClient = useQueryClient();
   const { activeBusinessId, canWrite, withQuery, writeBlockedMessage } = useBusinessScope();
-  const [selectedDate, setSelectedDate] = useState("2026-07-20");
+  const selectedDate = useViewDate();
+  const setViewDate = useTemporalContextStore((s) => s.setViewDate);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<OperationalDiaryEntry | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -231,7 +235,7 @@ export default function DiarioPage() {
   function shiftDate(days: number) {
     const d = parseISO(selectedDate);
     d.setDate(d.getDate() + days);
-    setSelectedDate(format(d, "yyyy-MM-dd"));
+    setViewDate(format(d, "yyyy-MM-dd"));
     setEditing(false);
   }
 
@@ -262,9 +266,10 @@ export default function DiarioPage() {
   }
 
   return (
-    <AppShell
+    <ModuleShell
       title="Diário Operacional"
       subtitle={`${getBusinessUnitName(activeBusinessId)} · memória qualitativa`}
+      temporalChip={false}
       actions={
         canWrite && !editing ? (
           <Button size="sm" onClick={startEdit}>
@@ -283,7 +288,7 @@ export default function DiarioPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => {
-                setSelectedDate(e.target.value);
+                setViewDate(e.target.value);
                 setEditing(false);
               }}
               className="w-auto"
@@ -306,7 +311,7 @@ export default function DiarioPage() {
                   variant={d.date === selectedDate ? "default" : "secondary"}
                   size="sm"
                   onClick={() => {
-                    setSelectedDate(d.date);
+                    setViewDate(d.date);
                     setEditing(false);
                   }}
                 >
@@ -325,7 +330,12 @@ export default function DiarioPage() {
           </Card>
         )}
 
-        {entry && !editing && displayEntry && <DiaryView entry={displayEntry} />}
+        {entry && !editing && displayEntry && (
+          <>
+            <DiaryAutoInsightsPanel date={selectedDate} />
+            <DiaryView entry={displayEntry} />
+          </>
+        )}
 
         {editing && form && (
           <Card>
@@ -462,6 +472,6 @@ export default function DiarioPage() {
           </p>
         </div>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
@@ -64,14 +64,14 @@ export default function ClientesPage() {
 
   if (isLoading) {
     return (
-      <AppShell title="Clientes">
+      <ModuleShell title="Clientes">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
   return (
-    <AppShell title="Clientes" subtitle="CRM operacional — relacionamento e oportunidades">
+    <ModuleShell title="Clientes" subtitle="CRM operacional — relacionamento e oportunidades">
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-text-secondary">
@@ -190,6 +190,6 @@ export default function ClientesPage() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

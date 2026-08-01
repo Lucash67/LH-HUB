@@ -17,13 +17,13 @@ export const OFFICIAL_DIARY_2026_07_16: OperationalDiaryEntry = {
   },
   sales: { paidCount: 8, creditCount: 0 },
   revenue: { received: 45, pending: 0, total: 45 },
-  profit: 13.5,
+  profit: 45,
   quantitySold: 9,
   quantityLost: 0,
   observations:
-    "Primeiro dia oficial ACAL. 100% vendido em 47 min. 100% PIX. Investimento R$ 31,50 (terceiro). Lucro R$ 13,50.",
+    "Primeiro dia oficial ACAL. 100% vendido em 47 min. 100% PIX. Investimento R$ 31,50 (Henrique — 100%). Lucro R$ 45,00 (= faturamento, sem custo próprio).",
   manualInsights:
-    "Preço R$ 5,00 aceito. Nenhum desconto. Nenhum fiado. Mix 3+3+3 equilibrado.",
+    "Henrique arcou com todo o investimento. Lucro operacional = faturamento. Preço R$ 5,00 aceito. Mix 3+3+3 equilibrado.",
   lessonsLearned:
     "Validação bem-sucedida. Decisão: 12 unidades no dia 17 (5 Croissant, 4 Pastel, 3 Misto).",
   commercialIntelligence: {
@@ -68,13 +68,13 @@ export const OFFICIAL_DIARY_2026_07_17: OperationalDiaryEntry = {
   },
   sales: { paidCount: 12, creditCount: 0 },
   revenue: { received: 60, pending: 0, total: 60 },
-  profit: 18,
+  profit: 60,
   quantitySold: 12,
   quantityLost: 0,
   observations:
-    "ROO-0002. Segundo dia ACAL. 100% vendido. Raimunda recorrente. PIX Fernando R$2,50 (13:06) — movimentação extraordinária, não ACAL.",
+    "ROO-0002. Segundo dia ACAL. 100% vendido. Investimento R$ 42,00 (Henrique — 100%). Lucro R$ 60,00 (= faturamento, sem custo próprio).",
   manualInsights:
-    "Manter R$ 5,00. Crescimento gradual. Registrar clientes. Não alterar estratégia com 2 dias de histórico.",
+    "Henrique arcou com todo o investimento. Lucro operacional = faturamento. Manter R$ 5,00. Crescimento gradual.",
   lessonsLearned:
     "Produção 12 un validada. Recorrência intradiária (Raimunda). Mix 5+4+3 conforme plano do dia 16.",
   commercialIntelligence: {
@@ -237,16 +237,16 @@ export const OFFICIAL_DIARY_2026_07_22: OperationalDiaryEntry = {
   sales: {
     paidCount: 11,
     creditCount: 0,
-    fatherSale: { units: 3, amount: 15, buyerName: "Trabalho do Henrique" },
+    fatherSale: { units: 3, amount: 15, buyerName: "Clientes do trabalho do Henrique" },
   },
-  revenue: { received: 70, pending: 0, total: 70 },
-  profit: 17.5,
-  quantitySold: 14,
+  revenue: { received: 75, pending: 0, total: 75 },
+  profit: 52.5,
+  quantitySold: 15,
   quantityLost: 0,
   observations:
-    "14 un confirmadas · R$ 70 · lucro R$ 17,50 · margem 25%. 1 pastel em investigação (não é perda). 2 salgados em dinheiro — cliente/sabores pendentes. Investimento: R$ 22,50 próprio + R$ 30,00 Henrique.",
+    "15 un vendidas · R$ 75 · lucro R$ 52,50. Investimento: R$ 22,50 próprio + R$ 30,00 Henrique. Lucro = faturamento − minha parte do investimento.",
   manualInsights:
-    "Perguntar à Dona Raimunda nome da cliente e sabores dos 2 salgados em dinheiro. Manter 12 un na ACAL nesta semana.",
+    "Henrique pagou R$ 30,00 do custo; investi R$ 22,50. Com 15 salgados a R$ 5, lucro operacional R$ 52,50. Manter 12 un na ACAL nesta semana.",
   lessonsLearned:
     "Não assumir perda antes de confirmar. Preservar incertezas como eventos operacionais.",
   commercialIntelligence: {

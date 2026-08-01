@@ -2,6 +2,7 @@
  * Métricas compostas — orquestra queries + aggregates.
  */
 import { format, subDays, parseISO, getDay } from "date-fns";
+import { isUnidentifiedFlavorProduct } from "@/lib/salgados-flavors";
 import { getWeekRange, getMonthRange, goalProgress } from "@/lib/utils";
 import { getDailyGoalTarget } from "@/lib/goals-service";
 import { ALL_BUSINESSES_ID } from "@/lib/business-units";
@@ -14,6 +15,7 @@ import {
   itemsSoldFromItems,
   paymentBreakdown,
   productQuantityBreakdown,
+  flavorQuantityBreakdown,
   revenueByDate,
   revenueByDayOfWeek,
   salesCountByHour,
@@ -100,7 +102,7 @@ export async function computeDayReport(
   const profit = sumProfit(daySales);
   const itemsSold = itemsSoldFromItems(allItems);
   const payments = paymentBreakdown(daySales);
-  const productBreakdown = productQuantityBreakdown(allItems, (id) => productMap.get(id) ?? "Desconhecido");
+  const productBreakdown = flavorQuantityBreakdown(allItems, (id) => productMap.get(id) ?? "Desconhecido");
 
   return {
     date,
@@ -130,7 +132,7 @@ export async function computeRankings(
   > = {};
   for (const item of allItems) {
     const product = productMap.get(item.productId);
-    if (!product) continue;
+    if (!product || isUnidentifiedFlavorProduct(product.name)) continue;
     if (!productSales[product.id]) {
       productSales[product.id] = { name: product.name, quantity: 0, revenue: 0, profit: 0 };
     }
@@ -160,7 +162,7 @@ export async function computeRankings(
     const productCounts: Record<string, number> = {};
     for (const item of clientItems) {
       const product = productMap.get(item.productId);
-      if (product) {
+      if (product && !isUnidentifiedFlavorProduct(product.name)) {
         productCounts[product.name] = (productCounts[product.name] ?? 0) + item.quantity;
       }
     }

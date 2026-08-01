@@ -8,8 +8,11 @@ import {
 import { operationalDiaryEntrySchema } from "@/lib/diary/types";
 import { MSG, apiError } from "@/shared/api-messages";
 import { isAllBusinesses, parseBusinessIdParam, requireSpecificBusinessId } from "@/lib/business-units";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const { searchParams } = request.nextUrl;
     const businessId = parseBusinessIdParam(searchParams.get("businessId"));
@@ -35,6 +38,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
     const businessId = requireSpecificBusinessId(body.businessId);
@@ -54,6 +59,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const { searchParams } = request.nextUrl;
     const businessId = requireSpecificBusinessId(searchParams.get("businessId"));

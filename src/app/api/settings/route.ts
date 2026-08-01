@@ -9,8 +9,11 @@ import {
   listSettingsMap,
   upsertSetting,
 } from "@/platform/db/repositories/settings-repository";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET() {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     return NextResponse.json(await listSettingsMap());
   } catch (error) {
@@ -20,6 +23,8 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
 
@@ -52,6 +57,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function POST() {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     if (!isPostgresBackupSupported()) {
       return apiError(

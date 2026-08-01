@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { BusinessWriteNotice } from "@/components/business/business-write-notice";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,16 +53,16 @@ export default function EstoquePage() {
 
   if (isLoading || !data) {
     return (
-      <AppShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
+      <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
   const totalStock = data.products.reduce((s, p) => s + p.stockQuantity, 0);
 
   return (
-    <AppShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
+    <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
       <div className="space-y-6">
         {!canWrite && <BusinessWriteNotice message={writeBlockedMessage} />}
 
@@ -180,6 +180,6 @@ export default function EstoquePage() {
           </Card>
         </div>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

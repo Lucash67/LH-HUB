@@ -1,7 +1,6 @@
-import { parseISO, getDay } from "date-fns";
+import { format, parseISO, getDay, subDays } from "date-fns";
 import { getMonthRange, formatCurrency } from "./utils";
 import {
-  computeDashboardMetrics,
   loadMonthSalesDataset,
   loadKpiDataset,
   bottomProductByQuantity,
@@ -10,8 +9,105 @@ import {
   computeExecutiveKpis,
   computeRankings,
   computeProductKpis,
+  fetchScopedSales,
+  computeGrowth,
 } from "./analytics-engine";
+import { sumReceivedRevenue } from "./analytics-engine/client";
 import { ALL_BUSINESSES_ID, getBusinessUnitName, isAllBusinesses } from "./business-units";
+import { previousOperationalDate } from "./temporal-filter";
+
+export interface InsightsGenerationOptions {
+  date?: string;
+  viewMode?: string;
+}
+
+interface DayComparisonContext {
+  anchorDate: string;
+  compareDate: string | null;
+  currentRevenue: number;
+  previousRevenue: number;
+  compareLabel: string;
+  anchorLabel: string;
+  isAnchorToday: boolean;
+}
+
+async function resolveDayComparison(
+  businessId: string,
+  options?: InsightsGenerationOptions,
+): Promise<DayComparisonContext> {
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  if (options?.viewMode === "day" && options.date) {
+    const anchorDate = options.date;
+    const allSales = await fetchScopedSales({ businessId });
+    const knownDates = allSales.map((s) => s.date);
+    const compareDate = previousOperationalDate(anchorDate, businessId, knownDates);
+    const anchorSales = await fetchScopedSales({ businessId, dateEq: anchorDate });
+    const prevSales = compareDate
+      ? await fetchScopedSales({ businessId, dateEq: compareDate })
+      : [];
+
+    return {
+      anchorDate,
+      compareDate,
+      currentRevenue: sumReceivedRevenue(anchorSales),
+      previousRevenue: compareDate ? sumReceivedRevenue(prevSales) : 0,
+      compareLabel: compareDate
+        ? `vs ${format(parseISO(compareDate), "dd/MM")}`
+        : "vs dia anterior",
+      anchorLabel: format(parseISO(anchorDate), "dd/MM"),
+      isAnchorToday: anchorDate === today,
+    };
+  }
+
+  const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+  const todaySales = await fetchScopedSales({ businessId, dateEq: today });
+  const yesterdaySales = await fetchScopedSales({ businessId, dateEq: yesterday });
+
+  return {
+    anchorDate: today,
+    compareDate: yesterday,
+    currentRevenue: sumReceivedRevenue(todaySales),
+    previousRevenue: sumReceivedRevenue(yesterdaySales),
+    compareLabel: "vs ontem",
+    anchorLabel: "hoje",
+    isAnchorToday: true,
+  };
+}
+
+function shouldShowDailyGrowthComparison(ctx: DayComparisonContext, growth: number): boolean {
+  if (Math.abs(growth) < 5) return false;
+  if (ctx.isAnchorToday && ctx.currentRevenue === 0 && ctx.previousRevenue > 0) return false;
+  if (!ctx.compareDate && ctx.previousRevenue === 0) return false;
+  return true;
+}
+
+function pushDailyGrowthInsight(insights: Insight[], ctx: DayComparisonContext): void {
+  const growth = computeGrowth(ctx.currentRevenue, ctx.previousRevenue);
+
+  if (!shouldShowDailyGrowthComparison(ctx, growth)) {
+    if (ctx.isAnchorToday && ctx.currentRevenue === 0 && ctx.previousRevenue > 0) {
+      insights.push({
+        id: "exec-day-not-started",
+        type: "info",
+        title: "Operação ainda sem vendas hoje",
+        description: `Ontem foram ${formatCurrency(ctx.previousRevenue)}. Registre as vendas conforme forem acontecendo.`,
+      });
+    }
+    return;
+  }
+
+  const up = growth > 0;
+  insights.push({
+    id: "exec-daily-growth",
+    type: up ? "positive" : "warning",
+    title: `Receita ${up ? "aumentou" : "caiu"} ${Math.abs(growth).toFixed(0)}% ${ctx.compareLabel}`,
+    description: up
+      ? `${formatCurrency(ctx.currentRevenue)} em ${ctx.anchorLabel} — momentum positivo.`
+      : `${formatCurrency(ctx.currentRevenue)} em ${ctx.anchorLabel} contra ${formatCurrency(ctx.previousRevenue)} no dia anterior.`,
+    metric: `${up ? "+" : ""}${growth.toFixed(0)}%`,
+  });
+}
 
 export interface Insight {
   id: string;
@@ -21,7 +117,11 @@ export interface Insight {
   metric?: string;
 }
 
-async function prependExecutiveInsights(insights: Insight[], businessId: string): Promise<void> {
+async function prependExecutiveInsights(
+  insights: Insight[],
+  businessId: string,
+  dayComparison: DayComparisonContext,
+): Promise<void> {
   const kpis = await computeExecutiveKpis(businessId);
   const rankings = await computeRankings(businessId);
 
@@ -62,18 +162,7 @@ async function prependExecutiveInsights(insights: Insight[], businessId: string)
     });
   }
 
-  if (Math.abs(kpis.performance.dailyGrowth) >= 5) {
-    const up = kpis.performance.dailyGrowth > 0;
-    insights.push({
-      id: "exec-daily-growth",
-      type: up ? "positive" : "warning",
-      title: `Receita ${up ? "aumentou" : "caiu"} ${Math.abs(kpis.performance.dailyGrowth).toFixed(0)}% vs ontem`,
-      description: up
-        ? "Momentum positivo no dia — mantenha ritmo de vendas."
-        : "Volume abaixo de ontem — considere combos ou promoções pontuais.",
-      metric: `${up ? "+" : ""}${kpis.performance.dailyGrowth.toFixed(0)}%`,
-    });
-  }
+  pushDailyGrowthInsight(insights, dayComparison);
 
   const bestDow = rankings.bestDaysOfWeek[0];
   if (bestDow && bestDow.revenue > 0) {
@@ -132,9 +221,13 @@ async function prependExecutiveInsights(insights: Insight[], businessId: string)
   }
 }
 
-export async function generateInsights(businessId: string = ALL_BUSINESSES_ID): Promise<Insight[]> {
+export async function generateInsights(
+  businessId: string = ALL_BUSINESSES_ID,
+  options?: InsightsGenerationOptions,
+): Promise<Insight[]> {
   const insights: Insight[] = [];
-  await prependExecutiveInsights(insights, businessId);
+  const dayComparison = await resolveDayComparison(businessId, options);
+  await prependExecutiveInsights(insights, businessId, dayComparison);
 
   const { start: monthStart } = getMonthRange();
   const { sales: allSales, items: monthItems, products: allProducts } =
@@ -226,25 +319,6 @@ export async function generateInsights(businessId: string = ALL_BUSINESSES_ID): 
       title: `Setor ${topDept[0]} lidera em faturamento`,
       description: `${formatCurrency(topDept[1])} em vendas para clientes deste setor no mês.`,
       metric: formatCurrency(topDept[1]),
-    });
-  }
-
-  const metrics = await computeDashboardMetrics(businessId);
-  if (metrics.growthVsYesterday > 5) {
-    insights.push({
-      id: "growth",
-      type: "positive",
-      title: `Receita subiu ${metrics.growthVsYesterday.toFixed(0)}% vs ontem`,
-      description: `${formatCurrency(metrics.revenueToday)} faturados hoje — momentum positivo.`,
-      metric: `+${metrics.growthVsYesterday.toFixed(0)}%`,
-    });
-  } else if (metrics.growthVsYesterday < -10) {
-    insights.push({
-      id: "growth-down",
-      type: "warning",
-      title: `Queda de ${Math.abs(metrics.growthVsYesterday).toFixed(0)}% vs ontem`,
-      description: `${formatCurrency(metrics.revenueToday)} hoje contra meta de ${formatCurrency(metrics.dailyGoal)}.`,
-      metric: `${metrics.growthVsYesterday.toFixed(0)}%`,
     });
   }
 

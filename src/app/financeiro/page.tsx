@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ChartCard } from "@/components/charts/chart-card";
 import { PageLoader } from "@/components/ui/loading";
@@ -12,6 +12,9 @@ import { HeroMetric } from "@/components/executive/hero-metric";
 import { DollarSign, TrendingUp, Wallet, PiggyBank, ArrowDownUp, Banknote, UserCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface FinancialData {
   grossRevenue: number;
@@ -54,24 +57,37 @@ interface FinancialData {
   };
   cashFlow: { income: number; expenses: number; balance: number };
   monthlyChart: Array<{ label: string; value: number; profit?: number; revenue?: number }>;
+  scope?: { mode: "general" | "day"; date?: string };
 }
 
 export default function FinanceiroPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
+  const context = useTemporalViewContext();
+
+  const financialUrl = isViewingGeneral(context)
+    ? withQuery("/api/financial")
+    : withQuery(`/api/financial?date=${context.viewDate}&viewMode=day`);
+
   const { data, isLoading } = useQuery<FinancialData>({
-    queryKey: ["financial", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/financial")).then((r) => r.json()),
+    queryKey: ["financial", activeBusinessId, context.mode, context.viewDate],
+    queryFn: () => fetch(financialUrl).then((r) => r.json()),
+    staleTime: 60_000,
+    placeholderData: (prev) => prev,
   });
 
-  if (isLoading || !data) {
+  if (isLoading && !data) {
     return (
-      <AppShell title="Financeiro" subtitle="Visão executiva das finanças">
+      <ModuleShell title="Financeiro" subtitle="Visão executiva das finanças">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
   const { operation, operator, reconciliation } = data.operatorFinance;
+  const isDayScoped = data.scope?.mode === "day";
+  const scopeLabel = isDayScoped
+    ? `Acumulado até ${format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR })}`
+    : "Visão do mês corrente";
   const resultPositive = data.operationalProfit >= 0;
   const operatorPositive = operator.operatorNetGain >= 0;
   const conclusion = resultPositive
@@ -84,11 +100,11 @@ export default function FinanceiroPage() {
       : `Posição do operador negativa: ${formatCurrency(operator.operatorNetGain)}.`);
 
   return (
-    <AppShell title="Financeiro" subtitle="Visão executiva das finanças">
+    <ModuleShell title="Financeiro" subtitle={scopeLabel}>
       <div className="space-y-5">
         <ExecutiveSummary
           theme="finance"
-          title="Resumo Financeiro"
+          title={isDayScoped ? "Resumo acumulado" : "Resumo Financeiro"}
           conclusion={conclusion}
           items={[
             { label: "Entradas", value: formatCurrency(data.cashFlow.income), highlight: true },
@@ -206,10 +222,10 @@ export default function FinanceiroPage() {
           </CardContent>
         </Card>
 
-        <SectionPanel theme="finance" title="Tendência mensal">
-          <ChartCard data={data.monthlyChart} title="Faturamento Mensal" type="area" height={320} />
+        <SectionPanel theme="finance" title="Tendencia" subtitle={isDayScoped ? "Ultimos 30 dias ate a data selecionada" : "Faturamento mensal"}>
+          <ChartCard data={data.monthlyChart} title={isDayScoped ? "Faturamento diario" : "Faturamento Mensal"} type="area" height={320} />
         </SectionPanel>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

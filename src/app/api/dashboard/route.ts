@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { getDashboardMetrics, getRevenueChart, getPaymentMethodChart, getFlavorChart, getSalesChart, getGrowthChart } from "@/lib/analytics";
 import { generateInsights } from "@/lib/insights-engine";
 import { MSG, apiError } from "@/shared/api-messages";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET() {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const metrics = await getDashboardMetrics();
     const revenueChart = await getRevenueChart(14);

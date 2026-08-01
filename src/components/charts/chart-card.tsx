@@ -16,8 +16,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { HUB_COLORS } from "@/constants/hub-brand";
 
-const COLORS = ["#FF5722", "#22C55E", "#737373"];
+const COLORS = [HUB_COLORS.yellow, "#22C55E", "#737373"];
+const BRAND_PRIMARY = HUB_COLORS.yellow;
 
 interface ChartCardProps {
   data: Array<{ label: string; value: number; profit?: number; revenue?: number }>;
@@ -95,8 +97,8 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#FF5722" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#FF5722" stopOpacity={0} />
+                  <stop offset="5%" stopColor={BRAND_PRIMARY} stopOpacity={0.2} />
+                  <stop offset="95%" stopColor={BRAND_PRIMARY} stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#22C55E" stopOpacity={0.2} />
@@ -107,7 +109,7 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
               <XAxis dataKey="name" stroke="#737373" fontSize={11} tickLine={false} axisLine={false} />
               <YAxis stroke="#737373" fontSize={11} tickLine={false} axisLine={false} width={32} />
               <Tooltip content={<ChartTooltip />} />
-              <Area type="monotone" dataKey="revenue" stroke="#FF5722" fill="url(#gradRevenue)" strokeWidth={2} name="Receita" />
+              <Area type="monotone" dataKey="revenue" stroke={BRAND_PRIMARY} fill="url(#gradRevenue)" strokeWidth={2} name="Receita" />
               {chartData.some((d) => d.profit !== undefined) && (
                 <Area type="monotone" dataKey="profit" stroke="#22C55E" fill="url(#gradProfit)" strokeWidth={2} name="Lucro" />
               )}
@@ -118,7 +120,7 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
               <XAxis dataKey="name" stroke="#737373" fontSize={11} tickLine={false} axisLine={false} />
               <YAxis stroke="#737373" fontSize={11} tickLine={false} axisLine={false} width={32} />
               <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="value" fill="#FF5722" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="value" fill={BRAND_PRIMARY} radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : (
             <PieChart>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { PageLoader } from "@/components/ui/loading";
 import { ChartCard } from "@/components/charts/chart-card";
 import { ExecutiveSummary } from "@/components/executive/executive-summary";
@@ -12,40 +12,58 @@ import { useBusinessScope } from "@/hooks/use-business-scope";
 import { formatCurrency } from "@/lib/utils";
 import type { ProfitBankView } from "@/lib/profit-bank-service";
 import { simulateProfitBank, simulationSummary } from "@/lib/profit-bank-view";
+import { filterUpToDate } from "@/lib/temporal-filter";
+import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
 import { PiggyBank, Calculator } from "lucide-react";
 
 export default function BancoLucroPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
+  const context = useTemporalViewContext();
   const { data, isLoading } = useQuery<ProfitBankView>({
     queryKey: ["profit-bank", activeBusinessId],
     queryFn: () => fetch(withQuery("/api/profit-bank")).then((r) => r.json()),
+    staleTime: 60_000,
+    placeholderData: (prev) => prev,
   });
 
   const [saveRate, setSaveRate] = useState(100);
   const [monthlyWithdrawal, setMonthlyWithdrawal] = useState(0);
   const [horizonDays, setHorizonDays] = useState(90);
 
+  const scopedHistory = useMemo(() => {
+    if (!data) return [];
+    return isViewingGeneral(context) ? data.history : filterUpToDate(data.history, context);
+  }, [data, context]);
+
+  const scopedBalance = scopedHistory.length ? scopedHistory[scopedHistory.length - 1]!.balance : 0;
+  const scopedProfit = scopedHistory.reduce((s, d) => s + d.profit, 0);
+  const scopedRevenue = scopedHistory.reduce((s, d) => s + d.revenue, 0);
+  const scopedDays = scopedHistory.length;
+  const scopedAvg = scopedDays > 0 ? scopedProfit / scopedDays : 0;
+
   const simulation = useMemo(() => {
     if (!data) return { points: [], summary: { finalBalance: 0, totalSaved: 0, totalWithdrawn: 0 } };
+    const startBalance = isViewingGeneral(context) ? data.currentBalance : scopedBalance;
+    const avgDaily = isViewingGeneral(context) ? data.avgDailyProfit : scopedAvg;
     const points = simulateProfitBank({
-      startingBalance: data.currentBalance,
-      avgDailyProfit: data.avgDailyProfit,
+      startingBalance: startBalance,
+      avgDailyProfit: avgDaily,
       saveRatePercent: saveRate,
       monthlyWithdrawal,
       horizonDays,
     });
     return { points, summary: simulationSummary(points) };
-  }, [data, saveRate, monthlyWithdrawal, horizonDays]);
+  }, [data, saveRate, monthlyWithdrawal, horizonDays, context, scopedBalance, scopedAvg]);
 
   if (isLoading || !data) {
     return (
-      <AppShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
+      <ModuleShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
-  const historyChart = data.history.map((d) => ({
+  const historyChart = scopedHistory.map((d) => ({
     label: d.label,
     value: d.balance,
     profit: d.profit,
@@ -53,21 +71,47 @@ export default function BancoLucroPage() {
   }));
 
   const simulationChart = simulation.points
-    .filter((_, i) => i % Math.max(1, Math.floor(horizonDays / 30)) === 0 || i === simulation.points.length - 1)
+    .filter(
+      (_, i) =>
+        i % Math.max(1, Math.floor(horizonDays / 30)) === 0 || i === simulation.points.length - 1,
+    )
     .map((p) => ({ label: p.label, value: p.balance }));
 
   return (
-    <AppShell title="Banco de Lucro" subtitle="Quanto você teria guardando o lucro operacional">
+    <ModuleShell title="Banco de Lucro" subtitle="Quanto você teria guardando o lucro operacional">
       <div className="space-y-6">
+
         <ExecutiveSummary
           theme="finance"
-          title="Acumulado real (100% do lucro guardado)"
-          conclusion={`Se você guardasse todo o lucro operacional desde o início, hoje teria ${formatCurrency(data.currentBalance)} reservados em ${data.operationalDays} dias de operação.`}
+          title={
+            isViewingGeneral(context)
+              ? "Acumulado real (100% do lucro guardado)"
+              : "Acumulado até o dia selecionado"
+          }
+          conclusion={
+            isViewingGeneral(context)
+              ? `Se você guardasse todo o lucro operacional desde o início, hoje teria ${formatCurrency(data.currentBalance)} reservados em ${data.operationalDays} dias de operação.`
+              : `Até a data selecionada: ${formatCurrency(scopedBalance)} acumulados (${scopedDays} dias · lucro ${formatCurrency(scopedProfit)}).`
+          }
           items={[
-            { label: "Saldo acumulado", value: formatCurrency(data.currentBalance), highlight: true },
-            { label: "Lucro total", value: formatCurrency(data.totalProfit), highlight: true },
-            { label: "Receita total", value: formatCurrency(data.totalRevenue) },
-            { label: "Lucro médio/dia", value: formatCurrency(data.avgDailyProfit) },
+            {
+              label: "Saldo acumulado",
+              value: formatCurrency(isViewingGeneral(context) ? data.currentBalance : scopedBalance),
+              highlight: true,
+            },
+            {
+              label: "Lucro total",
+              value: formatCurrency(isViewingGeneral(context) ? data.totalProfit : scopedProfit),
+              highlight: true,
+            },
+            {
+              label: "Receita total",
+              value: formatCurrency(isViewingGeneral(context) ? data.totalRevenue : scopedRevenue),
+            },
+            {
+              label: "Lucro médio/dia",
+              value: formatCurrency(isViewingGeneral(context) ? data.avgDailyProfit : scopedAvg),
+            },
           ]}
         />
 
@@ -94,7 +138,9 @@ export default function BancoLucroPage() {
                   min={0}
                   max={100}
                   value={saveRate}
-                  onChange={(e) => setSaveRate(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                  onChange={(e) =>
+                    setSaveRate(Math.min(100, Math.max(0, Number(e.target.value) || 0)))
+                  }
                   className="mt-1"
                 />
               </label>
@@ -117,7 +163,9 @@ export default function BancoLucroPage() {
                   min={7}
                   max={365}
                   value={horizonDays}
-                  onChange={(e) => setHorizonDays(Math.min(365, Math.max(7, Number(e.target.value) || 90)))}
+                  onChange={(e) =>
+                    setHorizonDays(Math.min(365, Math.max(7, Number(e.target.value) || 90)))
+                  }
                   className="mt-1"
                 />
               </label>
@@ -125,7 +173,9 @@ export default function BancoLucroPage() {
               <div className="grid grid-cols-2 gap-3 pt-2 text-sm">
                 <div>
                   <p className="text-text-muted text-xs">Saldo projetado</p>
-                  <p className="font-bold text-brand-green">{formatCurrency(simulation.summary.finalBalance)}</p>
+                  <p className="font-bold text-brand-green">
+                    {formatCurrency(simulation.summary.finalBalance)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-text-muted text-xs">Total guardado</p>
@@ -154,6 +204,6 @@ export default function BancoLucroPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

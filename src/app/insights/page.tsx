@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/ui/loading";
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { SectionPanel } from "@/components/executive/section-panel";
+import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
 
 interface Insight {
   id: string;
@@ -26,21 +27,33 @@ const typeConfig = {
 
 export default function InsightsPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
+  const context = useTemporalViewContext();
+
+  const insightsUrl = isViewingGeneral(context)
+    ? withQuery("/api/insights")
+    : withQuery(`/api/insights?date=${context.viewDate}&viewMode=day`);
+
   const { data: insights, isLoading } = useQuery<Insight[]>({
-    queryKey: ["insights", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/insights")).then((r) => r.json()),
-    refetchInterval: 60_000,
+    queryKey: ["insights", activeBusinessId, context.mode, context.viewDate],
+    queryFn: () => fetch(insightsUrl).then((r) => r.json()),
+    staleTime: 60_000,
+    refetchInterval: 120_000,
   });
 
   if (isLoading || !insights) {
-    return <AppShell title="Insights"><PageLoader /></AppShell>;
+    return (
+      <ModuleShell title="Insights">
+        <PageLoader />
+      </ModuleShell>
+    );
   }
 
-  const executive = insights.slice(0, 5);
-  const operational = insights.slice(5);
+  const diaryFirst = insights.filter((i) => i.id.startsWith("diary-"));
+  const executive = insights.filter((i) => !i.id.startsWith("diary-")).slice(0, 5);
+  const operational = insights.filter((i) => !i.id.startsWith("diary-")).slice(5);
 
   return (
-    <AppShell title="Insights" subtitle="Recomendações executivas baseadas nos seus dados">
+    <ModuleShell title="Insights" subtitle="Recomendações executivas + insights automáticos do diário">
       <div className="space-y-5">
         <div className="flex items-center gap-3 rounded-2xl border border-brand-orange/20 bg-brand-orange/5 p-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-orange/10">
@@ -49,10 +62,42 @@ export default function InsightsPage() {
           <div>
             <p className="font-semibold text-text-primary">Análise consultiva automática</p>
             <p className="text-sm text-text-secondary">
-              {insights.length} recomendações geradas a partir do Analytics Engine
+              {insights.length} recomendações · diário + analytics engine
             </p>
           </div>
         </div>
+
+        {diaryFirst.length > 0 && (
+          <SectionPanel
+            theme="dashboard"
+            title="Insights do diário (automáticos)"
+            subtitle="Mix, ritmo, clientes e comparativos — complemente só o contexto humano"
+          >
+            <div className="space-y-3">
+              {diaryFirst.map((insight, i) => {
+                const config = typeConfig[insight.type];
+                const Icon = config.icon;
+                return (
+                  <motion.div
+                    key={insight.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className={`rounded-2xl border p-4 ${config.accent}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Icon className={`h-4 w-4 mt-1 ${config.iconColor}`} />
+                      <div>
+                        <h3 className="font-semibold text-text-primary">{insight.title}</h3>
+                        <p className="mt-1 text-sm text-text-secondary">{insight.description}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </SectionPanel>
+        )}
 
         <SectionPanel theme="alerts" title="Prioridades executivas" subtitle="Ações com maior impacto no negócio">
           <div className="space-y-3">
@@ -97,16 +142,11 @@ export default function InsightsPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 + i * 0.03 }}
-                    className="flex items-start gap-3 rounded-xl border border-surface-border bg-surface-card p-3 transition-colors hover:bg-surface-elevated/50"
+                    className="flex items-start gap-3 rounded-xl border border-surface-border bg-surface-card p-3"
                   >
                     <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${config.iconColor}`} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-text-primary">{insight.title}</p>
-                        {insight.metric && (
-                          <span className="text-xs font-medium text-text-muted">{insight.metric}</span>
-                        )}
-                      </div>
+                      <p className="text-sm font-medium text-text-primary">{insight.title}</p>
                       <p className="text-xs text-text-secondary mt-0.5">{insight.description}</p>
                     </div>
                   </motion.div>
@@ -116,6 +156,6 @@ export default function InsightsPage() {
           </SectionPanel>
         )}
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

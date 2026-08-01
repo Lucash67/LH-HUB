@@ -1,7 +1,9 @@
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { fetchMetricSales } from "@/platform/db/data-access/metrics";
-import { isOperationalDay } from "@/lib/operational-calendar";
+import {
+  buildOperationalDayMetrics,
+  sortOperationalDays,
+} from "@/lib/operational-day-metrics";
 
 export interface ProfitBankDay {
   date: string;
@@ -25,34 +27,20 @@ export interface ProfitBankView {
 }
 
 export async function getProfitBankView(businessId: string): Promise<ProfitBankView> {
-  const sales = await fetchMetricSales({ businessId });
-  const operational = sales
-    .filter((s) => isOperationalDay(s.date, businessId))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const metricsMap = await buildOperationalDayMetrics(businessId);
+  const rows = sortOperationalDays(metricsMap);
 
-  const byDate = new Map<string, { revenue: number; profit: number; costs: number }>();
-
-  for (const sale of operational) {
-    const row = byDate.get(sale.date) ?? { revenue: 0, profit: 0, costs: 0 };
-    row.revenue += sale.totalAmount;
-    row.profit += sale.profit;
-    row.costs += sale.totalCost ?? sale.totalAmount - sale.profit;
-    byDate.set(sale.date, row);
-  }
-
-  const dates = Array.from(byDate.keys()).sort();
   let balance = 0;
   let bestDay: { date: string; profit: number } | null = null;
 
-  const history: ProfitBankDay[] = dates.map((date) => {
-    const row = byDate.get(date)!;
+  const history: ProfitBankDay[] = rows.map((row) => {
     balance += row.profit;
     if (!bestDay || row.profit > bestDay.profit) {
-      bestDay = { date, profit: row.profit };
+      bestDay = { date: row.date, profit: row.profit };
     }
     return {
-      date,
-      label: format(parseISO(date), "dd/MM", { locale: ptBR }),
+      date: row.date,
+      label: format(parseISO(row.date), "dd/MM", { locale: ptBR }),
       revenue: row.revenue,
       profit: row.profit,
       costs: row.costs,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { PageLoader } from "@/components/ui/loading";
 import { ChartCard } from "@/components/charts/chart-card";
 import { ExecutiveSummary } from "@/components/executive/executive-summary";
@@ -24,13 +24,15 @@ export default function DesempenhoPage() {
     queryKey: ["performance", activeBusinessId, period, offset],
     queryFn: () =>
       fetch(withQuery(`/api/performance?period=${period}&offset=${offset}`)).then((r) => r.json()),
+    staleTime: 60_000,
+    placeholderData: (prev) => prev,
   });
 
-  if (isLoading || !data) {
+  if (isLoading && !data) {
     return (
-      <AppShell title="Desempenho" subtitle="Receita, lucro e custos por período">
+      <ModuleShell title="Desempenho" subtitle="Receita, lucro e custos por período">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
@@ -41,7 +43,7 @@ export default function DesempenhoPage() {
   const ProfitGrowthIcon = growthIcon(data.comparison.profitGrowth);
 
   return (
-    <AppShell title="Desempenho" subtitle="Visão semanal e mensal da operação">
+    <ModuleShell title="Desempenho" subtitle="Visão semanal e mensal da operação">
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex rounded-xl border border-surface-border bg-surface-card p-1">
@@ -56,7 +58,7 @@ export default function DesempenhoPage() {
                 className={cn(
                   "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                   period === p
-                    ? "bg-brand-orange text-white"
+                    ? "bg-brand-orange text-brand-on"
                     : "text-text-secondary hover:text-text-primary",
                 )}
               >
@@ -132,6 +134,6 @@ export default function DesempenhoPage() {
           </div>
         </SectionPanel>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

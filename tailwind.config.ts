@@ -11,6 +11,9 @@ const config: Config = {
       colors: {
         brand: {
           orange: "var(--brand-orange)",
+          yellow: "var(--brand-yellow)",
+          secondary: "var(--brand-secondary)",
+          on: "var(--brand-on-accent)",
           green: "var(--brand-green)",
           red: "var(--brand-red)",
         },

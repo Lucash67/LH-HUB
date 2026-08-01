@@ -10,7 +10,7 @@ import {
 import {
   computeGrowth,
   computeGoalProgress,
-  productQuantityBreakdown,
+  flavorQuantityBreakdown,
   saleReceivedAmount,
 } from "@/lib/analytics-engine/client";
 import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
@@ -350,7 +350,7 @@ export function buildProductGoals(
     return sale && sale.date >= monthStart && sale.date <= referenceDate;
   });
 
-  const breakdown = productQuantityBreakdown(monthItems, input.productNameById);
+  const breakdown = flavorQuantityBreakdown(monthItems, input.productNameById);
   const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
   if (total === 0) return [];
 
@@ -358,7 +358,7 @@ export function buildProductGoals(
     const sale = input.sales.find((s) => s.id === item.saleId);
     return sale?.date === referenceDate;
   });
-  const todayBreakdown = productQuantityBreakdown(todayItems, input.productNameById);
+  const todayBreakdown = flavorQuantityBreakdown(todayItems, input.productNameById);
 
   return Object.entries(breakdown)
     .sort((a, b) => b[1] - a[1])

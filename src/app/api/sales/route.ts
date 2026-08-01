@@ -5,8 +5,11 @@ import { MSG, apiError } from "@/shared/api-messages";
 import { isEngineError } from "@/shared/errors/engine-errors";
 import { parseBusinessIdParam, requireSpecificBusinessId } from "@/lib/business-units";
 import { listSalesEnriched, getSaleProduct } from "@/platform/db/repositories/sale-repository";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const businessId = parseBusinessIdParam(request.nextUrl.searchParams.get("businessId"));
     return NextResponse.json(await listSalesEnriched(businessId));
@@ -17,6 +20,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
     const businessId = requireSpecificBusinessId(body.businessId);

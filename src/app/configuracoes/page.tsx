@@ -176,8 +176,8 @@ export default function ConfiguracoesPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm text-text-secondary">
-              <p><strong className="text-text-primary">Lucas Business OS</strong></p>
-              <p>Painel Inteligente de Gestão e Crescimento</p>
+              <p><strong className="text-text-primary">LH Hub</strong></p>
+              <p>Centro operacional da LH Empreendimentos</p>
               <p>Versão 1.0.0</p>
               <p className="text-xs text-text-muted mt-4">
                 Sistema escalável para crescer do primeiro salgado vendido até uma operação completa.

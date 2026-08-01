@@ -13,8 +13,11 @@ import { queryAll } from "@/platform/db/query";
 import { stockMovements as sqliteStockMovements } from "@/lib/db/schema";
 import { stockMovements as pgStockMovements } from "@/lib/db/postgres/schema";
 import { desc } from "drizzle-orm";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const businessId = parseBusinessIdParam(request.nextUrl.searchParams.get("businessId"));
     const allProducts = await listStockProducts(businessId);
@@ -68,6 +71,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
     const { productId, type, quantity, reason } = body;

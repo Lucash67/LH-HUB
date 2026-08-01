@@ -6,6 +6,14 @@ function todayISO(): string {
   return format(new Date(), "yyyy-MM-dd");
 }
 
+function sanitizeViewDate(date: string | undefined): string {
+  const fallback = todayISO();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return fallback;
+  const year = Number(date.slice(0, 4));
+  if (year < 2020 || year > 2035) return fallback;
+  return date;
+}
+
 /** general = histórico completo · day = data específica */
 export type TemporalViewMode = "general" | "day";
 
@@ -26,7 +34,7 @@ export const useTemporalContextStore = create<TemporalContextState>()(
       viewMode: "general",
       viewDate: todayISO(),
       setGeneral: () => set({ viewMode: "general" }),
-      setViewDate: (date) => set({ viewMode: "day", viewDate: date }),
+      setViewDate: (date) => set({ viewMode: "day", viewDate: sanitizeViewDate(date) }),
       setToday: () => set({ viewMode: "day", viewDate: todayISO() }),
       setYesterday: () =>
         set({ viewMode: "day", viewDate: format(subDays(new Date(), 1), "yyyy-MM-dd") }),
@@ -34,16 +42,23 @@ export const useTemporalContextStore = create<TemporalContextState>()(
     }),
     {
       name: "lbo-temporal-context",
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, version) => {
         const state = persisted as Partial<TemporalContextState>;
+        const viewDate = sanitizeViewDate(state.viewDate);
         if (version < 2) {
           return {
             viewMode: "general" as const,
-            viewDate: state.viewDate ?? todayISO(),
+            viewDate,
           };
         }
-        return state as TemporalContextState;
+        if (version < 3) {
+          return {
+            ...state,
+            viewDate,
+          } as TemporalContextState;
+        }
+        return { ...state, viewDate } as TemporalContextState;
       },
     },
   ),

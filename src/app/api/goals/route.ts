@@ -4,8 +4,11 @@ import { MSG, apiError } from "@/shared/api-messages";
 import { parseBusinessIdParam, requireSpecificBusinessId, BUSINESS_GOALS_BLOCKED_MESSAGE } from "@/lib/business-units";
 import { initializeGoalsIfEmpty, updateGoalTargets } from "@/lib/goals-service";
 import { getGoalById, updateGoalById } from "@/platform/db/repositories/goal-repository";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const businessId = parseBusinessIdParam(request.nextUrl.searchParams.get("businessId"));
     const goalsData = await getGoalsWithProgress(businessId);
@@ -17,6 +20,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const businessId = requireSpecificBusinessId(request.nextUrl.searchParams.get("businessId"));
     await initializeGoalsIfEmpty(businessId);
@@ -32,6 +37,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const businessId = requireSpecificBusinessId(request.nextUrl.searchParams.get("businessId"));
     const body = await request.json();

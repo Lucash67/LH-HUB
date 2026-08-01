@@ -11,6 +11,7 @@ import {
   computeCalendarDayStatus,
 } from "./analytics-engine";
 import { fetchMetricSales, fetchMetricGoals } from "@/platform/db/data-access/metrics";
+import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
 import { getDualFinancialView, getDayDualFinancialView } from "./finance";
 import type { DualFinancialView } from "./finance";
 import { isPostgres, getPostgresDb, getSqliteDb } from "@/platform/db";
@@ -26,6 +27,7 @@ import { fetchMetricClients } from "@/platform/db/data-access/metrics";
 import { getClientById } from "@/platform/db/repositories/client-repository";
 import { fetchMetricSaleItems } from "@/platform/db/data-access/metrics";
 import { listProducts } from "@/platform/db/repositories/product-repository";
+import { flavorQuantityBreakdown } from "./analytics-engine/aggregates";
 
 export type { DashboardMetricsResult as DashboardMetrics } from "./analytics-engine";
 
@@ -36,6 +38,43 @@ export interface ChartDataPoint {
   revenue?: number;
 }
 
+function aggregateSalesByDate(
+  sales: Awaited<ReturnType<typeof fetchMetricSales>>,
+): Map<string, { revenue: number; profit: number }> {
+  const map = new Map<string, { revenue: number; profit: number }>();
+  for (const sale of sales) {
+    const current = map.get(sale.date) ?? { revenue: 0, profit: 0 };
+    current.revenue += sale.totalAmount;
+    current.profit += sale.profit;
+    map.set(sale.date, current);
+  }
+  return map;
+}
+
+function buildRevenueChartSeries(
+  days: number,
+  end: Date,
+  businessId: string,
+  metricsMap: Awaited<ReturnType<typeof buildOperationalDayMetrics>> | null,
+  salesByDate: Map<string, { revenue: number; profit: number }>,
+): ChartDataPoint[] {
+  const result: ChartDataPoint[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = format(subDays(end, i), "yyyy-MM-dd");
+    const fromDiary = metricsMap?.get(date);
+    const fromSales = salesByDate.get(date);
+    const revenue = fromDiary?.revenue ?? fromSales?.revenue ?? 0;
+    const profit = fromDiary?.profit ?? fromSales?.profit ?? 0;
+    result.push({
+      label: format(parseISO(date), "dd/MM"),
+      value: revenue,
+      revenue,
+      profit,
+    });
+  }
+  return result;
+}
+
 export async function getDashboardMetrics(businessId: string = ALL_BUSINESSES_ID) {
   return computeDashboardMetrics(businessId);
 }
@@ -44,22 +83,14 @@ export async function getRevenueChart(
   days = 14,
   businessId: string = ALL_BUSINESSES_ID,
 ): Promise<ChartDataPoint[]> {
-  const result: ChartDataPoint[] = [];
-
-  for (let i = days - 1; i >= 0; i--) {
-    const date = format(subDays(new Date(), i), "yyyy-MM-dd");
-    const daySales = await fetchMetricSales({ businessId, dateEq: date });
-    const revenue = daySales.reduce((s, v) => s + v.totalAmount, 0);
-    const profit = daySales.reduce((s, v) => s + v.profit, 0);
-    result.push({
-      label: format(parseISO(date), "dd/MM"),
-      value: revenue,
-      revenue,
-      profit,
-    });
-  }
-
-  return result;
+  const end = new Date();
+  const startStr = format(subDays(end, days - 1), "yyyy-MM-dd");
+  const endStr = format(end, "yyyy-MM-dd");
+  const [metricsMap, sales] = await Promise.all([
+    !isAllBusinesses(businessId) ? buildOperationalDayMetrics(businessId) : Promise.resolve(null),
+    fetchMetricSales({ businessId, dateGte: startStr, dateLte: endStr }),
+  ]);
+  return buildRevenueChartSeries(days, end, businessId, metricsMap, aggregateSalesByDate(sales));
 }
 
 export async function getPaymentMethodChart(): Promise<ChartDataPoint[]> {
@@ -85,11 +116,7 @@ export async function getFlavorChart(): Promise<ChartDataPoint[]> {
   const allProducts = await listProducts(ALL_BUSINESSES_ID);
   const productMap = new Map(allProducts.map((p) => [p.id, p.name]));
 
-  const flavorCounts: Record<string, number> = {};
-  for (const item of allItems) {
-    const name = productMap.get(item.productId) ?? "Desconhecido";
-    flavorCounts[name] = (flavorCounts[name] ?? 0) + item.quantity;
-  }
+  const flavorCounts = flavorQuantityBreakdown(allItems, (id) => productMap.get(id) ?? "Desconhecido");
 
   return Object.entries(flavorCounts)
     .sort((a, b) => b[1] - a[1])
@@ -131,13 +158,59 @@ export async function getGrowthChart(): Promise<ChartDataPoint[]> {
   return result;
 }
 
-export async function getFinancialSummary(businessId: string = ALL_BUSINESSES_ID) {
-  const { start: monthStart, end: monthEnd } = getMonthRange();
-  const monthSales = await fetchMetricSales({ businessId, dateGte: monthStart });
+export interface FinancialSummaryOptions {
+  viewMode?: "general" | "day";
+  /** No modo dia: acumulado até esta data (inclusive). */
+  date?: string;
+}
 
-  const grossRevenue = monthSales.reduce((s, v) => s + v.totalAmount, 0);
-  const totalCost = monthSales.reduce((s, v) => s + (v.totalCost ?? 0), 0);
-  const operationalProfit = monthSales.reduce((s, v) => s + v.profit, 0);
+export async function getRevenueChartUpTo(
+  days: number,
+  businessId: string,
+  endDate: string,
+  metricsMap?: Awaited<ReturnType<typeof buildOperationalDayMetrics>> | null,
+): Promise<ChartDataPoint[]> {
+  const end = parseISO(endDate);
+  const startStr = format(subDays(end, days - 1), "yyyy-MM-dd");
+  const resolvedMap =
+    metricsMap !== undefined
+      ? metricsMap
+      : !isAllBusinesses(businessId)
+        ? await buildOperationalDayMetrics(businessId)
+        : null;
+  const sales = await fetchMetricSales({ businessId, dateGte: startStr, dateLte: endDate });
+  return buildRevenueChartSeries(days, end, businessId, resolvedMap, aggregateSalesByDate(sales));
+}
+
+export async function getFinancialSummary(
+  businessId: string = ALL_BUSINESSES_ID,
+  options?: FinancialSummaryOptions,
+) {
+  const isDayScoped = options?.viewMode === "day" && options.date;
+  const scopeEnd = isDayScoped ? options.date! : undefined;
+  const { start: monthStart, end: monthEnd } = getMonthRange();
+
+  const salesFilter = isDayScoped
+    ? { businessId, dateLte: scopeEnd }
+    : { businessId, dateGte: monthStart };
+  const scopedSales = await fetchMetricSales(salesFilter);
+
+  let grossRevenue: number;
+  let operationalProfit: number;
+  let totalCost: number;
+  let dayScopedMetricsMap: Awaited<ReturnType<typeof buildOperationalDayMetrics>> | null = null;
+
+  if (isDayScoped && !isAllBusinesses(businessId)) {
+    dayScopedMetricsMap = await buildOperationalDayMetrics(businessId);
+    const days = Array.from(dayScopedMetricsMap.values()).filter((d) => d.date <= scopeEnd!);
+    grossRevenue = days.reduce((s, d) => s + d.revenue, 0);
+    operationalProfit = days.reduce((s, d) => s + d.profit, 0);
+    totalCost = days.reduce((s, d) => s + d.costs, 0);
+  } else {
+    grossRevenue = scopedSales.reduce((s, v) => s + v.totalAmount, 0);
+    totalCost = scopedSales.reduce((s, v) => s + (v.totalCost ?? 0), 0);
+    operationalProfit = scopedSales.reduce((s, v) => s + v.profit, 0);
+  }
 
   let totalExpenses = 0;
   let incomeEntries: Array<{ category: string; amount: number }> = [];
@@ -156,10 +229,13 @@ export async function getFinancialSummary(businessId: string = ALL_BUSINESSES_ID
   if (isPostgres()) {
     const db = await getPostgresDb();
     const cashRows = await queryAll(db.select().from(pgCashFlow));
-    expenseEntries = cashRows
+    const filteredCash = scopeEnd
+      ? cashRows.filter((e) => e.eventDate <= scopeEnd)
+      : cashRows;
+    expenseEntries = filteredCash
       .filter((e) => e.eventType === "expense")
       .map((e) => ({ amount: Number(e.amount) }));
-    incomeEntries = cashRows
+    incomeEntries = filteredCash
       .filter((e) => e.eventType === "income")
       .map((e) => ({ category: e.category, amount: Number(e.amount) }));
     totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0);
@@ -178,7 +254,9 @@ export async function getFinancialSummary(businessId: string = ALL_BUSINESSES_ID
       isAllBusinesses(businessId)
         ? allInvestments
         : allInvestments.filter((i) => i.businessId === businessId)
-    ).map((i) => ({
+    )
+      .filter((i) => !scopeEnd || i.date <= scopeEnd)
+      .map((i) => ({
       id: i.id,
       description: i.description,
       amount: i.amount,
@@ -210,7 +288,14 @@ export async function getFinancialSummary(businessId: string = ALL_BUSINESSES_ID
   const totalIncome = grossRevenue + otherIncome.reduce((s, e) => s + e.amount, 0);
   const totalOut = expenseEntries.reduce((s, e) => s + e.amount, 0) + totalCost;
 
-  const dualFinance = await getDualFinancialView(businessId, { start: monthStart, end: monthEnd });
+  const dualPeriod = isDayScoped
+    ? { end: scopeEnd }
+    : { start: monthStart, end: monthEnd };
+  const dualFinance = await getDualFinancialView(businessId, dualPeriod);
+
+  const monthlyChart = isDayScoped
+    ? await getRevenueChartUpTo(30, businessId, scopeEnd!, dayScopedMetricsMap)
+    : await getRevenueChart(30, businessId);
 
   return {
     grossRevenue,
@@ -228,7 +313,8 @@ export async function getFinancialSummary(businessId: string = ALL_BUSINESSES_ID
       balance: totalIncome - totalOut,
       deferredCollections: deferredCollections.reduce((s, e) => s + e.amount, 0),
     },
-    monthlyChart: await getRevenueChart(30, businessId),
+    monthlyChart,
+    scope: isDayScoped ? { mode: "day" as const, date: scopeEnd! } : { mode: "general" as const },
   };
 }
 

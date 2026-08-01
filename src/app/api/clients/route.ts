@@ -3,8 +3,11 @@ import { getClientCrmList, getClientCrmProfile } from "@/lib/client-crm-service"
 import { MSG, apiError } from "@/shared/api-messages";
 import { parseBusinessIdParam, SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 import { createClient, updateClient } from "@/platform/db/repositories/client-repository";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -39,6 +42,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
 
@@ -64,6 +69,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
 

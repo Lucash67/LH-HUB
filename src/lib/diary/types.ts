@@ -53,6 +53,9 @@ export const operationalDiaryEntrySchema = z.object({
     total: z.number().min(0),
   }),
   profit: z.number(),
+  /** Receita extra do dia fora das vendas (ex.: bonificação do Henrique). Soma ao lucro total. */
+  bonusIncome: z.number().min(0).optional(),
+  bonusIncomeDescription: z.string().optional(),
   quantitySold: z.number().int().min(0),
   quantityLost: z.number().int().min(0).default(0),
   lossReason: z.string().optional(),
@@ -76,6 +79,13 @@ export const ENTITY_TYPE = "operational_diary";
 
 export function diaryEntityId(businessId: string, date: string): string {
   return `${businessId}:${date}`;
+}
+
+/** Lucro total do dia = lucro dos salgados + bonificação/receita extra (quando houver). */
+export function deriveDiaryTotalProfit(
+  entry: Pick<OperationalDiaryEntry, "profit" | "bonusIncome">,
+): number {
+  return Math.round((entry.profit + (entry.bonusIncome ?? 0)) * 100) / 100;
 }
 
 export function parseDiaryEntityId(entityId: string): { businessId: string; date: string } | null {

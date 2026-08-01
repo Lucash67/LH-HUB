@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { BusinessWriteNotice } from "@/components/business/business-write-notice";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,14 +86,14 @@ export default function ProdutosPage() {
 
   if (isLoading) {
     return (
-      <AppShell title="Produtos" subtitle="Gerencie seu catálogo de produtos">
+      <ModuleShell title="Produtos" subtitle="Gerencie seu catálogo de produtos">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
   return (
-    <AppShell title="Produtos" subtitle="Gerencie seu catálogo de produtos">
+    <ModuleShell title="Produtos" subtitle="Gerencie seu catálogo de produtos">
       <div className="space-y-6">
         {!canWrite && <BusinessWriteNotice message={writeBlockedMessage} />}
 
@@ -196,6 +196,6 @@ export default function ProdutosPage() {
           ))}
         </div>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

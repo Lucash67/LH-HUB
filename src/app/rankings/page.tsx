@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/loading";
 import { Trophy, Package, Users, Calendar, Clock, DollarSign } from "lucide-react";
@@ -37,15 +37,21 @@ export default function RankingsPage() {
   const { data, isLoading } = useQuery<RankingsData>({
     queryKey: ["rankings", activeBusinessId],
     queryFn: () => fetch(withQuery("/api/rankings")).then((r) => r.json()),
+    staleTime: 90_000,
+    placeholderData: (prev) => prev,
   });
 
-  if (isLoading || !data) {
-    return <AppShell title="Rankings"><PageLoader /></AppShell>;
+  if (isLoading && !data) {
+    return (
+      <ModuleShell title="Rankings">
+        <PageLoader />
+      </ModuleShell>
+    );
   }
 
   return (
-    <AppShell title="Rankings" subtitle="Os melhores do seu negócio">
-      <div className="grid gap-6 lg:grid-cols-2">
+    <ModuleShell title="Rankings" subtitle="Os melhores do seu negócio">
+      <div className="grid gap-6 lg:grid-cols-2 mt-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5 text-brand-orange" />Produtos Mais Vendidos</CardTitle>
@@ -160,6 +166,6 @@ export default function RankingsPage() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

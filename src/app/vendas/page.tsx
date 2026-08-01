@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { BusinessWriteNotice } from "@/components/business/business-write-notice";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { Plus, ShoppingCart, Package } from "lucide-react";
 import { formatCurrency, formatDate, paymentMethodLabel, todayISO, nowTime, DEPARTMENTS, PAYMENT_METHODS } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { filterByTemporalContext } from "@/lib/temporal-filter";
+import { useTemporalViewContext } from "@/stores/temporal-context-store";
 
 interface Product {
   id: string;
@@ -57,6 +59,7 @@ async function postJson(url: string, data: unknown) {
 
 export default function VendasPage() {
   const queryClient = useQueryClient();
+  const context = useTemporalViewContext();
   const { activeBusinessId, canWrite, withQuery, writeBlockedMessage } = useBusinessScope();
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -91,6 +94,11 @@ export default function VendasPage() {
 
   const activeProducts = products?.filter((p) => p.status === "active") ?? [];
 
+  const filteredSales = useMemo(
+    () => (sales ? filterByTemporalContext(sales, context) : []),
+    [sales, context],
+  );
+
   const createSale = useMutation({
     mutationFn: (data: typeof form) =>
       postJson("/api/sales", {
@@ -102,6 +110,7 @@ export default function VendasPage() {
     onSuccess: () => {
       setFormError(null);
       queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-view"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["stock"] });
       queryClient.invalidateQueries({ queryKey: ["financial"] });
@@ -128,19 +137,19 @@ export default function VendasPage() {
 
   if (isLoading) {
     return (
-      <AppShell title="Vendas" subtitle="Registre e acompanhe suas vendas">
+      <ModuleShell title="Vendas" subtitle="Registre e acompanhe suas vendas">
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
   return (
-    <AppShell title="Vendas" subtitle="Registre e acompanhe suas vendas">
+    <ModuleShell title="Vendas" subtitle="Registre e acompanhe suas vendas">
       <div className="space-y-6">
         {!canWrite && <BusinessWriteNotice message={writeBlockedMessage} />}
 
         <div className="flex justify-between items-center">
-          <p className="text-text-secondary">{sales?.length ?? 0} vendas registradas</p>
+          <p className="text-text-secondary">{filteredSales.length} vendas no período</p>
           <Button onClick={handleNewSale} disabled={!canWrite || activeProducts.length === 0}>
             <Plus className="h-4 w-4" />
             Nova Venda
@@ -223,7 +232,7 @@ export default function VendasPage() {
           )}
         </AnimatePresence>
 
-        {sales && sales.length === 0 && activeProducts.length > 0 && (
+        {sales && filteredSales.length === 0 && activeProducts.length > 0 && (
           <Card className="p-8 text-center">
             <ShoppingCart className="h-10 w-10 text-text-muted mx-auto mb-3" />
             <p className="text-text-secondary">Nenhuma venda registrada nesta operação. Clique em Nova Venda para começar.</p>
@@ -231,7 +240,7 @@ export default function VendasPage() {
         )}
 
         <div className="space-y-3">
-          {sales?.slice(0, 50).map((sale, i) => (
+          {filteredSales.slice(0, 50).map((sale, i) => (
             <motion.div
               key={sale.id}
               initial={{ opacity: 0, y: 8 }}
@@ -268,6 +277,6 @@ export default function VendasPage() {
           ))}
         </div>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

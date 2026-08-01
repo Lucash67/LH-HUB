@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and, inArray } from "drizzle-orm";
 import { format } from "date-fns";
 import { getPostgresDb, getSqliteDb, isPostgres, runInTransactionAsync } from "@/platform/db";
 import { mapSaleRow, resolveBusinessScopeId } from "@/platform/db/mappers";
@@ -50,26 +50,32 @@ export async function listSalesEnriched(businessId: string) {
     const clientMap = new Map(clients.map((c) => [c.id, c]));
     const productMap = new Map(products.map((p) => [p.id, p]));
 
-    const enriched = [];
-    for (const sale of salesRows) {
-      const items = await queryAll(
-        db.select().from(pgSaleItems).where(eq(pgSaleItems.saleId, sale.id)),
-      );
-
-      enriched.push({
-        ...sale,
-        client: sale.clientId ? clientMap.get(sale.clientId) ?? null : null,
-        items: items.map((item) => ({
-          ...item,
-          unitPrice: Number(item.unitPrice),
-          unitCost: Number(item.unitCost),
-          subtotal: Number(item.subtotal),
-          profit: Number(item.profit),
-          product: productMap.get(item.productId),
-        })),
-      });
+    const saleIds = salesRows.map((s) => s.id);
+    const allItems =
+      saleIds.length > 0
+        ? await queryAll(
+            db.select().from(pgSaleItems).where(inArray(pgSaleItems.saleId, saleIds)),
+          )
+        : [];
+    const itemsBySale = new Map<string, typeof allItems>();
+    for (const item of allItems) {
+      const list = itemsBySale.get(item.saleId) ?? [];
+      list.push(item);
+      itemsBySale.set(item.saleId, list);
     }
-    return enriched;
+
+    return salesRows.map((sale) => ({
+      ...sale,
+      client: sale.clientId ? clientMap.get(sale.clientId) ?? null : null,
+      items: (itemsBySale.get(sale.id) ?? []).map((item) => ({
+        ...item,
+        unitPrice: Number(item.unitPrice),
+        unitCost: Number(item.unitCost),
+        subtotal: Number(item.subtotal),
+        profit: Number(item.profit),
+        product: productMap.get(item.productId),
+      })),
+    }));
   }
 
   const db = getSqliteDb();
@@ -89,27 +95,60 @@ export async function listSalesEnriched(businessId: string) {
   const clientMap = new Map(clients.map((c) => [c.id, c]));
   const productMap = new Map(products.map((p) => [p.id, p]));
 
-  const enriched = [];
-  for (const sale of salesRows) {
-    const items = await queryAll(
-      db.select().from(sqliteSaleItems).where(eq(sqliteSaleItems.saleId, sale.id)),
-    );
-
-    enriched.push({
-      ...sale,
-      client: sale.clientId ? clientMap.get(sale.clientId) ?? null : null,
-      items: items.map((item) => ({
-        ...item,
-        unitPrice: item.unitPrice,
-        unitCost: item.unitCost,
-        subtotal: item.subtotal,
-        profit: item.profit,
-        product: productMap.get(item.productId),
-      })),
-    });
+  const saleIds = salesRows.map((s) => s.id);
+  const allItems =
+    saleIds.length > 0
+      ? await queryAll(
+          db.select().from(sqliteSaleItems).where(inArray(sqliteSaleItems.saleId, saleIds)),
+        )
+      : [];
+  const itemsBySale = new Map<string, typeof allItems>();
+  for (const item of allItems) {
+    const list = itemsBySale.get(item.saleId) ?? [];
+    list.push(item);
+    itemsBySale.set(item.saleId, list);
   }
 
-  return enriched;
+  return salesRows.map((sale) => ({
+    ...sale,
+    client: sale.clientId ? clientMap.get(sale.clientId) ?? null : null,
+    items: (itemsBySale.get(sale.id) ?? []).map((item) => ({
+      ...item,
+      unitPrice: item.unitPrice,
+      unitCost: item.unitCost,
+      subtotal: item.subtotal,
+      profit: item.profit,
+      product: productMap.get(item.productId),
+    })),
+  }));
+}
+
+/** Contagem rápida de vendas por data — evita carregar todo o histórico enriquecido. */
+export async function countSalesForDate(businessId: string, saleDate: string): Promise<number> {
+  if (isPostgres()) {
+    const db = await getPostgresDb();
+    const rows = await queryAll(
+      db
+        .select({ id: pgSales.id })
+        .from(pgSales)
+        .where(
+          and(
+            eq(pgSales.businessId, toDbBusinessId(businessId)),
+            eq(pgSales.saleDate, saleDate),
+          ),
+        ),
+    );
+    return rows.length;
+  }
+
+  const db = getSqliteDb();
+  const rows = await queryAll(
+    db
+      .select({ id: sqliteSales.id })
+      .from(sqliteSales)
+      .where(and(eq(sqliteSales.businessId, businessId), eq(sqliteSales.date, saleDate))),
+  );
+  return rows.length;
 }
 
 export interface ExecuteSaleInput {
@@ -122,6 +161,9 @@ export interface ExecuteSaleInput {
   time?: string;
   department?: string | null;
   notes?: string | null;
+  /** Sobrescreve preço/custo do catálogo (ex.: Registro do Dia com faturamento explícito). */
+  unitPrice?: number;
+  unitCost?: number;
 }
 
 export async function executeSaleRecord(input: ExecuteSaleInput): Promise<string> {
@@ -135,8 +177,10 @@ export async function executeSaleRecord(input: ExecuteSaleInput): Promise<string
     throw new Error("Informe uma quantidade válida (mínimo 1).");
   }
 
-  const subtotal = product.price * qty;
-  const cost = product.cost * qty;
+  const unitPrice = input.unitPrice ?? product.price;
+  const unitCost = input.unitCost ?? product.cost;
+  const subtotal = unitPrice * qty;
+  const cost = unitCost * qty;
   const profit = subtotal - cost;
   const now = new Date();
   const saleId = generateId();
@@ -178,8 +222,8 @@ export async function executeSaleRecord(input: ExecuteSaleInput): Promise<string
           saleId,
           productId: input.productId,
           quantity: qty,
-          unitPrice: String(product.price),
-          unitCost: String(product.cost),
+          unitPrice: String(unitPrice),
+          unitCost: String(unitCost),
           subtotal: String(subtotal),
           profit: String(profit),
           flavorConfidence: "confirmed",
@@ -228,8 +272,8 @@ export async function executeSaleRecord(input: ExecuteSaleInput): Promise<string
         saleId,
         productId: input.productId,
         quantity: qty,
-        unitPrice: product.price,
-        unitCost: product.cost,
+        unitPrice,
+        unitCost,
         subtotal,
         profit,
       }),

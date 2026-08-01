@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, type SQL } from "drizzle-orm";
+import { and, eq, gte, lte, inArray, type SQL } from "drizzle-orm";
 import { getPostgresDb, getSqliteDb, isPostgres } from "@/platform/db";
 import { resolveBusinessScopeId } from "@/platform/db/mappers";
 import { fromDbBusinessId } from "@/platform/db/business-id";
@@ -124,12 +124,11 @@ export async function fetchMetricProducts(
 
 export async function fetchMetricSaleItems(saleIds: string[]): Promise<MetricSaleItem[]> {
   if (saleIds.length === 0) return [];
-  const idSet = new Set(saleIds);
 
   if (isPostgres()) {
     const db = await getPostgresDb();
-    const rows = (await queryAll(db.select().from(pgSaleItems))).filter((i) =>
-      idSet.has(i.saleId),
+    const rows = await queryAll(
+      db.select().from(pgSaleItems).where(inArray(pgSaleItems.saleId, saleIds)),
     );
     return rows.map((i) => ({
       saleId: i.saleId,
@@ -141,8 +140,8 @@ export async function fetchMetricSaleItems(saleIds: string[]): Promise<MetricSal
   }
 
   const db = getSqliteDb();
-  const rows = (await queryAll(db.select().from(sqliteSaleItems))).filter((i) =>
-    idSet.has(i.saleId),
+  const rows = await queryAll(
+    db.select().from(sqliteSaleItems).where(inArray(sqliteSaleItems.saleId, saleIds)),
   );
   return rows.map((i) => ({
     saleId: i.saleId,

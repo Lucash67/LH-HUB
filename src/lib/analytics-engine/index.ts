@@ -1,5 +1,5 @@
 /**
- * Analytics Engine — única fonte oficial de métricas do Lucas Business OS.
+ * Analytics Engine — única fonte oficial de métricas do LH Hub.
  *
  * Regras:
  * - Sem dependência de React, páginas ou hooks
@@ -46,6 +46,8 @@ export {
   computePeriodMetrics,
   productQuantityBreakdown,
   productQuantityBreakdownFromEmbedded,
+  flavorQuantityBreakdown,
+  flavorQuantityBreakdownFromEmbedded,
   topProductByQuantity,
   bottomProductByQuantity,
   computeGoalProgress,

@@ -7,8 +7,11 @@ import {
   listProducts,
   updateProduct,
 } from "@/platform/db/repositories/product-repository";
+import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const businessId = parseBusinessIdParam(request.nextUrl.searchParams.get("businessId"));
     const allProducts = await listProducts(businessId);
@@ -35,6 +38,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
     const businessId = requireSpecificBusinessId(body.businessId);
@@ -73,6 +78,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireApiSession();
+  if (isAuthFailure(auth)) return auth;
   try {
     const body = await request.json();
 

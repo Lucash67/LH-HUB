@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { SectionPanel } from "@/components/executive/section-panel";
 import { FileText, Download } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
 
 interface ReportData {
   type: string;
@@ -79,7 +80,7 @@ function exportPDF(data: ReportData) {
     import("jspdf-autotable").then(() => {
       const doc = new jsPDF();
       doc.setFontSize(18);
-      doc.text("Lucas Business OS — Relatório", 14, 22);
+      doc.text("LH Hub — Relatório", 14, 22);
       doc.setFontSize(11);
       doc.text(`Tipo: ${data.type} | Período: ${data.period.start} a ${data.period.end}`, 14, 32);
       // @ts-expect-error autotable plugin
@@ -101,10 +102,15 @@ function exportPDF(data: ReportData) {
 export default function RelatoriosPage() {
   const [type, setType] = useState("daily");
   const { activeBusinessId, withQuery } = useBusinessScope();
+  const context = useTemporalViewContext();
+  const effectiveType = !isViewingGeneral(context) ? "daily" : type;
 
   const { data, isLoading } = useQuery<ReportData>({
-    queryKey: ["reports", type, activeBusinessId],
-    queryFn: () => fetch(withQuery(`/api/reports?type=${type}`)).then((r) => r.json()),
+    queryKey: ["reports", effectiveType, activeBusinessId, context.mode, context.viewDate],
+    queryFn: () => {
+      const dateQuery = !isViewingGeneral(context) ? `&date=${context.viewDate}` : "";
+      return fetch(withQuery(`/api/reports?type=${effectiveType}${dateQuery}`)).then((r) => r.json());
+    },
   });
 
   const { data: goals = [] } = useQuery<GoalRow[]>({
@@ -118,7 +124,7 @@ export default function RelatoriosPage() {
     const sales = data.totalSales ?? data.salesCount ?? 0;
     const items = data.totalItems ?? data.itemsSold ?? 0;
     const productCount = data.productBreakdown ? Object.keys(data.productBreakdown).length : 0;
-    const goalType = type === "monthly" ? "monthly" : type === "weekly" ? "weekly" : "daily";
+    const goalType = effectiveType === "monthly" ? "monthly" : effectiveType === "weekly" ? "weekly" : "daily";
     const goalTarget = goals.find((g) => g.type === goalType)?.targetAmount ?? 0;
     const goalPct = goalTarget > 0 ? Math.min(100, (revenue / goalTarget) * 100) : 0;
 
@@ -141,15 +147,21 @@ export default function RelatoriosPage() {
       goalLabel: goalTarget > 0 ? `${goalPct.toFixed(0)}%` : "—",
       conclusion,
     };
-  }, [data, goals, type]);
+  }, [data, goals, effectiveType]);
 
   if (isLoading || !data || !summary) {
-    return <AppShell title="Relatórios"><PageLoader /></AppShell>;
+    return (
+      <ModuleShell title="Relatórios">
+        <PageLoader />
+      </ModuleShell>
+    );
   }
 
   return (
-    <AppShell title="Relatórios" subtitle="Visão executiva e detalhes do período">
+    <ModuleShell title="Relatórios" subtitle="Visão executiva e detalhes do período">
       <div className="space-y-5">
+
+        {isViewingGeneral(context) && (
         <div className="flex flex-wrap gap-2">
           {reportTypes.map((rt) => (
             <Button key={rt.value} variant={type === rt.value ? "default" : "secondary"} onClick={() => setType(rt.value)}>
@@ -157,6 +169,7 @@ export default function RelatoriosPage() {
             </Button>
           ))}
         </div>
+        )}
 
         <ExecutiveSummary
           theme="reports"
@@ -176,7 +189,7 @@ export default function RelatoriosPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="h-4 w-4" />
-                  Relatório {reportTypes.find((r) => r.value === type)?.label}
+                  Relatório {reportTypes.find((r) => r.value === effectiveType)?.label}
                 </CardTitle>
                 <Badge>{formatDate(data.period.start)} — {formatDate(data.period.end)}</Badge>
               </div>
@@ -238,6 +251,6 @@ export default function RelatoriosPage() {
           </Card>
         </SectionPanel>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

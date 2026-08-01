@@ -1,21 +1,28 @@
 import { format, parseISO, subDays, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getMonthRange, getWeekRange, formatCurrency } from "@/lib/utils";
-import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
+import {
+  canonicalSalgadosFlavor,
+  isSaleExcludedFromMix,
+} from "@/lib/salgados-flavors";
 import {
   averageTicket,
   computeGoalProgress,
   computeGrowth,
   itemsSoldFromEmbedded,
   paymentBreakdown,
-  productQuantityBreakdownFromEmbedded,
+  flavorQuantityBreakdownFromEmbedded,
   sumProfit,
   sumRevenue,
   sumReceivedRevenue,
   sumPendingRevenue,
+  saleReceivedAmount,
   uniqueCustomerCount,
 } from "@/lib/analytics-engine/client";
 import type { TemporalViewContext } from "@/stores/temporal-context-store";
+import { deriveDiaryTotalProfit } from "@/lib/diary/types";
+import type { OperationalDiaryEntry } from "@/lib/diary/types";
+import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 
 export interface DashboardSaleItem {
   quantity: number;
@@ -48,6 +55,7 @@ export interface DiaryDayContext {
   lossReason?: string;
   revenue?: { received: number; pending: number; total: number };
   profit?: number;
+  bonusIncome?: number;
   manualInsights?: string;
   commercialIntelligence?: {
     whatWeLearnedToday: string[];
@@ -253,8 +261,16 @@ function allOperationalDates(sales: DashboardSale[]): string[] {
 }
 
 function flavorBreakdown(salesList: DashboardSale[]): DashboardChartPoint[] {
-  const counts = productQuantityBreakdownFromEmbedded(salesList);
-  return Object.entries(counts)
+  const counts = new Map<string, number>();
+  for (const sale of salesList) {
+    if (isSaleExcludedFromMix(sale)) continue;
+    for (const item of sale.items ?? []) {
+      const flavor = canonicalSalgadosFlavor(item.product?.name ?? "");
+      if (!flavor) continue;
+      counts.set(flavor, (counts.get(flavor) ?? 0) + item.quantity);
+    }
+  }
+  return Array.from(counts.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([label, value]) => ({ label, value }));
 }
@@ -292,6 +308,9 @@ function formatSaleProducts(sale: DashboardSale): string {
 }
 
 function resolveSaleStatus(sale: DashboardSale): { label: string; tone: DayTimelineEntry["statusTone"] } {
+  if (isSaleExcludedFromMix(sale)) {
+    return { label: "Perda", tone: "warning" };
+  }
   if (sale.paymentStatus === "pending") {
     return { label: "Pendente", tone: "warning" };
   }
@@ -339,6 +358,41 @@ function buildDayTimeline(daySales: DashboardSale[]): DayTimelineGroup[] {
     }));
 }
 
+function normalizeClientLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+/** Clientes genéricos, roubos/fiado e pendências não entram no ranking de maior comprador. */
+function isUnknownClientName(name: string): boolean {
+  const n = normalizeClientLabel(name);
+  if (!n) return true;
+  if (n === "cliente") return true;
+  if (n.startsWith("cliente nao identificado")) return true;
+  if (n.startsWith("cliente avulso")) return true;
+  if (n.startsWith("cliente fiado")) return true;
+  if (n.includes("nao identificado")) return true;
+  if (n.includes("nao pagou")) return true;
+  return false;
+}
+
+function shouldExcludeFromTopBuyer(sale: DashboardSale): boolean {
+  if (sale.paymentStatus === "pending" || sale.paymentStatus === "partial") return true;
+
+  const notes = normalizeClientLabel(sale.notes ?? "");
+  if (notes.includes("nao pagou") || notes.includes("roub") || notes.includes("fiado")) {
+    return true;
+  }
+
+  const clientName = sale.client?.name ?? "";
+  if (isUnknownClientName(clientName)) return true;
+
+  return false;
+}
+
 function resolveAnonymousBuyerName(sale: DashboardSale): string {
   const notes = (sale.notes ?? "").toLowerCase();
   if (notes.includes("henrique") || notes.includes("pai")) return "Henrique";
@@ -349,53 +403,59 @@ function resolveAnonymousBuyerName(sale: DashboardSale): string {
 }
 
 function buildCustomerDayInsight(daySales: DashboardSale[]): CustomerDayInsight {
-  if (daySales.length === 0) {
+  const eligibleSales = daySales.filter((sale) => !shouldExcludeFromTopBuyer(sale));
+
+  if (eligibleSales.length === 0) {
     return {
       uniqueBuyers: 0,
       topBuyer: null,
-      summary: "Nenhuma venda registrada",
+      summary: daySales.length > 0 ? "Sem comprador identificado" : "Nenhuma venda registrada",
     };
   }
 
   const ranked: Array<{ name: string; total: number }> = [];
   const byClient = new Map<string, { name: string; total: number }>();
 
-  for (const sale of daySales) {
+  for (const sale of eligibleSales) {
+    const amount = saleReceivedAmount(sale);
+    if (amount <= 0) continue;
+
     if (sale.clientId && sale.client) {
       const existing = byClient.get(sale.clientId);
       if (existing) {
-        existing.total += sale.totalAmount;
+        existing.total += amount;
       } else {
-        byClient.set(sale.clientId, { name: sale.client.name, total: sale.totalAmount });
+        byClient.set(sale.clientId, { name: sale.client.name, total: amount });
       }
     } else {
       ranked.push({
         name: resolveAnonymousBuyerName(sale),
-        total: sale.totalAmount,
+        total: amount,
       });
     }
   }
 
   for (const entry of Array.from(byClient.values())) {
-    ranked.push(entry);
+    if (!isUnknownClientName(entry.name)) {
+      ranked.push(entry);
+    }
   }
 
   ranked.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "pt-BR"));
   const topBuyer = ranked[0] ?? null;
 
   const identifiedCount = byClient.size;
-  const anonymousCount = daySales.filter((s) => !s.clientId).length;
 
   let summary: string;
   if (topBuyer) {
     const firstName = topBuyer.name.split(" ")[0];
     summary = `${firstName} foi o maior comprador do dia`;
   } else {
-    summary = "Nenhuma venda registrada";
+    summary = "Sem comprador identificado";
   }
 
   return {
-    uniqueBuyers: identifiedCount + anonymousCount,
+    uniqueBuyers: identifiedCount,
     topBuyer,
     summary,
   };
@@ -412,7 +472,13 @@ function buildDayExecutiveSummary(
     goalUnits: diary?.dailyGoalUnits ?? null,
     soldUnits: diary?.quantitySold ?? metrics.itemsSoldToday,
     revenue: diary?.revenue?.received ?? sumReceivedRevenue(daySales),
-    profit: diary?.profit ?? metrics.profitToday,
+    profit:
+      diary?.profit !== undefined || diary?.bonusIncome !== undefined
+        ? deriveDiaryTotalProfit({
+            profit: diary?.profit ?? metrics.profitToday,
+            bonusIncome: diary?.bonusIncome,
+          })
+        : metrics.profitToday,
     pendingCount: pendingSales.length || (diary?.revenue?.pending ? 1 : 0),
     pendingAmount: diary?.revenue?.pending ?? sumPendingRevenue(daySales),
     losses: diary?.quantityLost ?? 0,
@@ -627,6 +693,37 @@ function buildGeneralDashboardView(
   };
 }
 
+export function enrichDiaryContext(
+  entry: OperationalDiaryEntry | null | undefined,
+  autoGoalUnits?: number,
+): DiaryDayContext | null {
+  const goalUnits =
+    entry?.dailyGoalUnits && entry.dailyGoalUnits > 0
+      ? entry.dailyGoalUnits
+      : autoGoalUnits && autoGoalUnits > 0
+        ? autoGoalUnits
+        : undefined;
+
+  if (!entry && !goalUnits) return null;
+
+  if (!entry) {
+    return { dailyGoalUnits: goalUnits };
+  }
+
+  return {
+    dailyGoalUnits: goalUnits,
+    quantitySold: entry.quantitySold,
+    quantityLost: entry.quantityLost,
+    lossReason: entry.lossReason,
+    revenue: entry.revenue,
+    profit: entry.profit,
+    bonusIncome: entry.bonusIncome,
+    manualInsights: entry.manualInsights,
+    commercialIntelligence: entry.commercialIntelligence,
+    suggestedActions: entry.suggestedActions,
+  };
+}
+
 export function buildDashboardView(
   sales: DashboardSale[],
   context: TemporalViewContext,
@@ -652,8 +749,14 @@ export function buildDashboardView(
   const weekSales = sales.filter((s) => s.date >= weekStart && s.date <= weekEnd);
   const monthSales = sales.filter((s) => s.date >= monthStart && s.date <= monthEnd);
 
-  const revenueToday = sumReceivedRevenue(daySales);
-  const profitToday = sumProfit(daySales);
+  const revenueToday = diary?.revenue?.received ?? sumReceivedRevenue(daySales);
+  const profitToday =
+    diary?.profit !== undefined || diary?.bonusIncome !== undefined
+      ? deriveDiaryTotalProfit({
+          profit: diary?.profit ?? sumProfit(daySales),
+          bonusIncome: diary?.bonusIncome,
+        })
+      : sumProfit(daySales);
   const revenueWeek = sumReceivedRevenue(weekSales);
   const revenueMonth = sumReceivedRevenue(monthSales);
   const revenueCompare = sumReceivedRevenue(compareSales);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartCard } from "@/components/charts/chart-card";
 import { PageLoader } from "@/components/ui/loading";
@@ -30,7 +30,11 @@ export default function ProjecoesPage() {
   });
 
   if (isLoading || !projections) {
-    return <AppShell title="Projeções"><PageLoader /></AppShell>;
+    return (
+      <ModuleShell title="Projeções">
+        <PageLoader />
+      </ModuleShell>
+    );
   }
 
   const revenueChart = projections.map((p) => ({
@@ -45,7 +49,7 @@ export default function ProjecoesPage() {
   }));
 
   return (
-    <AppShell title="Projeções" subtitle="Simule o crescimento do seu negócio">
+    <ModuleShell title="Projeções" subtitle="Simule o crescimento do seu negócio">
       <div className="space-y-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-orange/10">
@@ -91,6 +95,6 @@ export default function ProjecoesPage() {
           <ChartCard data={profitChart} title="Projeção de Lucro Mensal" type="bar" height={350} />
         </div>
       </div>
-    </AppShell>
+    </ModuleShell>
   );
 }

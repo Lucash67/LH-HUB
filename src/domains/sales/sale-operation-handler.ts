@@ -16,6 +16,8 @@ export interface SaleOperationParams {
   time?: string;
   department?: string | null;
   notes?: string | null;
+  unitPrice?: number;
+  unitCost?: number;
 }
 
 export interface SaleOperationResult {

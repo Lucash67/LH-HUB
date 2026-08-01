@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/layout/app-shell";
+import { ModuleShell } from "@/components/layout/module-shell";
 import { BusinessWriteNotice } from "@/components/business/business-write-notice";
 import { Card } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/loading";
@@ -26,34 +26,36 @@ export default function MetasPage() {
       return json;
     },
     enabled: !isAggregated,
-    refetchInterval: 60_000,
+    staleTime: 60_000,
+    placeholderData: (prev) => prev,
+    refetchInterval: 120_000,
   });
 
   if (isAggregated) {
     return (
-      <AppShell
+      <ModuleShell
         title="Metas Inteligentes"
         subtitle="Centro de planejamento operacional baseado no seu histórico real"
       >
         <BusinessWriteNotice message={goalsBlockedMessage} />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !view) {
     return (
-      <AppShell
+      <ModuleShell
         title="Metas Inteligentes"
         subtitle="Centro de planejamento operacional baseado no seu histórico real"
       >
         <PageLoader />
-      </AppShell>
+      </ModuleShell>
     );
   }
 
   if (isError || !view) {
     return (
-      <AppShell
+      <ModuleShell
         title="Metas Inteligentes"
         subtitle="Centro de planejamento operacional baseado no seu histórico real"
       >
@@ -64,16 +66,16 @@ export default function MetasPage() {
             {error instanceof Error ? error.message : "Registre vendas para gerar sugestões automáticas."}
           </p>
         </Card>
-      </AppShell>
+      </ModuleShell>
     );
   }
 
   return (
-    <AppShell
+    <ModuleShell
       title="Metas Inteligentes"
       subtitle="Centro de planejamento operacional baseado no seu histórico real"
     >
       <SmartGoalsDashboard view={view} />
-    </AppShell>
+    </ModuleShell>
   );
 }
