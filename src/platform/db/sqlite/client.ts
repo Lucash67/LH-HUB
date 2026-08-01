@@ -40,6 +40,15 @@ function initBusinessUnitsTable(sqlite: Database.Database) {
       updated_at TEXT NOT NULL
     );
   `);
+  const columns = sqlite.prepare("PRAGMA table_info(business_units)").all() as { name: string }[];
+  if (!columns.some((c) => c.name === "owner_id")) {
+    sqlite.exec("ALTER TABLE business_units ADD COLUMN owner_id TEXT");
+    sqlite.exec(`
+      UPDATE business_units
+      SET owner_id = (SELECT id FROM users LIMIT 1)
+      WHERE owner_id IS NULL;
+    `);
+  }
 }
 
 function migrateLegacyBusinessIdColumns(sqlite: Database.Database) {

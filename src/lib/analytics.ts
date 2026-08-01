@@ -1,8 +1,9 @@
 import { format, subDays, parseISO, getDay } from "date-fns";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, inArray, lte } from "drizzle-orm";
 import { calcGrowth, getWeekRange, getMonthRange, goalProgress } from "./utils";
 import { getDailyGoalTarget } from "./goals-service";
 import { ALL_BUSINESSES_ID, isAllBusinesses } from "./business-units";
+import { getTenantDbIds } from "@/lib/auth/tenant-context";
 import {
   computeDashboardMetrics,
   computeDayReport,
@@ -15,6 +16,7 @@ import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
 import { getDualFinancialView, getDayDualFinancialView } from "./finance";
 import type { DualFinancialView } from "./finance";
 import { isPostgres, getPostgresDb, getSqliteDb } from "@/platform/db";
+import { resolveBusinessScopeId } from "@/platform/db/mappers";
 import { queryAll } from "@/platform/db/query";
 import {
   cashFlow as sqliteCashFlow,
@@ -228,17 +230,36 @@ export async function getFinancialSummary(
 
   if (isPostgres()) {
     const db = await getPostgresDb();
-    const cashRows = await queryAll(db.select().from(pgCashFlow));
-    const filteredCash = scopeEnd
-      ? cashRows.filter((e) => e.eventDate <= scopeEnd)
-      : cashRows;
-    expenseEntries = filteredCash
-      .filter((e) => e.eventType === "expense")
-      .map((e) => ({ amount: Number(e.amount) }));
-    incomeEntries = filteredCash
-      .filter((e) => e.eventType === "income")
-      .map((e) => ({ category: e.category, amount: Number(e.amount) }));
-    totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0);
+    const tenantIds = getTenantDbIds();
+    const cashConditions: ReturnType<typeof eq>[] = [];
+    if (!isAllBusinesses(businessId)) {
+      cashConditions.push(eq(pgCashFlow.businessId, resolveBusinessScopeId(businessId)));
+    } else if (tenantIds !== undefined) {
+      if (tenantIds.length === 0) {
+        expenseEntries = [];
+        incomeEntries = [];
+        totalExpenses = 0;
+      } else {
+        cashConditions.push(inArray(pgCashFlow.businessId, tenantIds));
+      }
+    }
+    if (cashConditions.length > 0 || tenantIds === undefined) {
+      const cashRows = await queryAll(
+        cashConditions.length > 0
+          ? db.select().from(pgCashFlow).where(and(...cashConditions))
+          : db.select().from(pgCashFlow),
+      );
+      const filteredCash = scopeEnd
+        ? cashRows.filter((e) => e.eventDate <= scopeEnd)
+        : cashRows;
+      expenseEntries = filteredCash
+        .filter((e) => e.eventType === "expense")
+        .map((e) => ({ amount: Number(e.amount) }));
+      incomeEntries = filteredCash
+        .filter((e) => e.eventType === "income")
+        .map((e) => ({ category: e.category, amount: Number(e.amount) }));
+      totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0);
+    }
   } else {
     const db = getSqliteDb();
     const expenses = (await queryAll(

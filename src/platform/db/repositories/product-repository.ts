@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { getPostgresDb, getSqliteDb, isPostgres } from "@/platform/db";
 import { mapProductRow, resolveBusinessScopeId } from "@/platform/db/mappers";
 import { queryAll, queryOne, queryRun, toIsoTimestamp } from "@/platform/db/query";
@@ -6,29 +6,47 @@ import { toDbBusinessId } from "@/platform/db/business-id";
 import { products as sqliteProducts } from "@/lib/db/schema";
 import { products as pgProducts } from "@/lib/db/postgres/schema";
 import { isAllBusinesses } from "@/lib/business-units";
+import { getTenantDbIds } from "@/lib/auth/tenant-context";
 import { generateId } from "@/shared/ids/generate-id";
 import type { LegacyProduct } from "@/lib/db/types";
 
 export async function listProducts(businessId: string): Promise<LegacyProduct[]> {
+  const tenantIds = getTenantDbIds();
+  if (tenantIds !== undefined && tenantIds.length === 0) return [];
+
   if (isPostgres()) {
     const db = await getPostgresDb();
-    const rows = isAllBusinesses(businessId)
-      ? await queryAll(db.select().from(pgProducts))
-      : await queryAll(
-          db
-            .select()
-            .from(pgProducts)
-            .where(eq(pgProducts.businessId, resolveBusinessScopeId(businessId))),
-        );
+    let rows;
+    if (!isAllBusinesses(businessId)) {
+      rows = await queryAll(
+        db
+          .select()
+          .from(pgProducts)
+          .where(eq(pgProducts.businessId, resolveBusinessScopeId(businessId))),
+      );
+    } else if (tenantIds !== undefined) {
+      rows = await queryAll(
+        db.select().from(pgProducts).where(inArray(pgProducts.businessId, tenantIds)),
+      );
+    } else {
+      rows = await queryAll(db.select().from(pgProducts));
+    }
     return rows.map(mapProductRow);
   }
 
   const db = getSqliteDb();
-  const rows = isAllBusinesses(businessId)
-    ? await queryAll(db.select().from(sqliteProducts))
-    : await queryAll(
-        db.select().from(sqliteProducts).where(eq(sqliteProducts.businessId, businessId)),
-      );
+  let rows;
+  if (!isAllBusinesses(businessId)) {
+    rows = await queryAll(
+      db.select().from(sqliteProducts).where(eq(sqliteProducts.businessId, businessId)),
+    );
+  } else if (tenantIds !== undefined) {
+    rows = await queryAll(
+      db.select().from(sqliteProducts).where(inArray(sqliteProducts.businessId, tenantIds)),
+    );
+  } else {
+    rows = await queryAll(db.select().from(sqliteProducts));
+  }
   return rows.map(mapProductRow);
 }
 

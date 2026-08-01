@@ -19,6 +19,7 @@ import {
   stockMovements as pgStockMovements,
 } from "@/lib/db/postgres/schema";
 import { isAllBusinesses } from "@/lib/business-units";
+import { getTenantDbIds } from "@/lib/auth/tenant-context";
 import {
   inferPaymentStatusFromNotes,
   resolveAmountReceived,
@@ -30,23 +31,45 @@ import { mapProductRow, mapClientRow } from "@/platform/db/mappers";
 import { clients as pgClients, products as pgProducts } from "@/lib/db/postgres/schema";
 
 export async function listSalesEnriched(businessId: string) {
+  const tenantIds = getTenantDbIds();
+  if (tenantIds !== undefined && tenantIds.length === 0) return [];
+
   let salesRows: LegacySale[];
 
   if (isPostgres()) {
     const db = await getPostgresDb();
-    const raw = isAllBusinesses(businessId)
-      ? await queryAll(db.select().from(pgSales).orderBy(desc(pgSales.saleDate), desc(pgSales.saleTime)))
-      : await queryAll(
-          db
-            .select()
-            .from(pgSales)
-            .where(eq(pgSales.businessId, resolveBusinessScopeId(businessId)))
-            .orderBy(desc(pgSales.saleDate), desc(pgSales.saleTime)),
-        );
+    let raw;
+    if (!isAllBusinesses(businessId)) {
+      raw = await queryAll(
+        db
+          .select()
+          .from(pgSales)
+          .where(eq(pgSales.businessId, resolveBusinessScopeId(businessId)))
+          .orderBy(desc(pgSales.saleDate), desc(pgSales.saleTime)),
+      );
+    } else if (tenantIds !== undefined) {
+      raw = await queryAll(
+        db
+          .select()
+          .from(pgSales)
+          .where(inArray(pgSales.businessId, tenantIds))
+          .orderBy(desc(pgSales.saleDate), desc(pgSales.saleTime)),
+      );
+    } else {
+      raw = await queryAll(
+        db.select().from(pgSales).orderBy(desc(pgSales.saleDate), desc(pgSales.saleTime)),
+      );
+    }
     salesRows = raw.map(mapSaleRow);
 
+    const productConditions =
+      tenantIds !== undefined && isAllBusinesses(businessId)
+        ? inArray(pgProducts.businessId, tenantIds)
+        : undefined;
     const clients = (await queryAll(db.select().from(pgClients))).map(mapClientRow);
-    const products = (await queryAll(db.select().from(pgProducts))).map(mapProductRow);
+    const products = productConditions
+      ? (await queryAll(db.select().from(pgProducts).where(productConditions))).map(mapProductRow)
+      : (await queryAll(db.select().from(pgProducts))).map(mapProductRow);
     const clientMap = new Map(clients.map((c) => [c.id, c]));
     const productMap = new Map(products.map((p) => [p.id, p]));
 
@@ -79,19 +102,37 @@ export async function listSalesEnriched(businessId: string) {
   }
 
   const db = getSqliteDb();
-  const raw = isAllBusinesses(businessId)
-      ? await queryAll(db.select().from(sqliteSales).orderBy(desc(sqliteSales.date), desc(sqliteSales.time)))
-      : await queryAll(
-          db
-            .select()
-            .from(sqliteSales)
-            .where(eq(sqliteSales.businessId, businessId))
-            .orderBy(desc(sqliteSales.date), desc(sqliteSales.time)),
-        );
-    salesRows = raw.map(mapSaleRow);
+  let raw;
+  if (!isAllBusinesses(businessId)) {
+    raw = await queryAll(
+      db
+        .select()
+        .from(sqliteSales)
+        .where(eq(sqliteSales.businessId, businessId))
+        .orderBy(desc(sqliteSales.date), desc(sqliteSales.time)),
+    );
+  } else if (tenantIds !== undefined) {
+    raw = await queryAll(
+      db
+        .select()
+        .from(sqliteSales)
+        .where(inArray(sqliteSales.businessId, tenantIds))
+        .orderBy(desc(sqliteSales.date), desc(sqliteSales.time)),
+    );
+  } else {
+    raw = await queryAll(
+      db.select().from(sqliteSales).orderBy(desc(sqliteSales.date), desc(sqliteSales.time)),
+    );
+  }
+  salesRows = raw.map(mapSaleRow);
 
+  const products =
+    tenantIds !== undefined && isAllBusinesses(businessId)
+      ? (await queryAll(
+          db.select().from(sqliteProducts).where(inArray(sqliteProducts.businessId, tenantIds)),
+        )).map(mapProductRow)
+      : (await queryAll(db.select().from(sqliteProducts))).map(mapProductRow);
   const clients = (await queryAll(db.select().from(sqliteClients))).map(mapClientRow);
-  const products = (await queryAll(db.select().from(sqliteProducts))).map(mapProductRow);
   const clientMap = new Map(clients.map((c) => [c.id, c]));
   const productMap = new Map(products.map((p) => [p.id, p]));
 

@@ -20,7 +20,8 @@ export const businesses = pgTable(
   "businesses",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    slug: text("slug").notNull().unique(),
+    ownerId: uuid("owner_id").references(() => users.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
     name: text("name").notNull(),
     status: text("status", { enum: ["active", "inactive"] }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -28,6 +29,8 @@ export const businesses = pgTable(
   },
   (table) => ({
     statusIdx: index("idx_businesses_status").on(table.status),
+    ownerIdx: index("idx_businesses_owner").on(table.ownerId),
+    ownerSlugIdx: uniqueIndex("idx_businesses_owner_slug").on(table.ownerId, table.slug),
   }),
 );
 

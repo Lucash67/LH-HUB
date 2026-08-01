@@ -2,6 +2,7 @@ import { sqliteTable, text, real, integer } from "drizzle-orm/sqlite-core";
 
 export const businessUnits = sqliteTable("business_units", {
   id: text("id").primaryKey(),
+  ownerId: text("owner_id"),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   status: text("status", { enum: ["active", "inactive"] }).notNull().default("active"),

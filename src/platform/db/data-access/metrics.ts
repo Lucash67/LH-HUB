@@ -1,9 +1,10 @@
-import { and, eq, gte, lte, inArray, type SQL } from "drizzle-orm";
+import { and, eq, gte, lte, inArray, or, isNull, type SQL } from "drizzle-orm";
 import { getPostgresDb, getSqliteDb, isPostgres } from "@/platform/db";
 import { resolveBusinessScopeId } from "@/platform/db/mappers";
 import { fromDbBusinessId } from "@/platform/db/business-id";
 import { mapClientRow, mapGoalRow, mapProductRow, mapSaleRow } from "@/platform/db/mappers";
 import { queryAll } from "@/platform/db/query";
+import { getTenantContext, getTenantDbIds } from "@/lib/auth/tenant-context";
 import {
   clients as sqliteClients,
   goals as sqliteGoals,
@@ -26,6 +27,43 @@ export interface ScopedSalesQuery {
   dateEq?: string;
   dateGte?: string;
   dateLte?: string;
+}
+
+function isTenantEmpty(): boolean {
+  const ids = getTenantDbIds();
+  return ids !== undefined && ids.length === 0;
+}
+
+function appendBusinessScope(conditions: SQL[], businessId: string, pg: boolean): void {
+  const tenantIds = getTenantDbIds();
+  if (!isAllBusinesses(businessId)) {
+    const scopedId = pg ? resolveBusinessScopeId(businessId) : businessId;
+    conditions.push(pg ? eq(pgSales.businessId, scopedId) : eq(sqliteSales.businessId, scopedId));
+    return;
+  }
+  if (tenantIds !== undefined) {
+    conditions.push(
+      pg ? inArray(pgSales.businessId, tenantIds) : inArray(sqliteSales.businessId, tenantIds),
+    );
+  }
+}
+
+function appendProductBusinessScope(conditions: SQL[], businessId: string, pg: boolean): void {
+  const tenantIds = getTenantDbIds();
+  if (!isAllBusinesses(businessId)) {
+    const scopedId = pg ? resolveBusinessScopeId(businessId) : businessId;
+    conditions.push(pg ? eq(pgProducts.businessId, scopedId) : eq(sqliteProducts.businessId, scopedId));
+    return;
+  }
+  if (tenantIds !== undefined) {
+    conditions.push(
+      pg ? inArray(pgProducts.businessId, tenantIds) : inArray(sqliteProducts.businessId, tenantIds),
+    );
+  }
+}
+
+function goalBelongsToTenant(businessId: string, slugs: string[]): boolean {
+  return slugs.includes(businessId);
 }
 
 function toMetricSale(row: ReturnType<typeof mapSaleRow>): MetricSale {
@@ -59,14 +97,14 @@ function toMetricProduct(row: ReturnType<typeof mapProductRow>): MetricProduct {
 }
 
 export async function fetchMetricSales(query: ScopedSalesQuery = {}): Promise<MetricSale[]> {
+  if (isTenantEmpty()) return [];
+
   const businessId = query.businessId ?? ALL_BUSINESSES_ID;
 
   if (isPostgres()) {
     const db = await getPostgresDb();
     const conditions: SQL[] = [];
-    if (!isAllBusinesses(businessId)) {
-      conditions.push(eq(pgSales.businessId, resolveBusinessScopeId(businessId)));
-    }
+    appendBusinessScope(conditions, businessId, true);
     if (query.dateEq) conditions.push(eq(pgSales.saleDate, query.dateEq));
     if (query.dateGte) conditions.push(gte(pgSales.saleDate, query.dateGte));
     if (query.dateLte) conditions.push(lte(pgSales.saleDate, query.dateLte));
@@ -80,9 +118,7 @@ export async function fetchMetricSales(query: ScopedSalesQuery = {}): Promise<Me
 
   const db = getSqliteDb();
   const conditions: SQL[] = [];
-  if (!isAllBusinesses(businessId)) {
-    conditions.push(eq(sqliteSales.businessId, businessId));
-  }
+  appendBusinessScope(conditions, businessId, false);
   if (query.dateEq) conditions.push(eq(sqliteSales.date, query.dateEq));
   if (query.dateGte) conditions.push(gte(sqliteSales.date, query.dateGte));
   if (query.dateLte) conditions.push(lte(sqliteSales.date, query.dateLte));
@@ -98,26 +134,27 @@ export async function fetchMetricProducts(
   businessId: string = ALL_BUSINESSES_ID,
   activeOnly = false,
 ): Promise<MetricProduct[]> {
+  if (isTenantEmpty()) return [];
+
   if (isPostgres()) {
     const db = await getPostgresDb();
-    let rows = isAllBusinesses(businessId)
-      ? await queryAll(db.select().from(pgProducts))
-      : await queryAll(
-          db
-            .select()
-            .from(pgProducts)
-            .where(eq(pgProducts.businessId, resolveBusinessScopeId(businessId))),
-        );
+    const conditions: SQL[] = [];
+    appendProductBusinessScope(conditions, businessId, true);
+    let rows =
+      conditions.length > 0
+        ? await queryAll(db.select().from(pgProducts).where(and(...conditions)))
+        : await queryAll(db.select().from(pgProducts));
     if (activeOnly) rows = rows.filter((r) => r.status === "active");
     return rows.map((r) => toMetricProduct(mapProductRow(r)));
   }
 
   const db = getSqliteDb();
-  let rows = isAllBusinesses(businessId)
-    ? await queryAll(db.select().from(sqliteProducts))
-    : await queryAll(
-        db.select().from(sqliteProducts).where(eq(sqliteProducts.businessId, businessId)),
-      );
+  const conditions: SQL[] = [];
+  appendProductBusinessScope(conditions, businessId, false);
+  let rows =
+    conditions.length > 0
+      ? await queryAll(db.select().from(sqliteProducts).where(and(...conditions)))
+      : await queryAll(db.select().from(sqliteProducts));
   if (activeOnly) rows = rows.filter((r) => r.status === "active");
   return rows.map((r) => toMetricProduct(mapProductRow(r)));
 }
@@ -153,23 +190,76 @@ export async function fetchMetricSaleItems(saleIds: string[]): Promise<MetricSal
 }
 
 export async function fetchMetricClients() {
+  if (isTenantEmpty()) return [];
+
+  const tenant = getTenantContext();
+  let clients: ReturnType<typeof mapClientRow>[];
+
   if (isPostgres()) {
     const db = await getPostgresDb();
-    return (await queryAll(db.select().from(pgClients))).map(mapClientRow);
+    if (tenant && tenant.dbIds.length > 0) {
+      clients = (
+        await queryAll(
+          db
+            .select()
+            .from(pgClients)
+            .where(
+              or(
+                inArray(pgClients.registeredBusinessId, tenant.dbIds),
+                isNull(pgClients.registeredBusinessId),
+              ),
+            ),
+        )
+      ).map(mapClientRow);
+    } else {
+      clients = (await queryAll(db.select().from(pgClients))).map(mapClientRow);
+    }
+  } else {
+    const db = getSqliteDb();
+    clients = (await queryAll(db.select().from(sqliteClients))).map(mapClientRow);
+    if (tenant && tenant.slugs.length > 0) {
+      clients = clients.filter(
+        (c) => !c.businessId || tenant.slugs.includes(c.businessId),
+      );
+    }
   }
-  const db = getSqliteDb();
-  return (await queryAll(db.select().from(sqliteClients))).map(mapClientRow);
+
+  if (!tenant) return clients;
+
+  const scopedSales = await fetchMetricSales({});
+  const linkedClientIds = new Set(
+    scopedSales.map((s) => s.clientId).filter((id): id is string => Boolean(id)),
+  );
+  return clients.filter(
+    (c) =>
+      linkedClientIds.has(c.id) ||
+      (c.businessId && tenant.slugs.includes(c.businessId)),
+  );
 }
 
 export async function fetchMetricGoals(businessId: string = ALL_BUSINESSES_ID) {
+  if (isTenantEmpty()) return [];
+
+  const tenant = getTenantContext();
   let allGoals: ReturnType<typeof mapGoalRow>[];
 
   if (isPostgres()) {
     const db = await getPostgresDb();
-    allGoals = (await queryAll(db.select().from(pgGoals))).map(mapGoalRow);
+    if (tenant && isAllBusinesses(businessId) && tenant.dbIds.length > 0) {
+      allGoals = (
+        await queryAll(
+          db.select().from(pgGoals).where(inArray(pgGoals.businessId, tenant.dbIds)),
+        )
+      ).map(mapGoalRow);
+    } else {
+      allGoals = (await queryAll(db.select().from(pgGoals))).map(mapGoalRow);
+    }
   } else {
     const db = getSqliteDb();
     allGoals = (await queryAll(db.select().from(sqliteGoals))).map(mapGoalRow);
+    if (tenant && isAllBusinesses(businessId)) {
+      allGoals = allGoals.filter((g) => goalBelongsToTenant(g.businessId, tenant.slugs));
+    }
   }
 
   if (!isAllBusinesses(businessId)) {

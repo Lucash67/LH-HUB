@@ -1,19 +1,15 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { eq } from "drizzle-orm";
 import * as pgSchema from "@/lib/db/postgres/schema";
 import { getDatabaseUrl } from "@/platform/db/config";
-import { postgresBusinessSeedRows } from "@/platform/db/business-id";
-import { businesses, goals as pgGoals } from "@/lib/db/postgres/schema";
-import { format } from "date-fns";
 
 const schema = pgSchema;
 
 let client: ReturnType<typeof postgres> | null = null;
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
-let seedPromise: Promise<void> | null = null;
+let initPromise: Promise<void> | null = null;
 
-async function ensureAuthTables(): Promise<void> {
+async function ensureAuthAndTenantColumns(): Promise<void> {
   if (!client) return;
   await client.unsafe(`
     CREATE TABLE IF NOT EXISTS users (
@@ -36,55 +32,28 @@ async function ensureAuthTables(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_password_reset_token_hash ON password_reset_tokens (token_hash);
     CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens (user_id);
+
+    ALTER TABLE businesses ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES users(id) ON DELETE CASCADE;
+    CREATE INDEX IF NOT EXISTS idx_businesses_owner ON businesses (owner_id);
+    ALTER TABLE businesses DROP CONSTRAINT IF EXISTS businesses_slug_key;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_businesses_owner_slug ON businesses (owner_id, slug);
+
+    UPDATE businesses
+    SET owner_id = (SELECT id FROM users WHERE email = 'lucashcampos667@gmail.com' LIMIT 1)
+    WHERE owner_id IS NULL;
   `);
-}
-
-async function seedPostgresIfEmpty(db: ReturnType<typeof drizzle<typeof schema>>): Promise<void> {
-  const existing = await db.select().from(businesses).limit(1);
-  if (existing.length > 0) return;
-
-  const now = new Date();
-  for (const row of postgresBusinessSeedRows()) {
-    await db.insert(businesses).values({
-      id: row.id,
-      slug: row.slug,
-      name: row.name,
-      status: row.status,
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
-
-  const today = format(now, "yyyy-MM-dd");
-  for (const row of postgresBusinessSeedRows()) {
-    for (const goalType of ["daily", "weekly", "monthly", "yearly"] as const) {
-      await db.insert(pgGoals).values({
-        businessId: row.id,
-        goalType,
-        targetAmount: "0",
-        targetUnits: null,
-        periodStart: today,
-        periodEnd: today,
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
-  }
 }
 
 export async function getPostgresDb() {
   if (dbInstance) {
-    if (seedPromise) await seedPromise;
+    if (initPromise) await initPromise;
     return dbInstance;
   }
 
   client = postgres(getDatabaseUrl(), { prepare: false, max: 10 });
   dbInstance = drizzle(client, { schema });
-  seedPromise = (async () => {
-    await ensureAuthTables();
-    await seedPostgresIfEmpty(dbInstance!);
-  })();
-  await seedPromise;
+  initPromise = ensureAuthAndTenantColumns();
+  await initPromise;
   return dbInstance;
 }
 
@@ -98,7 +67,7 @@ export async function closePostgresConnection(): Promise<void> {
     await client.end();
     client = null;
     dbInstance = null;
-    seedPromise = null;
+    initPromise = null;
   }
 }
 
