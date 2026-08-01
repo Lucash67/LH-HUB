@@ -39,5 +39,5 @@ Custos, Bonificações, Faturamento, e Lucro
 - Meu investimento: R$27,50
 - Investimento do meu pai: R$25 (Não conta como custo meu)
 - Bonificação do meu pai (R$1 a cada salgado vendido por mim): R$15
-- Faturamento do dia: R$75 (15 salgados × R$5)
-- Lucro do dia: R$62,50 (75 − 27,50 + 15 bonificação)`;
+- Faturamento do dia: R$90 (75 dos 15 salgados + 15 da bonificação do meu pai)
+- Lucro do dia: R$62,50 (75 − 27,50 + 15 bonificação)`

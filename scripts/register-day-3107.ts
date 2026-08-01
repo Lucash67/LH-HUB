@@ -38,6 +38,7 @@ async function applyBonusAndNarrative(plan: DayRegistrationPlan): Promise<void> 
     manualInsights: [
       plan.manualInsights,
       bonusIncomeDescription,
+      `Faturamento do dia: R$90 (75 dos 15 salgados + 15 da bonificação do meu pai).`,
       `Lucro operacional salgados: R$${profitSalgados.toFixed(2)} (faturamento R$75 − investimento próprio R$27,50).`,
       `Lucro total do dia: R$${totalProfit.toFixed(2)} (salgados + bonificação).`,
       "Pastel de carne frito esgotou rápido — manter no cardápio.",
