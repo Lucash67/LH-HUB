@@ -58,6 +58,8 @@ function normalizeProductName(raw: string): string {
     return UNKNOWN_PRODUCT;
   }
   if (n.includes("croissant") || n.includes("croisant") || n.includes("crosisant")) return "Croissant";
+  // Pastel de carne antes do pastel padrão (frango/presunto).
+  if (n.includes("pastel") && n.includes("carne")) return "Pastel de Carne";
   if (n.includes("pastel")) return "Pastel de Frango com Presunto";
   // Sabor novo (só frango + catupiry) — antes do mistão, e nunca confundir com pastel de frango.
   if (

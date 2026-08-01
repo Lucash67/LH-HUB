@@ -46,6 +46,7 @@ export function canonicalSalgadosFlavor(name: string): string | null {
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
   if (n.includes("croissant")) return "Croissant";
+  if (n.includes("pastel") && n.includes("carne")) return "Pastel de Carne";
   if (n.includes("pastel")) return "Pastel";
   if (n.includes("misto") || n.includes("mistao")) return "Misto";
   if (
