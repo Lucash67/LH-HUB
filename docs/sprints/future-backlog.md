@@ -1,13 +1,13 @@
 # Backlog futuro — Lucas Business OS
 
-Ideias para implementar **depois** da entrega atual (insights inteligentes + contexto temporal).
+Ideias para implementar **depois** da entrega atual.
 
 ---
 
 ## 1. Módulo de Projeções por Período (ambição & motivação)
 
-**Status:** ideia registrada · não iniciado  
-**Prioridade sugerida:** após insights automáticos estáveis
+**Status:** MVP entregue (semana/mês + ritmo + meta + “o que falta”) · 2026-08-01  
+**Prioridade sugerida:** evoluções após uso real
 
 ### Visão
 
@@ -21,21 +21,23 @@ Módulo focado em **projeções da semana, do mês e de outros períodos** (2 me
 
 Gerar **faturamento, lucro, unidades e margem projetados** ao fechar cada “ciclo” de tempo — para usar como **motivação e ambição** consciente, não só número frio.
 
-### Entregáveis possíveis (MVP → evolução)
+### Entregáveis
 
+- [x] Projeção da semana e do mês atuais (ritmo × dias úteis)
+- [x] Comparativo: projetado vs. realizado vs. meta
+- [x] Painel “O que falta para bater a projeção” (unidades/dia restantes)
+- [x] Entrada no menu + simulador estático como secundário
+- [ ] Cenários (conservador · base · otimista) baseados no histórico
 - [ ] Projeção automática ao completar semana / mês / N meses
-- [ ] Comparativo: projetado vs. realizado vs. meta
-- [ ] Cenários (conservador · base · otimista) baseados no histórico Salgados
-- [ ] Painel “O que falta para bater a projeção” (unidades/dia restantes)
 - [ ] Notificação ou destaque no Dashboard quando um ciclo fecha
-- [ ] Refinamentos incrementais conforme uso real
+- [ ] Períodos longos (2–3 meses, trimestre)
 
 ### Notas
 
-- Complementa `/projecoes` atual (simulador estático por unidades/dia)
-- Deve respeitar calendário operacional ACAL (seg–sex)
-- Lucro operacional deve usar diário homologado quando existir
+- Rota `/projecoes` · serviço `src/lib/period-projections-service.ts`
+- Respeita calendário operacional ACAL (seg–sex)
+- Lucro/receita usam diário homologado quando existir (`buildOperationalDayMetrics`)
 
 ---
 
-_Última atualização: 2026-07-30_
+_Última atualização: 2026-08-01_
