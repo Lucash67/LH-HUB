@@ -26,9 +26,10 @@ export default function EstoquePage() {
   const [form, setForm] = useState({ productId: "", type: "entry", quantity: "", reason: "" });
   const [formError, setFormError] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery<StockData>({
+  const { data, isLoading, isError, error, refetch } = useQuery<StockData>({
     queryKey: ["stock", activeBusinessId],
     queryFn: async () => (await fetchJson(withQuery("/api/stock"))) as StockData,
+    staleTime: 120_000,
   });
 
   const updateStock = useMutation({
@@ -52,10 +53,23 @@ export default function EstoquePage() {
     onError: (error: Error) => setFormError(error.message),
   });
 
-  if (isLoading || !data) {
+  if (isLoading && !data) {
     return (
       <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
         <PageLoader />
+      </ModuleShell>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
+        <p className="text-text-muted mb-3">
+          {error instanceof Error ? error.message : "Não foi possível carregar o estoque."}
+        </p>
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>
+          Tentar novamente
+        </Button>
       </ModuleShell>
     );
   }

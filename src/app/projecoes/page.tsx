@@ -44,7 +44,7 @@ export default function ProjecoesPage() {
       (await fetchJson(
         withQuery(`/api/projections?period=${period}&offset=${offset}`),
       )) as PeriodProjectionView,
-    staleTime: 60_000,
+    staleTime: 120_000,
     placeholderData: (prev) => prev,
   });
 

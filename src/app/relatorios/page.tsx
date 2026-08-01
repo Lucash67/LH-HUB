@@ -105,17 +105,26 @@ export default function RelatoriosPage() {
   const context = useTemporalViewContext();
   const effectiveType = !isViewingGeneral(context) ? "daily" : type;
 
-  const { data, isLoading } = useQuery<ReportData>({
+  const { data, isLoading, isError, error, refetch } = useQuery<ReportData>({
     queryKey: ["reports", effectiveType, activeBusinessId, context.mode, context.viewDate],
-    queryFn: () => {
+    queryFn: async () => {
       const dateQuery = !isViewingGeneral(context) ? `&date=${context.viewDate}` : "";
-      return fetch(withQuery(`/api/reports?type=${effectiveType}${dateQuery}`)).then((r) => r.json());
+      const r = await fetch(withQuery(`/api/reports?type=${effectiveType}${dateQuery}`));
+      const json = await r.json();
+      if (!r.ok || json.error) throw new Error(json.error || "Não foi possível gerar o relatório.");
+      return json;
     },
+    staleTime: 120_000,
   });
 
   const { data: goals = [] } = useQuery<GoalRow[]>({
     queryKey: ["goals", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/goals")).then((r) => r.json()),
+    queryFn: async () => {
+      const r = await fetch(withQuery("/api/goals"));
+      const json = await r.json();
+      return Array.isArray(json) ? json : [];
+    },
+    staleTime: 120_000,
   });
 
   const summary = useMemo(() => {
@@ -149,10 +158,23 @@ export default function RelatoriosPage() {
     };
   }, [data, goals, effectiveType]);
 
-  if (isLoading || !data || !summary) {
+  if (isLoading && !data) {
     return (
       <ModuleShell title="Relatórios">
         <PageLoader />
+      </ModuleShell>
+    );
+  }
+
+  if (isError || !data || !summary) {
+    return (
+      <ModuleShell title="Relatórios">
+        <p className="text-text-muted mb-3">
+          {error instanceof Error ? error.message : "Não foi possível gerar o relatório."}
+        </p>
+        <button type="button" className="text-sm text-brand-orange underline" onClick={() => void refetch()}>
+          Tentar novamente
+        </button>
       </ModuleShell>
     );
   }

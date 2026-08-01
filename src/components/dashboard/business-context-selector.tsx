@@ -46,7 +46,13 @@ export function BusinessContextSelector({ variant = "inline" }: BusinessContextS
   function selectBusiness(businessId: string) {
     setActiveBusiness(businessId);
     setOpen(false);
-    queryClient.invalidateQueries();
+    // Invalidate module data only — keep auth/businesses cache warm.
+    void queryClient.invalidateQueries({
+      predicate: (q) => {
+        const key = q.queryKey[0];
+        return key !== "auth" && key !== "businesses";
+      },
+    });
   }
 
   const isSidebar = variant === "sidebar";

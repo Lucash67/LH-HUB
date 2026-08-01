@@ -37,7 +37,7 @@ export default function InsightsPage() {
   const { data: insights = [], isLoading } = useQuery<Insight[]>({
     queryKey: ["insights", activeBusinessId, context.mode, context.viewDate],
     queryFn: () => fetchJsonArray<Insight>(insightsUrl),
-    staleTime: 60_000,
+    staleTime: 120_000,
     refetchInterval: 120_000,
   });
 

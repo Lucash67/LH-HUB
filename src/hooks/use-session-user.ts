@@ -22,7 +22,6 @@ function readLocalSessionUser(): SessionUserPublic | null {
 export function useSessionUser() {
   return useQuery<SessionUserPublic | null>({
     queryKey: ["auth", "me"],
-    initialData: readLocalSessionUser,
     queryFn: async () => {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.ok) {
@@ -32,10 +31,11 @@ export function useSessionUser() {
           return json.user;
         }
       }
-
-      return readLocalSessionUser();
+      return null;
     },
-    staleTime: 5 * 60_000,
-    retry: false,
+    // Display-only fallback — must NOT block /api/auth/me (never use as settled initialData).
+    placeholderData: () => readLocalSessionUser(),
+    staleTime: 60_000,
+    retry: 1,
   });
 }

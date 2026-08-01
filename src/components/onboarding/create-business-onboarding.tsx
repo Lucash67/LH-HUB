@@ -34,7 +34,10 @@ export function CreateBusinessOnboarding({ compact = false }: CreateBusinessOnbo
     },
     onSuccess: async (unit) => {
       setActiveBusiness(unit.id);
-      await queryClient.invalidateQueries();
+      await queryClient.invalidateQueries({ queryKey: ["businesses"] });
+      await queryClient.invalidateQueries({
+        predicate: (q) => q.queryKey[0] !== "auth",
+      });
     },
     onError: (err) => {
       setError(err instanceof Error ? err.message : "Não foi possível criar a operação.");

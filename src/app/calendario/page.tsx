@@ -53,9 +53,15 @@ export default function CalendarioPage() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
 
-  const { data: calendar, isLoading } = useQuery<CalendarData>({
+  const { data: calendar, isLoading, isError, error, refetch } = useQuery<CalendarData>({
     queryKey: ["calendar", year, month, activeBusinessId],
-    queryFn: () => fetch(withQuery(`/api/calendar?year=${year}&month=${month}`)).then((r) => r.json()),
+    queryFn: async () => {
+      const r = await fetch(withQuery(`/api/calendar?year=${year}&month=${month}`));
+      const json = await r.json();
+      if (!r.ok || json.error) throw new Error(json.error || "Não foi possível carregar o calendário.");
+      return json;
+    },
+    staleTime: 120_000,
   });
 
   const { data: dayReport } = useQuery<DayReport>({
@@ -83,10 +89,23 @@ export default function CalendarioPage() {
     return { pct, conclusion };
   }, [dayReport, calendar]);
 
-  if (isLoading || !calendar) {
+  if (isLoading && !calendar) {
     return (
       <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
         <PageLoader />
+      </ModuleShell>
+    );
+  }
+
+  if (isError || !calendar) {
+    return (
+      <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
+        <p className="text-text-muted mb-3">
+          {error instanceof Error ? error.message : "Não foi possível carregar o calendário."}
+        </p>
+        <button type="button" className="text-sm text-brand-orange underline" onClick={() => void refetch()}>
+          Tentar novamente
+        </button>
       </ModuleShell>
     );
   }

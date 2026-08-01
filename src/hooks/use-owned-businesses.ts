@@ -11,7 +11,7 @@ import {
 } from "@/stores/business-context-store";
 
 export function useOwnedBusinesses() {
-  const { data: user } = useSessionUser();
+  const { data: user, isFetched: sessionFetched } = useSessionUser();
   const activeBusinessId = useActiveBusinessId();
   const setActiveBusiness = useBusinessContextStore((s) => s.setActiveBusiness);
   const setOwnerUserId = useBusinessContextStore((s) => s.setOwnerUserId);
@@ -19,8 +19,9 @@ export function useOwnedBusinesses() {
   const resetBusinessContext = useBusinessContextStore((s) => s.resetBusinessContext);
   const realUserId = user?.id && user.id !== "local" ? user.id : null;
 
+  // Cookie auth is enough — do not wait for realUserId (avoids infinite PageLoader).
   const query = useQuery<BusinessesApiResponse>({
-    queryKey: ["businesses", realUserId ?? "pending"],
+    queryKey: ["businesses", realUserId ?? "cookie"],
     queryFn: async () => {
       const r = await fetch("/api/businesses", { credentials: "include" });
       const json = await r.json();
@@ -29,11 +30,23 @@ export function useOwnedBusinesses() {
       }
       return json;
     },
-    staleTime: 60_000,
-    enabled: Boolean(realUserId),
+    staleTime: 120_000,
+    retry: 1,
   });
 
   const units = query.data?.units ?? [];
+
+  const effectiveBusinessId = useMemo(() => {
+    if (!query.data) return null;
+    if (units.length === 0) return ALL_BUSINESSES_ID;
+    if (
+      activeBusinessId === ALL_BUSINESSES_ID ||
+      units.some((u) => u.id === activeBusinessId)
+    ) {
+      return activeBusinessId;
+    }
+    return units[0]!.id;
+  }, [query.data, units, activeBusinessId]);
 
   useEffect(() => {
     if (!realUserId) return;
@@ -47,28 +60,12 @@ export function useOwnedBusinesses() {
   }, [realUserId, ownerUserId, resetBusinessContext, setOwnerUserId]);
 
   useEffect(() => {
-    if (!query.data) return;
-
-    if (units.length === 0) {
-      if (activeBusinessId !== ALL_BUSINESSES_ID) {
-        setActiveBusiness(ALL_BUSINESSES_ID);
-      }
-      return;
+    if (effectiveBusinessId && effectiveBusinessId !== activeBusinessId) {
+      setActiveBusiness(effectiveBusinessId);
     }
+  }, [effectiveBusinessId, activeBusinessId, setActiveBusiness]);
 
-    const known = new Set<string>([ALL_BUSINESSES_ID, ...units.map((u) => u.id)]);
-    if (!known.has(activeBusinessId)) {
-      setActiveBusiness(units[0]!.id);
-    }
-  }, [query.data, units, activeBusinessId, setActiveBusiness]);
-
-  const isSynced = useMemo(() => {
-    if (!query.data) return false;
-    if (units.length === 0) return activeBusinessId === ALL_BUSINESSES_ID;
-    return (
-      activeBusinessId === ALL_BUSINESSES_ID || units.some((u) => u.id === activeBusinessId)
-    );
-  }, [query.data, units, activeBusinessId]);
+  const isSynced = effectiveBusinessId != null;
 
   return {
     ...query,
@@ -76,5 +73,6 @@ export function useOwnedBusinesses() {
     isEmpty: Boolean(query.data && units.length === 0),
     isSynced,
     isReady: Boolean(query.data && isSynced),
+    sessionFetched,
   };
 }

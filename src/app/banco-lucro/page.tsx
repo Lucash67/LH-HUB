@@ -19,10 +19,15 @@ import { PiggyBank, Calculator } from "lucide-react";
 export default function BancoLucroPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
   const context = useTemporalViewContext();
-  const { data, isLoading } = useQuery<ProfitBankView>({
+  const { data, isLoading, isError, error, refetch } = useQuery<ProfitBankView>({
     queryKey: ["profit-bank", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/profit-bank")).then((r) => r.json()),
-    staleTime: 60_000,
+    queryFn: async () => {
+      const r = await fetch(withQuery("/api/profit-bank"));
+      const json = await r.json();
+      if (!r.ok || json.error) throw new Error(json.error || "Não foi possível carregar o banco de lucro.");
+      return json;
+    },
+    staleTime: 120_000,
     placeholderData: (prev) => prev,
   });
 
@@ -55,10 +60,23 @@ export default function BancoLucroPage() {
     return { points, summary: simulationSummary(points) };
   }, [data, saveRate, monthlyWithdrawal, horizonDays, context, scopedBalance, scopedAvg]);
 
-  if (isLoading || !data) {
+  if (isLoading && !data) {
     return (
       <ModuleShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
         <PageLoader />
+      </ModuleShell>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <ModuleShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
+        <p className="text-text-muted mb-3">
+          {error instanceof Error ? error.message : "Não foi possível carregar o banco de lucro."}
+        </p>
+        <button type="button" className="text-sm text-brand-orange underline" onClick={() => void refetch()}>
+          Tentar novamente
+        </button>
       </ModuleShell>
     );
   }

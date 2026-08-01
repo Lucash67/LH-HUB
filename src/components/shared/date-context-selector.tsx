@@ -34,14 +34,16 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
   const activeBusinessId = useActiveBusinessId();
 
   const { data: sales = [] } = useQuery<DashboardSale[]>({
-    queryKey: ["sales", activeBusinessId],
+    queryKey: ["sales", activeBusinessId, "date-context"],
     queryFn: async () => {
       const r = await fetch(withBusinessQuery("/api/sales", activeBusinessId));
       const json = await r.json();
-      if (!r.ok || json.error) throw new Error(json.error ?? "Erro ao carregar vendas");
-      return json;
+      if (!r.ok || json.error || !Array.isArray(json)) return [];
+      return json as DashboardSale[];
     },
-    staleTime: 60_000,
+    // Só busca quando o seletor abre — evita fan-out em toda navegação.
+    enabled: open,
+    staleTime: 120_000,
   });
 
   const lastOperational = findLastOperationalDate(sales);

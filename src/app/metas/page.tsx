@@ -26,7 +26,7 @@ export default function MetasPage() {
       return json;
     },
     enabled: !isAggregated,
-    staleTime: 60_000,
+    staleTime: 120_000,
     placeholderData: (prev) => prev,
     refetchInterval: 120_000,
   });

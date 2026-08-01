@@ -24,7 +24,7 @@ export default function DesempenhoPage() {
     queryKey: ["performance", activeBusinessId, period, offset],
     queryFn: () =>
       fetch(withQuery(`/api/performance?period=${period}&offset=${offset}`)).then((r) => r.json()),
-    staleTime: 60_000,
+    staleTime: 120_000,
     placeholderData: (prev) => prev,
   });
 

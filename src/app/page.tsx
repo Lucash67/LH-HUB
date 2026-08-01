@@ -50,7 +50,7 @@ export default function DashboardPage() {
       }
       return json;
     },
-    staleTime: 60_000,
+    staleTime: 120_000,
     placeholderData: (prev) => prev,
     refetchInterval: shouldPoll ? 60_000 : false,
   });
