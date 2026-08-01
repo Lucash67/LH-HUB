@@ -49,6 +49,14 @@ export default function RankingsPage() {
     );
   }
 
+  if (!data) {
+    return (
+      <ModuleShell title="Rankings">
+        <p className="text-text-muted">Não foi possível carregar os rankings.</p>
+      </ModuleShell>
+    );
+  }
+
   return (
     <ModuleShell title="Rankings" subtitle="Os melhores do seu negócio">
       <div className="grid gap-6 lg:grid-cols-2 mt-6">

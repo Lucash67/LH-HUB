@@ -83,6 +83,14 @@ export default function FinanceiroPage() {
     );
   }
 
+  if (!data) {
+    return (
+      <ModuleShell title="Financeiro" subtitle="Visão executiva das finanças">
+        <p className="text-text-muted">Não foi possível carregar o financeiro.</p>
+      </ModuleShell>
+    );
+  }
+
   const { operation, operator, reconciliation } = data.operatorFinance;
   const isDayScoped = data.scope?.mode === "day";
   const scopeLabel = isDayScoped

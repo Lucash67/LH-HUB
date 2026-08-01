@@ -94,7 +94,7 @@ export async function sumOperationalMetricsUpToDate(
   let revenue = 0;
   let profit = 0;
   let costs = 0;
-  for (const row of metrics.values()) {
+  for (const row of Array.from(metrics.values())) {
     if (row.date > endDate) continue;
     revenue += row.revenue;
     profit += row.profit;

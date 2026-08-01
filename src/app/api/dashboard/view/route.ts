@@ -11,6 +11,15 @@ import type { TemporalViewContext } from "@/stores/temporal-context-store";
 import { MSG, apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 
+function normalizeDashboardSales(
+  sales: Awaited<ReturnType<typeof listSalesEnriched>>,
+) {
+  return sales.map((sale) => ({
+    ...sale,
+    paymentMethod: sale.paymentMethod ?? "",
+  }));
+}
+
 export async function GET(request: NextRequest) {
   const auth = await requireApiSession();
   if (isAuthFailure(auth)) return auth;
@@ -42,7 +51,7 @@ export async function GET(request: NextRequest) {
       autoInsights = insights;
       const diaryContext = enrichDiaryContext(entry, smartGoals?.daily?.targetUnits);
       const data = buildDashboardView(
-        sales,
+        normalizeDashboardSales(sales),
         context,
         0,
         dailyGoal,
@@ -53,7 +62,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data, diaryEntry, autoInsights });
     }
 
-    const data = buildDashboardView(sales, context, 0, dailyGoal, 0, null, businessId);
+    const data = buildDashboardView(normalizeDashboardSales(sales), context, 0, dailyGoal, 0, null, businessId);
     return NextResponse.json({ data, diaryEntry: null, autoInsights: [] });
   } catch (error) {
     console.error("Dashboard view GET error:", error);

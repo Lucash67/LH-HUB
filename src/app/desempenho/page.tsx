@@ -36,6 +36,14 @@ export default function DesempenhoPage() {
     );
   }
 
+  if (!data) {
+    return (
+      <ModuleShell title="Desempenho" subtitle="Receita, lucro e custos por período">
+        <p className="text-text-muted">Não foi possível carregar o desempenho.</p>
+      </ModuleShell>
+    );
+  }
+
   const growthIcon = (value: number) =>
     value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
 

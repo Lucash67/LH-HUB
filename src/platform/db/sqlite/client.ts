@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import type Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
 import fs from "fs";
@@ -10,6 +10,13 @@ import {
 } from "@/lib/business-units";
 import { backfillIntelligenceFromDiaries } from "@/platform/db/sqlite/backfill-intelligence";
 import { backfillClientBusinessIds } from "@/lib/client-business-scope";
+
+function openDatabase(dbPath: string): Database.Database {
+  // Lazy require — avoids native build on Postgres-only deploys (e.g. Vercel).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const BetterSqlite3 = require("better-sqlite3") as new (filename: string) => Database.Database;
+  return new BetterSqlite3(dbPath);
+}
 
 export const DATA_DIR = path.join(process.cwd(), "data");
 export const DB_PATH = path.join(DATA_DIR, "lucas-business-os.db");
@@ -512,7 +519,7 @@ export function getSqliteDb() {
   if (dbInstance) return dbInstance;
 
   ensureDataDir();
-  const sqlite = new Database(DB_PATH);
+  const sqlite = openDatabase(DB_PATH);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");
   initTables(sqlite);

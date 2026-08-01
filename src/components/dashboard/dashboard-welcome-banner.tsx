@@ -118,7 +118,10 @@ export function DashboardWelcomeBanner({ className }: { className?: string }) {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {QUICK_ACTIONS.map(({ href, label, hint, icon: Icon, primary }, index) => (
+            {QUICK_ACTIONS.map((action, index) => {
+              const { href, label, hint, icon: Icon } = action;
+              const primary = "primary" in action && action.primary;
+              return (
               <Link
                 key={href}
                 href={href}
@@ -155,7 +158,8 @@ export function DashboardWelcomeBanner({ className }: { className?: string }) {
                 </span>
                 <span className="text-[11px] leading-tight text-text-muted">{hint}</span>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
 
