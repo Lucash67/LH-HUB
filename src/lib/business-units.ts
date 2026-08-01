@@ -30,8 +30,9 @@ export function isAllBusinesses(businessId: string): boolean {
 
 export function parseBusinessIdParam(param: string | null | undefined): string {
   if (!param || param === ALL_BUSINESSES_ID) return ALL_BUSINESSES_ID;
-  if (BUSINESS_UNITS.some((b) => b.id === param)) return param;
-  return ALL_BUSINESSES_ID;
+  const trimmed = param.trim();
+  if (!trimmed || trimmed === ALL_BUSINESSES_ID) return ALL_BUSINESSES_ID;
+  return trimmed;
 }
 
 export function withBusinessQuery(baseUrl: string, businessId: string): string {
@@ -56,9 +57,6 @@ export function requireSpecificBusinessId(
 ): string {
   const parsed = businessId?.trim();
   if (!parsed || isAllBusinesses(parsed)) {
-    throw new Error(BUSINESS_WRITE_BLOCKED_MESSAGE);
-  }
-  if (!BUSINESS_UNITS.some((b) => b.id === parsed)) {
     throw new Error(BUSINESS_WRITE_BLOCKED_MESSAGE);
   }
   return parsed;

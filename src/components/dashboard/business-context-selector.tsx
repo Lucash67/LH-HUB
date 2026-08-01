@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ALL_BUSINESSES_ID } from "@/lib/business-units";
+import { useOwnedBusinesses } from "@/hooks/use-owned-businesses";
 import {
-  formatBusinessSelectorLabel,
   useActiveBusinessId,
   useBusinessContextStore,
-  type BusinessesApiResponse,
 } from "@/stores/business-context-store";
 
 interface BusinessContextSelectorProps {
@@ -23,18 +22,16 @@ export function BusinessContextSelector({ variant = "inline" }: BusinessContextS
   const queryClient = useQueryClient();
   const activeBusinessId = useActiveBusinessId();
   const setActiveBusiness = useBusinessContextStore((s) => s.setActiveBusiness);
+  const { data, units } = useOwnedBusinesses();
 
-  const { data } = useQuery<BusinessesApiResponse>({
-    queryKey: ["businesses"],
-    queryFn: () => fetch("/api/businesses").then((r) => r.json()),
-    staleTime: 300_000,
-  });
-
-  const label = formatBusinessSelectorLabel(activeBusinessId);
   const options = [
     { id: data?.all.id ?? ALL_BUSINESSES_ID, name: data?.all.name ?? "Todos" },
-    ...(data?.units ?? []),
+    ...units,
   ];
+
+  const activeLabel =
+    options.find((o) => o.id === activeBusinessId)?.name ??
+    (units.length === 0 ? "Nenhuma operação" : "Todos");
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -82,7 +79,7 @@ export function BusinessContextSelector({ variant = "inline" }: BusinessContextS
       >
         <span className="flex items-center gap-1.5 truncate">
           <Building2 className="h-3.5 w-3.5 shrink-0 text-text-muted" />
-          {label}
+          {activeLabel}
         </span>
         <ChevronDown
           className={cn("h-3.5 w-3.5 shrink-0 text-text-muted transition-transform", open && "rotate-180")}
@@ -97,21 +94,25 @@ export function BusinessContextSelector({ variant = "inline" }: BusinessContextS
           )}
           role="listbox"
         >
-          {options.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              role="option"
-              aria-selected={activeBusinessId === option.id}
-              onClick={() => selectBusiness(option.id)}
-              className={cn(
-                "flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover text-text-secondary hover:text-text-primary",
-                activeBusinessId === option.id && "text-brand-orange",
-              )}
-            >
-              {option.name}
-            </button>
-          ))}
+          {units.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-text-muted">Crie sua primeira operação no painel.</p>
+          ) : (
+            options.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="option"
+                aria-selected={activeBusinessId === option.id}
+                onClick={() => selectBusiness(option.id)}
+                className={cn(
+                  "flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover text-text-secondary hover:text-text-primary",
+                  activeBusinessId === option.id && "text-brand-orange",
+                )}
+              >
+                {option.name}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>

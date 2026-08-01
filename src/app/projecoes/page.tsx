@@ -9,6 +9,7 @@ import { TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { fetchJsonArray } from "@/lib/api/safe-json";
 import { getBusinessUnitName, isAllBusinesses } from "@/lib/business-units";
 
 interface Projection {
@@ -24,12 +25,12 @@ export default function ProjecoesPage() {
     ? "todas as operações"
     : getBusinessUnitName(activeBusinessId).toLowerCase();
 
-  const { data: projections, isLoading } = useQuery<Projection[]>({
+  const { data: projections = [], isLoading } = useQuery<Projection[]>({
     queryKey: ["projections", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/projections")).then((r) => r.json()),
+    queryFn: () => fetchJsonArray<Projection>(withQuery("/api/projections")),
   });
 
-  if (isLoading || !projections) {
+  if (isLoading) {
     return (
       <ModuleShell title="Projeções">
         <PageLoader />

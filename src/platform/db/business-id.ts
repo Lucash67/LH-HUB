@@ -1,3 +1,4 @@
+import { getTenantContext } from "@/lib/auth/tenant-context";
 import { isPostgres } from "./config";
 import {
   BRIGADEIROS_BUSINESS_ID,
@@ -17,11 +18,15 @@ const SLUG_BY_UUID = Object.fromEntries(
 
 export function toDbBusinessId(slug: string): string {
   if (!isPostgres()) return slug;
+  const fromTenant = getTenantContext()?.slugToDbId[slug];
+  if (fromTenant) return fromTenant;
   return POSTGRES_BUSINESS_UUIDS[slug as keyof typeof POSTGRES_BUSINESS_UUIDS] ?? slug;
 }
 
 export function fromDbBusinessId(dbId: string): string {
   if (!isPostgres()) return dbId;
+  const fromTenant = getTenantContext()?.dbIdToSlug[dbId];
+  if (fromTenant) return fromTenant;
   return SLUG_BY_UUID[dbId] ?? dbId;
 }
 

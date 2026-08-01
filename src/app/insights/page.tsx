@@ -7,6 +7,7 @@ import { PageLoader } from "@/components/ui/loading";
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { fetchJsonArray } from "@/lib/api/safe-json";
 import { SectionPanel } from "@/components/executive/section-panel";
 import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
 
@@ -33,14 +34,14 @@ export default function InsightsPage() {
     ? withQuery("/api/insights")
     : withQuery(`/api/insights?date=${context.viewDate}&viewMode=day`);
 
-  const { data: insights, isLoading } = useQuery<Insight[]>({
+  const { data: insights = [], isLoading } = useQuery<Insight[]>({
     queryKey: ["insights", activeBusinessId, context.mode, context.viewDate],
-    queryFn: () => fetch(insightsUrl).then((r) => r.json()),
+    queryFn: () => fetchJsonArray<Insight>(insightsUrl),
     staleTime: 60_000,
     refetchInterval: 120_000,
   });
 
-  if (isLoading || !insights) {
+  if (isLoading) {
     return (
       <ModuleShell title="Insights">
         <PageLoader />

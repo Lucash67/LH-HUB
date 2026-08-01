@@ -4,6 +4,8 @@ export interface TenantContext {
   userId: string;
   dbIds: string[];
   slugs: string[];
+  slugToDbId: Record<string, string>;
+  dbIdToSlug: Record<string, string>;
 }
 
 const tenantStorage = new AsyncLocalStorage<TenantContext>();

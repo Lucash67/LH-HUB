@@ -14,6 +14,7 @@ import { formatCurrency, PRODUCT_CATEGORIES } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { fetchJsonArray } from "@/lib/api/safe-json";
 
 async function postJson(url: string, data: unknown) {
   const r = await fetch(url, {
@@ -56,9 +57,9 @@ export default function ProdutosPage() {
     status: "active",
   });
 
-  const { data: products, isLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["products", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/products")).then((r) => r.json()),
+    queryFn: () => fetchJsonArray<Product>(withQuery("/api/products")),
   });
 
   const createProduct = useMutation({

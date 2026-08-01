@@ -8,18 +8,30 @@ import {
 
 export interface BusinessContextState {
   activeBusinessId: string;
+  /** Prevents leaking another account's selected operation via localStorage. */
+  ownerUserId: string | null;
   setActiveBusiness: (businessId: string) => void;
+  setOwnerUserId: (userId: string | null) => void;
+  resetBusinessContext: (userId?: string | null) => void;
 }
 
 export const useBusinessContextStore = create<BusinessContextState>()(
   persist(
     (set) => ({
       activeBusinessId: ALL_BUSINESSES_ID,
+      ownerUserId: null,
       setActiveBusiness: (businessId) => set({ activeBusinessId: businessId }),
+      setOwnerUserId: (userId) => set({ ownerUserId: userId }),
+      resetBusinessContext: (userId = null) =>
+        set({ activeBusinessId: ALL_BUSINESSES_ID, ownerUserId: userId }),
     }),
     {
       name: "lbo-business-context",
-      version: 1,
+      version: 2,
+      migrate: () => ({
+        activeBusinessId: ALL_BUSINESSES_ID,
+        ownerUserId: null,
+      }),
     },
   ),
 );

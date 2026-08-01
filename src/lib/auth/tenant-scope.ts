@@ -1,5 +1,4 @@
 import { ALL_BUSINESSES_ID, isAllBusinesses, BUSINESS_WRITE_BLOCKED_MESSAGE } from "@/lib/business-units";
-import { toDbBusinessId } from "@/platform/db/business-id";
 import { listBusinesses } from "@/platform/db/repositories/business-repository";
 
 export class TenantAccessError extends Error {
@@ -13,6 +12,8 @@ export interface TenantScope {
   businessId: string;
   slugs: string[];
   dbIds: string[];
+  slugToDbId: Record<string, string>;
+  dbIdToSlug: Record<string, string>;
   isEmpty: boolean;
 }
 
@@ -22,20 +23,25 @@ export async function resolveTenantScope(
 ): Promise<TenantScope> {
   const units = await listBusinesses(userId);
   const slugs = units.map((u) => u.id);
-  const dbIds = slugs.map((slug) => toDbBusinessId(slug));
+  const dbIds = units.map((u) => u.dbId);
+  const slugToDbId = Object.fromEntries(units.map((u) => [u.id, u.dbId]));
+  const dbIdToSlug = Object.fromEntries(units.map((u) => [u.dbId, u.id]));
 
   const raw = businessIdParam?.trim();
-  const businessId =
+  let businessId =
     !raw || raw === ALL_BUSINESSES_ID ? ALL_BUSINESSES_ID : raw;
 
+  // Stale client selector (e.g. previous account) must not 403 the whole app.
   if (!isAllBusinesses(businessId) && !slugs.includes(businessId)) {
-    throw new TenantAccessError();
+    businessId = ALL_BUSINESSES_ID;
   }
 
   return {
     businessId,
     slugs,
     dbIds,
+    slugToDbId,
+    dbIdToSlug,
     isEmpty: slugs.length === 0,
   };
 }

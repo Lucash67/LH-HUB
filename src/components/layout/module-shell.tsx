@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { AppShell as BaseAppShell } from "@/components/layout/app-shell";
 import { DateContextSelector } from "@/components/shared/date-context-selector";
 import { TemporalDayChip } from "@/components/shared/temporal-day-chip";
+import { TenantWorkspaceGate } from "@/components/onboarding/tenant-workspace-gate";
 import { shouldShowTemporalFilter } from "@/lib/temporal-filter";
 
 interface ModuleShellProps {
@@ -37,8 +38,10 @@ export function ModuleShell({
 
   return (
     <BaseAppShell title={title} subtitle={subtitle} actions={headerActions}>
-      {showTemporal && temporalChip && <TemporalDayChip />}
-      {children}
+      <TenantWorkspaceGate>
+        {showTemporal && temporalChip && <TemporalDayChip />}
+        {children}
+      </TenantWorkspaceGate>
     </BaseAppShell>
   );
 }

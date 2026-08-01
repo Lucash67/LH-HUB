@@ -14,6 +14,7 @@ import { Plus, ShoppingCart, Package } from "lucide-react";
 import { formatCurrency, formatDate, paymentMethodLabel, todayISO, nowTime, DEPARTMENTS, PAYMENT_METHODS } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { asArray, fetchJsonArray } from "@/lib/api/safe-json";
 import { filterByTemporalContext } from "@/lib/temporal-filter";
 import { useTemporalViewContext } from "@/stores/temporal-context-store";
 
@@ -72,30 +73,25 @@ export default function VendasPage() {
     notes: "",
   });
 
-  const { data: sales, isLoading } = useQuery<Sale[]>({
+  const { data: sales = [], isLoading } = useQuery<Sale[]>({
     queryKey: ["sales", activeBusinessId],
-    queryFn: async () => {
-      const r = await fetch(withQuery("/api/sales"));
-      const json = await r.json();
-      if (!r.ok || json.error) throw new Error(json.error);
-      return json;
-    },
+    queryFn: () => fetchJsonArray<Sale>(withQuery("/api/sales")),
   });
 
-  const { data: products } = useQuery<Product[]>({
+  const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["products", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/products")).then((r) => r.json()),
+    queryFn: () => fetchJsonArray<Product>(withQuery("/api/products")),
   });
 
-  const { data: clients } = useQuery<Client[]>({
-    queryKey: ["clients"],
-    queryFn: () => fetch("/api/clients").then((r) => r.json()),
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ["clients", activeBusinessId],
+    queryFn: () => fetchJsonArray<Client>(withQuery("/api/clients")),
   });
 
-  const activeProducts = products?.filter((p) => p.status === "active") ?? [];
+  const activeProducts = products.filter((p) => p.status === "active");
 
   const filteredSales = useMemo(
-    () => (sales ? filterByTemporalContext(sales, context) : []),
+    () => filterByTemporalContext(asArray<Sale>(sales), context),
     [sales, context],
   );
 
@@ -197,7 +193,7 @@ export default function VendasPage() {
                     </Select>
                     <Select label="Cliente (opcional)" value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}>
                       <option value="">Sem cliente</option>
-                      {clients?.map((c) => (
+                      {clients.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </Select>

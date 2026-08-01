@@ -10,6 +10,7 @@ import { BusinessContextSelector } from "@/components/dashboard/business-context
 import { LhHoldingIcon } from "@/components/hub/lh-hub-logo";
 import { resolveTheme, THEME_META } from "@/lib/theme-config";
 import { clearHubSession } from "@/lib/hub-session";
+import { useBusinessContextStore } from "@/stores/business-context-store";
 import { useEffect, useState } from "react";
 
 export function Sidebar() {
@@ -18,6 +19,7 @@ export function Sidebar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const resetBusinessContext = useBusinessContextStore((s) => s.resetBusinessContext);
 
   useEffect(() => setMounted(true), []);
 
@@ -27,6 +29,7 @@ export function Sidebar() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
       clearHubSession();
+      resetBusinessContext(null);
       router.push("/login");
       router.refresh();
     } finally {

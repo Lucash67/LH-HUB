@@ -12,7 +12,13 @@ export async function withTenantScope<T>(
   try {
     const scope = await resolveTenantScope(user.id, businessIdParam);
     return runWithTenantContext(
-      { userId: user.id, dbIds: scope.dbIds, slugs: scope.slugs },
+      {
+        userId: user.id,
+        dbIds: scope.dbIds,
+        slugs: scope.slugs,
+        slugToDbId: scope.slugToDbId,
+        dbIdToSlug: scope.dbIdToSlug,
+      },
       () => handler(scope),
     );
   } catch (error) {

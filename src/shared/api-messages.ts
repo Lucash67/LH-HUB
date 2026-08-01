@@ -43,6 +43,8 @@ export const MSG = {
   AUTH_REGISTER_FAILED: "Não foi possível criar a conta. Tente novamente.",
   AUTH_UNAUTHORIZED: "Sessão expirada. Faça login novamente.",
   AUTH_RESET_FAILED: "Não foi possível redefinir a senha. Tente novamente.",
+  CREATE_BUSINESS: "Não foi possível criar a operação. Tente novamente.",
+  BUSINESS_NAME_REQUIRED: "Informe o nome da sua operação.",
 } as const;
 
 export function apiError(message: string, status = 500) {

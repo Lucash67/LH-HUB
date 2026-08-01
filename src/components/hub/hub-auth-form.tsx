@@ -8,6 +8,7 @@ import { cn } from "@/components/ui/utils";
 import { HUB_COPY } from "@/constants/hub-brand";
 import { LhHoldingLogo } from "@/components/hub/lh-hub-logo";
 import { markHubSession } from "@/lib/hub-session";
+import { useBusinessContextStore } from "@/stores/business-context-store";
 
 type AuthTab = "login" | "register" | "forgot" | "reset";
 
@@ -26,6 +27,7 @@ function validateEmail(email: string): boolean {
 export function HubAuthForm({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resetBusinessContext = useBusinessContextStore((s) => s.resetBusinessContext);
   const [tab, setTab] = useState<AuthTab>("login");
   const [resetToken, setResetToken] = useState("");
   const [name, setName] = useState("");
@@ -114,12 +116,18 @@ export function HubAuthForm({ compact = false }: { compact?: boolean }) {
         body: JSON.stringify(payload),
       });
 
-      const data = (await res.json()) as { error?: string; user?: { email: string; name: string } };
+      const data = (await res.json()) as {
+        error?: string;
+        user?: { id?: string; email: string; name: string };
+      };
 
       if (!res.ok) {
         setErrors({ form: data.error ?? "Não foi possível continuar. Tente novamente." });
         return;
       }
+
+      // Drop previous account's selected operation from localStorage.
+      resetBusinessContext(data.user?.id ?? null);
 
       markHubSession({
         email: data.user?.email ?? email.trim(),

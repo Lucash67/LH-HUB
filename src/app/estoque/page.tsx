@@ -12,6 +12,7 @@ import { PageLoader } from "@/components/ui/loading";
 import { AlertTriangle, ArrowDown, ArrowUp, Package } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { fetchJson } from "@/lib/api/safe-json";
 
 interface StockData {
   products: Array<{ id: string; name: string; stockQuantity: number; minStock: number; category: string }>;
@@ -27,7 +28,7 @@ export default function EstoquePage() {
 
   const { data, isLoading } = useQuery<StockData>({
     queryKey: ["stock", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/stock")).then((r) => r.json()),
+    queryFn: async () => (await fetchJson(withQuery("/api/stock"))) as StockData,
   });
 
   const updateStock = useMutation({

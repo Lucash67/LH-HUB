@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { fetchJsonArray } from "@/lib/api/safe-json";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -40,9 +41,9 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ name: "", sector: "", company: "", phone: "", notes: "" });
 
-  const { data: clients, isLoading } = useQuery<ClientCrmListItem[]>({
+  const { data: clients = [], isLoading } = useQuery<ClientCrmListItem[]>({
     queryKey: ["clients", activeBusinessId],
-    queryFn: () => fetch(withQuery("/api/clients")).then((r) => r.json()),
+    queryFn: () => fetchJsonArray<ClientCrmListItem>(withQuery("/api/clients")),
   });
 
   const { data: profile } = useQuery<ClientCrmProfile>({
