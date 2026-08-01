@@ -59,6 +59,14 @@ function normalizeProductName(raw: string): string {
   }
   if (n.includes("croissant") || n.includes("croisant") || n.includes("crosisant")) return "Croissant";
   if (n.includes("pastel")) return "Pastel de Frango com Presunto";
+  // Sabor novo (só frango + catupiry) — antes do mistão, e nunca confundir com pastel de frango.
+  if (
+    (n.includes("frango") || n.includes("catupiry") || n.includes("cautpiry")) &&
+    !n.includes("mist") &&
+    (n.includes("catupiry") || n.includes("cautpiry") || n.includes("forno"))
+  ) {
+    return "Frango com Catupiry";
+  }
   if (n.includes("mist")) return "Misto com Catupiry";
   return raw.trim();
 }
@@ -90,11 +98,16 @@ function extractTimes(text: string): { primary?: string; pickup?: string; paid?:
 }
 
 function parsePaymentMethod(text: string): "pix" | "card" | "cash" {
-  const n = text.toLowerCase();
-  if (n.includes("moeda") || n.includes("especie") || n.includes("espécie") || n.includes("dinheiro")) {
+  const n = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  // Pix primeiro — evita falso positivo de "card" dentro de nomes (ex.: Ricardo).
+  if (n.includes("pix")) return "pix";
+  if (n.includes("moeda") || n.includes("especie") || n.includes("dinheiro")) {
     return "cash";
   }
-  if (n.includes("cartao") || n.includes("cartão") || n.includes("card")) return "card";
+  if (n.includes("cartao") || /\bcard\b/.test(n)) return "card";
   return "pix";
 }
 
@@ -136,7 +149,11 @@ function parseLucasSaleLine(line: string, date: string): DraftSale[] | null {
 
   const body = numbered[1].trim();
 
-  if (/^n[aã]o pagou/i.test(body)) {
+  if (
+    /^n[aã]o pagou/i.test(body) ||
+    /^roubado/i.test(body) ||
+    /salgado sumiu/i.test(body)
+  ) {
     return [
       {
         time: "12:00",
@@ -214,7 +231,8 @@ function detectSection(line: string): LucasSection | "skip" | "date" {
   if (/^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(n)) return "date";
   if (n.startsWith("encomendados hoje")) return "encomendados";
   if (n.startsWith("separados para o trabalho")) return "pai";
-  if (n.startsWith("separados para acal")) return "acal";
+  // Aceita "Separados para acal" e "Separados para a acal".
+  if (n.startsWith("separados para") && n.includes("acal")) return "acal";
   if (n.startsWith("histórico de vendas") || n.startsWith("historico de vendas")) return "vendas";
   if (n.startsWith("devendo ainda")) return "devendo";
   if (n.startsWith("observações do dia") || n.startsWith("observacoes do dia")) return "observacoes";

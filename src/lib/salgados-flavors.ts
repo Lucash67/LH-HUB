@@ -48,6 +48,13 @@ export function canonicalSalgadosFlavor(name: string): string | null {
   if (n.includes("croissant")) return "Croissant";
   if (n.includes("pastel")) return "Pastel";
   if (n.includes("misto") || n.includes("mistao")) return "Misto";
+  if (
+    n.includes("frango") &&
+    (n.includes("catupiry") || n.includes("cautpiry")) &&
+    !n.includes("presunto")
+  ) {
+    return "Frango c/ Catupiry";
+  }
   return name.trim();
 }
 
