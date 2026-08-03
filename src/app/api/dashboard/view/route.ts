@@ -4,6 +4,7 @@ import { buildDashboardView, enrichDiaryContext } from "@/lib/dashboard-view";
 import { generateDiaryAutoInsights } from "@/lib/diary-auto-insights";
 import { getDiaryEntry } from "@/lib/diary-service";
 import { getSmartGoalsView } from "@/lib/smart-goals-service";
+import { buildOperationalDayMetrics, sortOperationalDays } from "@/lib/operational-day-metrics";
 import { isAllBusinesses } from "@/lib/business-units";
 import { fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import { listSalesEnriched } from "@/platform/db/repositories/sale-repository";
@@ -69,7 +70,19 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const data = buildDashboardView(normalizeDashboardSales(sales), context, 0, dailyGoal, 0, null, businessId);
+      // Visão geral usa o diário homologado como fonte oficial de receita/lucro.
+      const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
+      const dayMetrics = metricsMap ? sortOperationalDays(metricsMap) : null;
+      const data = buildDashboardView(
+        normalizeDashboardSales(sales),
+        context,
+        0,
+        dailyGoal,
+        0,
+        null,
+        businessId,
+        dayMetrics,
+      );
       return NextResponse.json({
         data,
         diaryEntry: null,

@@ -7,6 +7,7 @@ import {
 import { sumPendingRevenue } from "@/lib/analytics-engine/client";
 import { isAllBusinesses } from "@/lib/business-units";
 import { getDiaryEntry } from "@/lib/diary-service";
+import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
 import {
   buildSmartGoalsView,
   type SmartGoalsView,
@@ -18,7 +19,16 @@ export async function getSmartGoalsView(
 ): Promise<SmartGoalsView | null> {
   if (isAllBusinesses(businessId)) return null;
 
-  const ref = referenceDate ?? format(new Date(), "yyyy-MM-dd");
+  const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
+  const lastOperationalDate = metricsMap
+    ? Array.from(metricsMap.keys()).sort().at(-1)
+    : undefined;
+
+  // Sem data explícita, ancora no último dia operacional com dados (evita "hoje" vazio).
+  const today = format(new Date(), "yyyy-MM-dd");
+  const ref =
+    referenceDate ??
+    (lastOperationalDate && lastOperationalDate <= today ? lastOperationalDate : today);
   const from = format(subMonths(new Date(ref), 3), "yyyy-MM-dd");
 
   const scopedSales = await fetchScopedSales({ businessId, dateGte: from, dateLte: ref });
@@ -28,6 +38,9 @@ export async function getSmartGoalsView(
   const productMap = new Map(products.map((p) => [p.id, p.name]));
 
   const diary = await getDiaryEntry(businessId, ref);
+  const dayMetrics = metricsMap
+    ? Array.from(metricsMap.values()).filter((d) => d.date >= from && d.date <= ref)
+    : undefined;
 
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
   const totalRevenue = scopedSales.reduce((s, v) => s + v.totalAmount, 0);
@@ -66,5 +79,6 @@ export async function getSmartGoalsView(
           dailyGoalUnits: diary.dailyGoalUnits,
         }
       : undefined,
+    dayMetrics,
   });
 }

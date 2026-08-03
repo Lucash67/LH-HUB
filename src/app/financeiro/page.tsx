@@ -110,7 +110,7 @@ export default function FinanceiroPage() {
   const isDayScoped = data.scope?.mode === "day";
   const scopeLabel = isDayScoped
     ? `Acumulado até ${format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR })}`
-    : "Visão do mês corrente";
+    : "Histórico completo";
   const resultPositive = data.operationalProfit >= 0;
   const operatorPositive = operator.operatorNetGain >= 0;
   const conclusion = resultPositive

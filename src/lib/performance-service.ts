@@ -10,13 +10,13 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fetchMetricSales } from "@/platform/db/data-access/metrics";
-import {
-  computePeriodMetrics,
-  sumProfit,
-  sumRevenue,
-} from "@/lib/analytics-engine/aggregates";
+import { computePeriodMetrics } from "@/lib/analytics-engine/aggregates";
 import { calcGrowth, getMonthRange, getWeekRange } from "@/lib/utils";
 import { isOperationalDay, WEEKDAY_MON_FRI } from "@/lib/operational-calendar";
+import {
+  buildOperationalDayMetrics,
+  type OperationalDayMetrics,
+} from "@/lib/operational-day-metrics";
 import type { ChartDataPoint } from "@/lib/analytics";
 
 export type PerformancePeriod = "weekly" | "monthly";
@@ -45,8 +45,14 @@ export interface PerformanceView {
   weekdayChart: ChartDataPoint[];
 }
 
-function sumCosts(sales: Array<{ totalCost?: number; profit: number; totalAmount: number }>): number {
-  return sales.reduce((s, v) => s + (v.totalCost ?? v.totalAmount - v.profit), 0);
+/** Métricas diário-primeiro dentro de um intervalo de datas (inclusive). */
+function metricsInRange(
+  allMetrics: Map<string, OperationalDayMetrics>,
+  range: { start: string; end: string },
+): OperationalDayMetrics[] {
+  return Array.from(allMetrics.values())
+    .filter((d) => d.date >= range.start && d.date <= range.end)
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function resolveRange(period: PerformancePeriod, offset: number, reference = new Date()) {
@@ -74,47 +80,35 @@ function formatPeriodLabel(period: PerformancePeriod, range: { start: string; en
 }
 
 function buildDailyChart(
-  sales: Awaited<ReturnType<typeof fetchMetricSales>>,
+  periodMetrics: OperationalDayMetrics[],
   range: { start: string; end: string },
   businessId: string,
 ): ChartDataPoint[] {
   const days = eachDayOfInterval({ start: parseISO(range.start), end: parseISO(range.end) });
-  const byDate = new Map<string, { revenue: number; profit: number }>();
-
-  for (const sale of sales) {
-    if (!isOperationalDay(sale.date, businessId)) continue;
-    const current = byDate.get(sale.date) ?? { revenue: 0, profit: 0 };
-    current.revenue += sale.totalAmount;
-    current.profit += sale.profit;
-    byDate.set(sale.date, current);
-  }
+  const byDate = new Map(periodMetrics.map((d) => [d.date, d]));
 
   return days
     .filter((d) => isOperationalDay(format(d, "yyyy-MM-dd"), businessId))
     .map((d) => {
       const key = format(d, "yyyy-MM-dd");
-      const row = byDate.get(key) ?? { revenue: 0, profit: 0 };
+      const row = byDate.get(key);
       return {
         label: format(d, "dd/MM"),
-        value: row.revenue,
-        revenue: row.revenue,
-        profit: row.profit,
+        value: row?.revenue ?? 0,
+        revenue: row?.revenue ?? 0,
+        profit: row?.profit ?? 0,
       };
     });
 }
 
-function buildWeekdayChart(
-  sales: Awaited<ReturnType<typeof fetchMetricSales>>,
-  businessId: string,
-): ChartDataPoint[] {
+function buildWeekdayChart(periodMetrics: OperationalDayMetrics[]): ChartDataPoint[] {
   const byDow = new Map<number, { revenue: number; profit: number }>();
 
-  for (const sale of sales) {
-    if (!isOperationalDay(sale.date, businessId)) continue;
-    const dow = getDay(parseISO(sale.date));
+  for (const day of periodMetrics) {
+    const dow = getDay(parseISO(day.date));
     const current = byDow.get(dow) ?? { revenue: 0, profit: 0 };
-    current.revenue += sale.totalAmount;
-    current.profit += sale.profit;
+    current.revenue += day.revenue;
+    current.profit += day.profit;
     byDow.set(dow, current);
   }
 
@@ -134,23 +128,34 @@ export async function getPerformanceView(
   period: PerformancePeriod = "weekly",
   offset = 0,
 ): Promise<PerformanceView> {
-  const range = resolveRange(period, offset);
+  // Diário homologado é a fonte oficial de receita/lucro/custos.
+  const allMetrics = await buildOperationalDayMetrics(businessId);
+
+  let range = resolveRange(period, offset);
+  // Período atual sem operação (ex.: virada de mês) — ancora no último período com dados.
+  if (offset === 0 && metricsInRange(allMetrics, range).length === 0 && allMetrics.size > 0) {
+    const lastDate = Array.from(allMetrics.keys()).sort().at(-1)!;
+    const anchor = parseISO(`${lastDate}T12:00:00`);
+    range = period === "weekly" ? getWeekRange(anchor) : getMonthRange(anchor);
+  }
   const prev = previousRange(period, range);
 
-  const [sales, prevSales] = await Promise.all([
-    fetchMetricSales({ businessId, dateGte: range.start, dateLte: range.end }),
-    fetchMetricSales({ businessId, dateGte: prev.start, dateLte: prev.end }),
-  ]);
+  const sales = await fetchMetricSales({ businessId, dateGte: range.start, dateLte: range.end });
 
+  const periodMetrics = metricsInRange(allMetrics, range);
+  const prevMetrics = metricsInRange(allMetrics, prev);
+
+  const revenue = periodMetrics.reduce((s, d) => s + d.revenue, 0);
+  const profit = periodMetrics.reduce((s, d) => s + d.profit, 0);
+  const costs = periodMetrics.reduce((s, d) => s + d.costs, 0);
+  const previousRevenue = prevMetrics.reduce((s, d) => s + d.revenue, 0);
+  const previousProfit = prevMetrics.reduce((s, d) => s + d.profit, 0);
+
+  // Detalhe transacional (nº de vendas / ticket) continua vindo das vendas.
   const operationalSales = sales.filter((s) => isOperationalDay(s.date, businessId));
   const metricsRaw = computePeriodMetrics(operationalSales);
-  const revenue = sumRevenue(operationalSales);
-  const profit = sumProfit(operationalSales);
-  const costs = sumCosts(operationalSales);
-
-  const prevOperational = prevSales.filter((s) => isOperationalDay(s.date, businessId));
-  const previousRevenue = sumRevenue(prevOperational);
-  const previousProfit = sumProfit(prevOperational);
+  const diaryUnits = periodMetrics.reduce((s, d) => s + (d.units ?? 0), 0);
+  const itemsSold = diaryUnits > 0 ? diaryUnits : metricsRaw.itemsSold;
 
   return {
     period,
@@ -162,8 +167,9 @@ export async function getPerformanceView(
       costs,
       salesCount: metricsRaw.salesCount,
       margin: revenue > 0 ? (profit / revenue) * 100 : 0,
-      averageTicket: metricsRaw.averageTicket,
-      itemsSold: metricsRaw.itemsSold,
+      averageTicket:
+        metricsRaw.salesCount > 0 ? revenue / metricsRaw.salesCount : metricsRaw.averageTicket,
+      itemsSold,
     },
     comparison: {
       revenueGrowth: calcGrowth(revenue, previousRevenue),
@@ -172,7 +178,7 @@ export async function getPerformanceView(
       previousProfit,
       previousLabel: formatPeriodLabel(period, prev),
     },
-    dailyChart: buildDailyChart(sales, range, businessId),
-    weekdayChart: buildWeekdayChart(sales, businessId),
+    dailyChart: buildDailyChart(periodMetrics, range, businessId),
+    weekdayChart: buildWeekdayChart(periodMetrics),
   };
 }

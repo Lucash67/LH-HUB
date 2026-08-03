@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCalendarData, getDayReport } from "@/lib/analytics";
+import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
 import { MSG, apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { withTenantScope } from "@/lib/auth/with-tenant-api";
@@ -16,8 +17,18 @@ export async function GET(request: NextRequest) {
       const date = searchParams.get("date");
 
       if (date) {
-        const report = await getDayReport(date, businessId);
-        return NextResponse.json(report);
+        const [report, metricsMap] = await Promise.all([
+          getDayReport(date, businessId),
+          buildOperationalDayMetrics(businessId).catch(() => null),
+        ]);
+        const diaryDay = metricsMap?.get(date);
+        return NextResponse.json({
+          ...report,
+          // Diário homologado sobrescreve receita/lucro do dia.
+          revenue: diaryDay?.revenue ?? report.revenue,
+          profit: diaryDay?.profit ?? report.profit,
+          itemsSold: diaryDay?.units ?? report.itemsSold,
+        });
       }
 
       const calendar = await getCalendarData(year, month, businessId);

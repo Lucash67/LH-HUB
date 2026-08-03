@@ -1,5 +1,5 @@
 import { format, parseISO, getDay, subDays } from "date-fns";
-import { getMonthRange, formatCurrency } from "./utils";
+import { formatCurrency } from "./utils";
 import {
   loadMonthSalesDataset,
   loadKpiDataset,
@@ -19,6 +19,11 @@ import { previousOperationalDate } from "./temporal-filter";
 export interface InsightsGenerationOptions {
   date?: string;
   viewMode?: string;
+}
+
+/** Janela móvel de 30 dias — evita insights zerados na virada do mês. */
+function rollingWindowStart(): string {
+  return format(subDays(new Date(), 30), "yyyy-MM-dd");
 }
 
 interface DayComparisonContext {
@@ -206,16 +211,15 @@ async function prependExecutiveInsights(
     }
   }
 
-  const { start: monthStartExec } = getMonthRange();
   const monthProductKpis = computeProductKpis(
-    await loadKpiDataset(businessId, { start: monthStartExec }),
+    await loadKpiDataset(businessId, { start: rollingWindowStart() }),
   );
   if (monthProductKpis.lowest && monthProductKpis.lowest.quantity < 10) {
     insights.push({
       id: "exec-low-product",
       type: "warning",
       title: `${monthProductKpis.lowest.name} possui baixa saída`,
-      description: `Somente ${monthProductKpis.lowest.quantity} unidades no mês. Avalie promoção ou descontinuação.`,
+      description: `Somente ${monthProductKpis.lowest.quantity} unidades nos últimos 30 dias. Avalie promoção ou descontinuação.`,
       metric: `${monthProductKpis.lowest.quantity} un.`,
     });
   }
@@ -229,9 +233,8 @@ export async function generateInsights(
   const dayComparison = await resolveDayComparison(businessId, options);
   await prependExecutiveInsights(insights, businessId, dayComparison);
 
-  const { start: monthStart } = getMonthRange();
   const { sales: allSales, items: monthItems, products: allProducts } =
-    await loadMonthSalesDataset(businessId, monthStart);
+    await loadMonthSalesDataset(businessId, rollingWindowStart());
   const productMap = new Map(allProducts.map((p) => [p.id, p]));
 
   const productByDay: Record<string, Record<number, number>> = {};

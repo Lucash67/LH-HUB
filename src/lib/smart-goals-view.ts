@@ -138,6 +138,8 @@ export interface SmartGoalsInput {
     lossReason?: string;
     dailyGoalUnits?: number;
   };
+  /** Métricas diário-primeiro por data — sobrescrevem os totais derivados das vendas. */
+  dayMetrics?: Array<{ date: string; units?: number; revenue: number; profit: number }>;
 }
 
 function isOperationalDay(date: string, businessId: string): boolean {
@@ -163,6 +165,16 @@ function unitsByDate(input: SmartGoalsInput): Map<string, DayUnitsRow> {
     row.revenue += saleReceivedAmount(sale);
     row.profit += sale.profit;
     map.set(sale.date, row);
+  }
+
+  // Diário homologado sobrescreve os totais do dia.
+  for (const day of input.dayMetrics ?? []) {
+    if (!isOperationalDay(day.date, input.businessId)) continue;
+    const row = map.get(day.date) ?? { date: day.date, units: 0, revenue: 0, profit: 0 };
+    row.revenue = day.revenue;
+    row.profit = day.profit;
+    if (day.units != null && day.units > 0) row.units = day.units;
+    map.set(day.date, row);
   }
 
   return map;

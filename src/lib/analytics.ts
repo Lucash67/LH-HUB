@@ -13,7 +13,7 @@ import {
 } from "./analytics-engine";
 import { fetchMetricSales, fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
-import { getDualFinancialView, getDayDualFinancialView } from "./finance";
+import { getDualFinancialView, getDayDualFinancialView, getInvestmentFinanceRecords } from "./finance";
 import type { DualFinancialView } from "./finance";
 import { isPostgres, getPostgresDb, getSqliteDb } from "@/platform/db";
 import { resolveBusinessScopeId } from "@/platform/db/mappers";
@@ -190,11 +190,9 @@ export async function getFinancialSummary(
 ) {
   const isDayScoped = options?.viewMode === "day" && options.date;
   const scopeEnd = isDayScoped ? options.date! : undefined;
-  const { start: monthStart, end: monthEnd } = getMonthRange();
 
-  const salesFilter = isDayScoped
-    ? { businessId, dateLte: scopeEnd }
-    : { businessId, dateGte: monthStart };
+  // Geral = histórico completo (não só o mês corrente); dia = acumulado até a data.
+  const salesFilter = isDayScoped ? { businessId, dateLte: scopeEnd } : { businessId };
   const scopedSales = await fetchMetricSales(salesFilter);
 
   let grossRevenue: number;
@@ -202,9 +200,13 @@ export async function getFinancialSummary(
   let totalCost: number;
   let dayScopedMetricsMap: Awaited<ReturnType<typeof buildOperationalDayMetrics>> | null = null;
 
-  if (isDayScoped && !isAllBusinesses(businessId)) {
-    dayScopedMetricsMap = await buildOperationalDayMetrics(businessId);
-    const days = Array.from(dayScopedMetricsMap.values()).filter((d) => d.date <= scopeEnd!);
+  // Diário homologado é a fonte oficial em ambos os modos.
+  dayScopedMetricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
+
+  if (dayScopedMetricsMap && dayScopedMetricsMap.size > 0) {
+    const days = Array.from(dayScopedMetricsMap.values()).filter(
+      (d) => !scopeEnd || d.date <= scopeEnd,
+    );
     grossRevenue = days.reduce((s, d) => s + d.revenue, 0);
     operationalProfit = days.reduce((s, d) => s + d.profit, 0);
     totalCost = days.reduce((s, d) => s + d.costs, 0);
@@ -260,6 +262,20 @@ export async function getFinancialSummary(
         .map((e) => ({ category: e.category, amount: Number(e.amount) }));
       totalExpenses = expenseEntries.reduce((s, e) => s + e.amount, 0);
     }
+
+    // Investimentos diários (compras) — antes ficavam vazios no Postgres.
+    const investmentRecords = await getInvestmentFinanceRecords(businessId).catch(() => []);
+    scopedInvestments = investmentRecords
+      .filter((i) => !scopeEnd || i.date <= scopeEnd)
+      .map((i) => ({
+        id: i.id,
+        description: i.description ?? "Investimento operacional",
+        amount: i.amount,
+        type: i.type,
+        date: i.date,
+        sourceType: i.sourceType ?? null,
+        sourceName: i.sourceName ?? null,
+      }));
   } else {
     const db = getSqliteDb();
     const expenses = (await queryAll(
@@ -309,9 +325,8 @@ export async function getFinancialSummary(
   const totalIncome = grossRevenue + otherIncome.reduce((s, e) => s + e.amount, 0);
   const totalOut = expenseEntries.reduce((s, e) => s + e.amount, 0) + totalCost;
 
-  const dualPeriod = isDayScoped
-    ? { end: scopeEnd }
-    : { start: monthStart, end: monthEnd };
+  // Geral considera o histórico completo; dia limita até a data selecionada.
+  const dualPeriod = isDayScoped ? { end: scopeEnd } : undefined;
   const dualFinance = await getDualFinancialView(businessId, dualPeriod);
 
   const monthlyChart = isDayScoped
@@ -341,15 +356,24 @@ export async function getFinancialSummary(
 
 export async function getGoalsWithProgress(businessId: string = ALL_BUSINESSES_ID) {
   const allGoals = await fetchMetricGoals(businessId);
+  // Diário homologado é a fonte de receita para progresso de metas.
+  const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
 
   const result = [];
   for (const goal of allGoals) {
-    const periodSales = await fetchMetricSales({
-      businessId,
-      dateGte: goal.periodStart,
-      dateLte: goal.periodEnd,
-    });
-    const current = periodSales.reduce((s, v) => s + v.totalAmount, 0);
+    let current: number;
+    if (metricsMap && metricsMap.size > 0) {
+      current = Array.from(metricsMap.values())
+        .filter((d) => d.date >= goal.periodStart && d.date <= goal.periodEnd)
+        .reduce((s, d) => s + d.revenue, 0);
+    } else {
+      const periodSales = await fetchMetricSales({
+        businessId,
+        dateGte: goal.periodStart,
+        dateLte: goal.periodEnd,
+      });
+      current = periodSales.reduce((s, v) => s + v.totalAmount, 0);
+    }
     const progress = goalProgress(current, goal.targetAmount);
     result.push({ ...goal, type: goal.type, current, progress, completed: progress >= 100 });
   }
@@ -369,7 +393,10 @@ export async function getCalendarData(
   const startDate = format(new Date(year, month - 1, 1), "yyyy-MM-dd");
   const endDate = format(new Date(year, month, 0), "yyyy-MM-dd");
 
-  const monthSales = await fetchScopedSales({ businessId, dateGte: startDate, dateLte: endDate });
+  const [monthSales, metricsMap] = await Promise.all([
+    fetchScopedSales({ businessId, dateGte: startDate, dateLte: endDate }),
+    buildOperationalDayMetrics(businessId).catch(() => null),
+  ]);
 
   const dayData: Record<
     string,
@@ -382,6 +409,17 @@ export async function getCalendarData(
     }
     dayData[sale.date].revenue += sale.totalAmount;
     dayData[sale.date].sales.push(sale);
+  }
+
+  // Diário homologado sobrescreve a receita do dia.
+  if (metricsMap) {
+    for (const day of Array.from(metricsMap.values())) {
+      if (day.date < startDate || day.date > endDate) continue;
+      if (!dayData[day.date]) {
+        dayData[day.date] = { revenue: 0, status: "miss", sales: [] };
+      }
+      dayData[day.date].revenue = day.revenue;
+    }
   }
 
   for (const [, data] of Object.entries(dayData)) {

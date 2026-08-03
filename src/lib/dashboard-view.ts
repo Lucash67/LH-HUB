@@ -235,23 +235,41 @@ function salesOnDate(sales: DashboardSale[], date: string): DashboardSale[] {
   return sales.filter((s) => s.date === date);
 }
 
+/** Estrutura mínima das métricas diárias diário-primeiro (evita importar código server-only). */
+export interface OperationalDayMetricsLike {
+  date: string;
+  revenue: number;
+  profit: number;
+  units?: number;
+}
+
 function buildChartsForDates(
   sales: DashboardSale[],
   dates: string[],
+  dayMetrics?: OperationalDayMetricsLike[] | null,
 ): { revenue: DashboardChartPoint[]; sales: DashboardChartPoint[] } {
+  const metricsByDate = new Map((dayMetrics ?? []).map((d) => [d.date, d]));
+  const allDates = Array.from(
+    new Set([...dates, ...Array.from(metricsByDate.keys())]),
+  ).sort();
+
   const revenue: DashboardChartPoint[] = [];
   const salesChart: DashboardChartPoint[] = [];
-  for (const date of dates) {
+  for (const date of allDates) {
     const dSales = salesOnDate(sales, date);
-    const rev = sumRevenue(dSales);
-    const profit = sumProfit(dSales);
+    const diaryDay = metricsByDate.get(date);
+    const rev = diaryDay?.revenue ?? sumRevenue(dSales);
+    const profit = diaryDay?.profit ?? sumProfit(dSales);
     revenue.push({
       label: format(parseISO(date), "dd/MM"),
       value: rev,
       revenue: rev,
       profit,
     });
-    salesChart.push({ label: format(parseISO(date), "dd/MM"), value: itemsSoldFromEmbedded(dSales) });
+    salesChart.push({
+      label: format(parseISO(date), "dd/MM"),
+      value: diaryDay?.units ?? itemsSoldFromEmbedded(dSales),
+    });
   }
   return { revenue, sales: salesChart };
 }
@@ -617,43 +635,64 @@ function buildGeneralDashboardView(
   currentStock: number,
   dailyGoal: number,
   totalRegisteredClients: number,
+  dayMetrics?: OperationalDayMetricsLike[] | null,
 ): DashboardViewData {
-  const totalRevenue = sumRevenue(sales);
-  const totalProfit = sumProfit(sales);
-  const totalUnits = itemsSoldFromEmbedded(sales);
+  // Diário homologado é a fonte oficial de receita/lucro; vendas ficam para mix/pagamentos.
+  const hasDiaryMetrics = !!dayMetrics && dayMetrics.length > 0;
+  const totalRevenue = hasDiaryMetrics
+    ? dayMetrics!.reduce((s, d) => s + d.revenue, 0)
+    : sumRevenue(sales);
+  const totalProfit = hasDiaryMetrics
+    ? dayMetrics!.reduce((s, d) => s + d.profit, 0)
+    : sumProfit(sales);
+  const operationalDayCount = hasDiaryMetrics
+    ? dayMetrics!.length
+    : allOperationalDates(sales).length;
+  const totalUnits = hasDiaryMetrics
+    ? dayMetrics!.reduce(
+        (s, d) => s + (d.units ?? itemsSoldFromEmbedded(salesOnDate(sales, d.date))),
+        0,
+      )
+    : itemsSoldFromEmbedded(sales);
   const payments = paymentBreakdown(sales);
   const dates = allOperationalDates(sales);
-  const charts = buildChartsForDates(sales, dates);
+  const charts = buildChartsForDates(sales, dates, dayMetrics);
 
   const today = new Date();
   const { start: weekStart, end: weekEnd } = getWeekRange(today);
   const { start: monthStart, end: monthEnd } = getMonthRange(today);
-  const weekSales = sales.filter((s) => s.date >= weekStart && s.date <= weekEnd);
-  const monthSales = sales.filter((s) => s.date >= monthStart && s.date <= monthEnd);
+  const revenueWeek = hasDiaryMetrics
+    ? dayMetrics!.filter((d) => d.date >= weekStart && d.date <= weekEnd).reduce((s, d) => s + d.revenue, 0)
+    : sumRevenue(sales.filter((s) => s.date >= weekStart && s.date <= weekEnd));
+  const revenueMonth = hasDiaryMetrics
+    ? dayMetrics!.filter((d) => d.date >= monthStart && d.date <= monthEnd).reduce((s, d) => s + d.revenue, 0)
+    : sumRevenue(sales.filter((s) => s.date >= monthStart && s.date <= monthEnd));
 
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const todayRevenue = sumRevenue(salesOnDate(sales, todayStr));
+  // Meta geral = média de receita por dia operacional vs meta diária.
+  const avgDailyRevenue = operationalDayCount > 0 ? totalRevenue / operationalDayCount : 0;
+  const generalGoalProgress = computeGoalProgress(avgDailyRevenue, dailyGoal);
   const uniqueBuyers = uniqueCustomerCount(sales);
+  const salesCount = sales.length;
 
   return {
     isGeneralView: true,
     metrics: {
       revenueToday: totalRevenue,
       profitToday: totalProfit,
-      revenueWeek: sumRevenue(weekSales),
-      revenueMonth: sumRevenue(monthSales),
+      revenueWeek,
+      revenueMonth,
       itemsSoldToday: totalUnits,
       currentStock,
       dailyGoal,
-      goalProgress: computeGoalProgress(todayRevenue, dailyGoal),
-      goalRevenue: todayRevenue,
+      goalProgress: generalGoalProgress,
+      goalRevenue: avgDailyRevenue,
       customersToday: totalRegisteredClients > 0 ? totalRegisteredClients : uniqueBuyers,
       pixTotal: payments.pix,
       cardTotal: payments.card,
       cashTotal: payments.cash,
-      averageTicket: averageTicket(totalRevenue, sales.length),
+      averageTicket: averageTicket(totalRevenue, salesCount),
       growthVsYesterday: 0,
-      hasOperations: sales.length > 0,
+      hasOperations: sales.length > 0 || hasDiaryMetrics,
     },
     charts: {
       revenue: charts.revenue,
@@ -672,8 +711,8 @@ function buildGeneralDashboardView(
         profitToday: totalProfit,
         itemsSoldToday: totalUnits,
         dailyGoal,
-        goalProgress: computeGoalProgress(todayRevenue, dailyGoal),
-        goalRevenue: todayRevenue,
+        goalProgress: generalGoalProgress,
+        goalRevenue: avgDailyRevenue,
       } as DashboardViewMetrics,
     ),
     daySummary: null,
@@ -732,9 +771,10 @@ export function buildDashboardView(
   totalRegisteredClients = 0,
   diary?: DiaryDayContext | null,
   businessId?: string,
+  dayMetrics?: OperationalDayMetricsLike[] | null,
 ): DashboardViewData {
   if (context.mode === "general") {
-    return buildGeneralDashboardView(sales, currentStock, dailyGoal, totalRegisteredClients);
+    return buildGeneralDashboardView(sales, currentStock, dailyGoal, totalRegisteredClients, dayMetrics);
   }
 
   const viewDate = context.viewDate;

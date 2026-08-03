@@ -29,7 +29,8 @@ export interface NavItem {
 /** Ordem e itens idênticos à versão Lovable oficial */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/vendas", label: "Vendas", icon: ShoppingCart },
+  // Vendas pausado — histórico de vendas agora aparece por dia no Dashboard/Calendário.
+  { href: "/vendas", label: "Vendas", icon: ShoppingCart, paused: true },
   { href: "/produtos", label: "Produtos", icon: Package },
   { href: "/estoque", label: "Estoque", icon: Warehouse, paused: true },
   { href: "/clientes", label: "Clientes", icon: Users },
