@@ -29,8 +29,8 @@ interface QuickAction {
   primary?: boolean;
 }
 
-/** Dia útil: o painel é de ação — registrar e movimentar a operação. */
-const WEEKDAY_ACTIONS: QuickAction[] = [
+/** Dia em andamento: o painel é de ação — registrar e movimentar a operação. */
+const OPERATE_ACTIONS: QuickAction[] = [
   {
     href: "/registro-dia",
     label: "Registrar o dia",
@@ -64,8 +64,8 @@ const WEEKDAY_ACTIONS: QuickAction[] = [
   },
 ];
 
-/** Fim de semana: sem operação — o painel é de consulta e planejamento. */
-const WEEKEND_ACTIONS: QuickAction[] = [
+/** Fim de semana ou dia fora de hoje: o painel é de consulta e planejamento. */
+const CONSULT_ACTIONS: QuickAction[] = [
   {
     href: "/desempenho",
     label: "Desempenho",
@@ -101,29 +101,32 @@ const WEEKEND_ACTIONS: QuickAction[] = [
 
 interface DashboardWelcomeBannerProps {
   className?: string;
-  /** Faturamento da semana — exibido no fim de semana, junto da saudação. */
+  /** Dia em foco no filtro temporal (yyyy-MM-dd) — null na visão geral. */
+  viewDate?: string | null;
+  /** Faturamento da semana em foco — exibido quando o painel é de consulta. */
   weekRevenue?: number;
 }
 
 export function DashboardWelcomeBanner({
   className,
+  viewDate,
   weekRevenue,
 }: DashboardWelcomeBannerProps) {
   const { data: user } = useSessionUser();
-  const [copy, setCopy] = useState(() => resolveDashboardGreeting());
+  const [copy, setCopy] = useState(() => resolveDashboardGreeting({ viewDate }));
 
   useEffect(() => {
     const timeZone = resolveUserTimeZone();
-    const tick = () => setCopy(resolveDashboardGreeting(timeZone));
-    tick();
+    const apply = () => setCopy(resolveDashboardGreeting({ viewDate, timeZone }));
+    apply();
 
-    const interval = window.setInterval(tick, 60_000);
+    const interval = window.setInterval(apply, 60_000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [viewDate]);
 
   const firstName = getFirstName(user?.name ?? "Lucas");
-  const quickActions = copy.isWeekend ? WEEKEND_ACTIONS : WEEKDAY_ACTIONS;
-  const showWeekRevenue = copy.isWeekend && typeof weekRevenue === "number";
+  const quickActions = copy.isConsulting ? CONSULT_ACTIONS : OPERATE_ACTIONS;
+  const showWeekRevenue = copy.isConsulting && !!weekRevenue && weekRevenue > 0;
 
   return (
     <motion.section

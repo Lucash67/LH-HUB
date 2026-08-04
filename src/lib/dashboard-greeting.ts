@@ -1,16 +1,16 @@
 /**
  * Frases de boas-vindas da dashboard.
  *
- * A saudação ("Bom dia/Boa tarde/Boa noite") vem do horário local do usuário e
- * o resto da frase muda entre fim de semana (não há operação: o painel é de
- * consulta) e dia útil (o painel é de ação). Nos dias úteis a frase alterna
- * entre as variações da rotação, uma por dia. Para trocar a copy, edite apenas
- * WEEKEND_COPY / WEEKDAY_COPY_ROTATION.
+ * A saudação ("Bom dia/Boa tarde/Boa noite") vem do horário local do usuário,
+ * mas o resto da frase segue o dia que está em foco no filtro temporal, não o
+ * relógio: falar de "hoje" enquanto o painel mostra um sábado antigo seria
+ * mentira. Para trocar a copy, edite WEEKEND_COPY / WEEKDAY_COPY_ROTATION.
  */
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   getLocalDateKey,
   getTimeGreeting,
-  isWeekendForUser,
   resolveUserTimeZone,
 } from "@/lib/time-greeting";
 
@@ -20,11 +20,13 @@ export interface GreetingCopy {
   subtitle: string;
 }
 
+/** Fim de semana: não há operação, o painel é de consulta. Frase fixa. */
 export const WEEKEND_COPY: GreetingCopy = {
   suffix: ", aqui está seu desempenho da semana em seu SaaS.",
   subtitle: "Deseja consultar algo mais?",
 };
 
+/** Dia útil em andamento: o painel é de ação. Alterna uma frase por dia. */
 export const WEEKDAY_COPY_ROTATION: GreetingCopy[] = [
   {
     suffix: ".",
@@ -60,20 +62,67 @@ function weekdayCopyFor(dateKey: string): GreetingCopy {
   return WEEKDAY_COPY_ROTATION[index] ?? WEEKDAY_COPY_ROTATION[0]!;
 }
 
-export interface DashboardGreeting extends GreetingCopy {
-  greeting: string;
-  isWeekend: boolean;
+function isWeekendDateKey(dateKey: string): boolean {
+  const weekday = parseISO(dateKey).getDay();
+  return weekday === 0 || weekday === 6;
 }
 
-export function resolveDashboardGreeting(
-  timeZone?: string,
-  date = new Date(),
-): DashboardGreeting {
+function describeDate(dateKey: string): string {
+  return format(parseISO(dateKey), "EEEE, dd 'de' MMMM", { locale: ptBR });
+}
+
+export type GreetingMode = "weekend" | "operate" | "review" | "future";
+
+export interface DashboardGreeting extends GreetingCopy {
+  greeting: string;
+  mode: GreetingMode;
+  /** Fim de semana ou dia fora de hoje: o painel é de consulta, não de ação. */
+  isConsulting: boolean;
+}
+
+export interface GreetingInput {
+  /** Dia em foco (yyyy-MM-dd). Ausente na visão geral. */
+  viewDate?: string | null;
+  timeZone?: string;
+  now?: Date;
+}
+
+export function resolveDashboardGreeting({
+  viewDate,
+  timeZone,
+  now = new Date(),
+}: GreetingInput = {}): DashboardGreeting {
   const tz = timeZone ?? resolveUserTimeZone();
-  const isWeekend = isWeekendForUser(tz, date);
-  return {
-    greeting: getTimeGreeting(tz, date),
-    isWeekend,
-    ...(isWeekend ? WEEKEND_COPY : weekdayCopyFor(getLocalDateKey(tz, date))),
-  };
+  const greeting = getTimeGreeting(tz, now);
+  const today = getLocalDateKey(tz, now);
+
+  // O dia em foco manda. Sem dia (visão geral) o painel é do próprio hoje.
+  const focus = viewDate ?? today;
+
+  const build = (mode: GreetingMode, copy: GreetingCopy): DashboardGreeting => ({
+    greeting,
+    mode,
+    isConsulting: mode !== "operate",
+    ...copy,
+  });
+
+  if (isWeekendDateKey(focus)) {
+    return build("weekend", WEEKEND_COPY);
+  }
+
+  if (focus > today) {
+    return build("future", {
+      suffix: `, ${describeDate(focus)} ainda não chegou.`,
+      subtitle: "Deseja consultar outro dia?",
+    });
+  }
+
+  if (focus < today) {
+    return build("review", {
+      suffix: `, aqui está o desempenho de ${describeDate(focus)}.`,
+      subtitle: "Deseja consultar algo mais?",
+    });
+  }
+
+  return build("operate", weekdayCopyFor(focus));
 }

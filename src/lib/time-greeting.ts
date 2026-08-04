@@ -27,18 +27,6 @@ export function getLocalDateKey(timeZone: string, date = new Date()): string {
   }).format(date);
 }
 
-/** Dia da semana local (0 = domingo). */
-export function getLocalWeekday(timeZone?: string, date = new Date()): number {
-  const key = getLocalDateKey(timeZone ?? resolveUserTimeZone(), date);
-  // Meio-dia em UTC evita que o deslocamento do fuso mude o dia da semana.
-  return new Date(`${key}T12:00:00Z`).getUTCDay();
-}
-
-export function isWeekendForUser(timeZone?: string, date = new Date()): boolean {
-  const weekday = getLocalWeekday(timeZone, date);
-  return weekday === 0 || weekday === 6;
-}
-
 /** Saudação conforme horário local do usuário (fuso do navegador). */
 export function getTimeGreeting(timeZone?: string, date = new Date()): string {
   const tz = timeZone ?? resolveUserTimeZone();

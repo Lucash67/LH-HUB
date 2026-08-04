@@ -128,7 +128,10 @@ export default function DashboardPage() {
       subtitle={<span className="capitalize">{dayLabel}</span>}
       actions={headerActions}
     >
-      <DashboardWelcomeBanner weekRevenue={metrics.revenueWeek} />
+      <DashboardWelcomeBanner
+        viewDate={context.mode === "day" ? context.viewDate : null}
+        weekRevenue={metrics.revenueWeek}
+      />
 
       {!isGeneralView && dayComparison.isNonOperationalDay && (
         <p className="text-sm text-text-muted mb-4">
