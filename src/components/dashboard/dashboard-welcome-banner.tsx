@@ -6,17 +6,31 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpen,
+  CalendarClock,
   ClipboardPaste,
   Crown,
+  FileText,
   ShoppingCart,
   Sparkles,
+  TrendingUp,
   Wallet,
+  type LucideIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { getFirstName, getTimeGreeting, resolveUserTimeZone } from "@/lib/time-greeting";
+import { cn, formatCurrency } from "@/lib/utils";
+import { getFirstName, resolveUserTimeZone } from "@/lib/time-greeting";
+import { resolveDashboardGreeting } from "@/lib/dashboard-greeting";
 import { useSessionUser } from "@/hooks/use-session-user";
 
-const QUICK_ACTIONS = [
+interface QuickAction {
+  href: string;
+  label: string;
+  hint: string;
+  icon: LucideIcon;
+  primary?: boolean;
+}
+
+/** Dia útil: o painel é de ação — registrar e movimentar a operação. */
+const WEEKDAY_ACTIONS: QuickAction[] = [
   {
     href: "/registro-dia",
     label: "Registrar o dia",
@@ -48,22 +62,68 @@ const QUICK_ACTIONS = [
     hint: "Oportunidades",
     icon: Sparkles,
   },
-] as const;
+];
 
-export function DashboardWelcomeBanner({ className }: { className?: string }) {
+/** Fim de semana: sem operação — o painel é de consulta e planejamento. */
+const WEEKEND_ACTIONS: QuickAction[] = [
+  {
+    href: "/desempenho",
+    label: "Desempenho",
+    hint: "Semana fechada",
+    icon: TrendingUp,
+    primary: true,
+  },
+  {
+    href: "/fechamento",
+    label: "Fechamento",
+    hint: "Mês e tendência",
+    icon: CalendarClock,
+  },
+  {
+    href: "/relatorios",
+    label: "Relatórios",
+    hint: "Consolidado",
+    icon: FileText,
+  },
+  {
+    href: "/insights",
+    label: "Ver insights",
+    hint: "Oportunidades",
+    icon: Sparkles,
+  },
+  {
+    href: "/diario",
+    label: "Diário",
+    hint: "Dias registrados",
+    icon: BookOpen,
+  },
+];
+
+interface DashboardWelcomeBannerProps {
+  className?: string;
+  /** Faturamento da semana — exibido no fim de semana, junto da saudação. */
+  weekRevenue?: number;
+}
+
+export function DashboardWelcomeBanner({
+  className,
+  weekRevenue,
+}: DashboardWelcomeBannerProps) {
   const { data: user } = useSessionUser();
-  const [greeting, setGreeting] = useState(() => getTimeGreeting());
+  const [copy, setCopy] = useState(() => resolveDashboardGreeting());
 
   useEffect(() => {
     const timeZone = resolveUserTimeZone();
-    setGreeting(getTimeGreeting(timeZone));
+    const tick = () => setCopy(resolveDashboardGreeting(timeZone));
+    tick();
 
-    const tick = () => setGreeting(getTimeGreeting(timeZone));
     const interval = window.setInterval(tick, 60_000);
     return () => window.clearInterval(interval);
   }, []);
 
   const firstName = getFirstName(user?.name ?? "Lucas");
+  const quickActions = copy.isWeekend ? WEEKEND_ACTIONS : WEEKDAY_ACTIONS;
+  const showWeekRevenue = copy.isWeekend && typeof weekRevenue === "number";
 
   return (
     <motion.section
@@ -106,21 +166,18 @@ export function DashboardWelcomeBanner({ className }: { className?: string }) {
 
           <div className="space-y-1.5">
             <h2 className="text-[1.65rem] font-black leading-[1.15] tracking-tight text-text-primary sm:text-3xl lg:text-[2rem]">
-              {greeting},{" "}
+              {copy.greeting},{" "}
               <span className="bg-gradient-to-r from-brand-yellow via-[#FFEA70] to-brand-secondary bg-clip-text text-transparent">
                 {firstName}
               </span>
-              .
+              {copy.suffix}
             </h2>
-            <p className="max-w-xl text-base text-text-secondary sm:text-lg">
-              O que deseja fazer hoje?
-            </p>
+            <p className="max-w-xl text-base text-text-secondary sm:text-lg">{copy.subtitle}</p>
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {QUICK_ACTIONS.map((action, index) => {
-              const { href, label, hint, icon: Icon } = action;
-              const primary = "primary" in action && action.primary;
+            {quickActions.map((action, index) => {
+              const { href, label, hint, icon: Icon, primary } = action;
               return (
               <Link
                 key={href}
@@ -165,8 +222,14 @@ export function DashboardWelcomeBanner({ className }: { className?: string }) {
 
         <div className="hidden shrink-0 sm:block">
           <div className="rounded-2xl border border-brand-yellow/15 bg-surface-base/60 px-4 py-3 text-right backdrop-blur-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">Status</p>
-            <p className="mt-0.5 text-sm font-bold text-brand-yellow">Operação sob seu comando</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              {showWeekRevenue ? "Semana" : "Status"}
+            </p>
+            <p className="mt-0.5 text-sm font-bold text-brand-yellow">
+              {showWeekRevenue
+                ? `${formatCurrency(weekRevenue)} faturados`
+                : "Operação sob seu comando"}
+            </p>
           </div>
         </div>
       </div>
