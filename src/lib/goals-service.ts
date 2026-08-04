@@ -60,8 +60,20 @@ export async function initializeGoalsIfEmpty(businessId: string): Promise<void> 
   }
 }
 
+export interface GoalTargetInput {
+  amount: number;
+  units?: number | null;
+  /** Período explícito — usado quando a meta é de um período futuro (ex.: mês seguinte). */
+  periodStart?: string;
+  periodEnd?: string;
+}
+
+function normalizeTarget(value: number | GoalTargetInput): GoalTargetInput {
+  return typeof value === "number" ? { amount: value } : value;
+}
+
 export async function updateGoalTargets(
-  targets: Partial<Record<GoalType, number>>,
+  targets: Partial<Record<GoalType, number | GoalTargetInput>>,
   businessId: string,
 ): Promise<void> {
   if (isAllBusinesses(businessId)) {
@@ -70,15 +82,25 @@ export async function updateGoalTargets(
 
   await initializeGoalsIfEmpty(businessId);
 
-  for (const [type, amount] of Object.entries(targets) as [GoalType, number][]) {
-    if (amount === undefined || Number.isNaN(amount)) continue;
+  for (const [type, raw] of Object.entries(targets) as [
+    GoalType,
+    number | GoalTargetInput,
+  ][]) {
+    if (raw === undefined || raw === null) continue;
+    const target = normalizeTarget(raw);
+    if (Number.isNaN(target.amount)) continue;
 
-    const { periodStart, periodEnd } = periodBounds(type);
+    const bounds = periodBounds(type);
+    const periodStart = target.periodStart ?? bounds.periodStart;
+    const periodEnd = target.periodEnd ?? bounds.periodEnd;
     const existing = await findGoalByType(businessId, type);
+    const targetUnits =
+      target.units === undefined ? (existing?.targetUnits ?? null) : target.units;
 
     if (existing) {
       await updateGoalById(existing.id, {
-        targetAmount: amount,
+        targetAmount: target.amount,
+        targetUnits,
         periodStart,
         periodEnd,
       });
@@ -86,8 +108,8 @@ export async function updateGoalTargets(
       await insertGoal({
         businessId,
         type,
-        targetAmount: amount,
-        targetUnits: null,
+        targetAmount: target.amount,
+        targetUnits,
         periodStart,
         periodEnd,
       });

@@ -54,6 +54,7 @@ export function temporalQueryParams(context: TemporalViewContext): Record<string
 export const TEMPORAL_FILTER_EXCLUDED_PATHS = [
   "/configuracoes",
   "/registro-dia",
+  "/fechamento",
   "/dev",
 ] as const;
 

@@ -413,7 +413,17 @@ export async function getGoalsWithProgress(businessId: string = ALL_BUSINESSES_I
 
   const result = [];
   for (const goal of allGoals) {
-    const { periodStart, periodEnd } = boundsFor(goal.type);
+    const live = boundsFor(goal.type);
+    // Mensal e anual podem apontar para um período futuro (metas geradas pelo
+    // Fechamento para o mês seguinte) e nesse caso mantêm o próprio período.
+    // Diária e semanal seguem sempre a âncora, para refletirem o último dia
+    // operado em vez de um dia ainda sem registro.
+    const honorsStoredPeriod =
+      (goal.type === "monthly" || goal.type === "yearly") &&
+      goal.periodStart > live.periodStart &&
+      goal.periodEnd >= today;
+    const periodStart = honorsStoredPeriod ? goal.periodStart : live.periodStart;
+    const periodEnd = honorsStoredPeriod ? goal.periodEnd : live.periodEnd;
     let current: number;
     if (metricsMap && metricsMap.size > 0) {
       current = Array.from(metricsMap.values())

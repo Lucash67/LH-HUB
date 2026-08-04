@@ -26,6 +26,8 @@ export const MSG = {
   LOAD_INSIGHTS: "Não foi possível carregar os insights.",
   LOAD_RANKINGS: "Não foi possível carregar os rankings.",
   LOAD_PROJECTIONS: "Não foi possível carregar as projeções.",
+  LOAD_MONTH_CLOSE: "Não foi possível carregar o fechamento do mês.",
+  APPLY_FORECAST_GOALS: "Não foi possível aplicar as metas da previsão.",
   LOAD_PERFORMANCE: "Não foi possível carregar o desempenho.",
   LOAD_PROFIT_BANK: "Não foi possível carregar o banco de lucro.",
   LOAD_CALENDAR: "Não foi possível carregar o calendário.",
