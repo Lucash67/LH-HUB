@@ -7,6 +7,7 @@ import {
 import { buildWeekPulse } from "../src/lib/week-pulse";
 import { getSmartGoalsView } from "../src/lib/smart-goals-service";
 import { fetchMetricGoals } from "../src/platform/db/data-access/metrics";
+import { listSalesEnriched } from "../src/platform/db/repositories/sale-repository";
 
 const BIZ = "salgados";
 const fmt = (n: number) => `R$${n.toFixed(2)}`;
@@ -23,10 +24,13 @@ async function main(): Promise<void> {
   }
   console.log(`meta semanal usada: ${fmt(weeklyGoal)}\n`);
 
+  const sales = await listSalesEnriched(BIZ);
+
   for (const focus of ["2026-08-01", "2026-07-31", "2026-07-24", "2026-08-04"]) {
     const pulse = buildWeekPulse(dayMetrics, focus, {
       goalRevenue: weeklyGoal,
       allowFallback: true,
+      sales,
     });
     if (!pulse) {
       console.log(`foco ${focus}: sem dados na semana`);
@@ -36,7 +40,10 @@ async function main(): Promise<void> {
       `foco ${focus} → semana ${pulse.rangeLabel} | fallback ${pulse.isFallback} | receita ${fmt(pulse.revenue)} | lucro ${fmt(pulse.profit)} | ${pulse.units} un | ${pulse.operationalDays} dias | margem ${pulse.margin.toFixed(1)}% | meta ${pulse.goalProgress.toFixed(0)}% | tendência ${pulse.profitTrend == null ? "—" : `${pulse.profitTrend.toFixed(0)}%`}`,
     );
     console.log(
-      `   barras: ${pulse.days.map((d) => `${d.label}${d.isFocus ? "*" : ""} ${fmt(d.revenue)}`).join(" | ")}`,
+      `   barras: ${pulse.days.map((d) => `${d.label}${d.isFocus ? "*" : ""} ${fmt(d.revenue)}/lucro ${fmt(d.profit)}`).join(" | ")}`,
+    );
+    console.log(
+      `   receita vs anterior: ${pulse.revenueTrend == null ? "—" : `${pulse.revenueTrend.toFixed(0)}%`} | mix: ${pulse.products.map((p) => `${p.label} ${p.units}un`).join(", ") || "—"}`,
     );
 
     const manual = dayMetrics

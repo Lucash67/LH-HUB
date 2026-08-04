@@ -129,6 +129,19 @@ export function DashboardWelcomeBanner({
   const firstName = getFirstName(user?.name ?? "Lucas");
   const quickActions = copy.isConsulting ? CONSULT_ACTIONS : OPERATE_ACTIONS;
 
+  // Sem resumo da semana, o card decorativo só aparece em dia de operação —
+  // no fim de semana a semana já ganha um bloco inteiro logo abaixo.
+  const sidePanel = weekPulse ? (
+    <WeekPulsePanel pulse={weekPulse} />
+  ) : copy.isConsulting ? null : (
+    <div className="rounded-2xl border border-brand-yellow/15 bg-surface-base/60 px-4 py-3 text-right backdrop-blur-sm">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Status
+      </p>
+      <p className="mt-0.5 text-sm font-bold text-brand-yellow">Operação sob seu comando</p>
+    </div>
+  );
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 14 }}
@@ -224,20 +237,9 @@ export function DashboardWelcomeBanner({
           </div>
         </div>
 
-        <div className="hidden shrink-0 sm:block sm:w-[300px] lg:w-[320px]">
-          {weekPulse ? (
-            <WeekPulsePanel pulse={weekPulse} />
-          ) : (
-            <div className="rounded-2xl border border-brand-yellow/15 bg-surface-base/60 px-4 py-3 text-right backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-                Status
-              </p>
-              <p className="mt-0.5 text-sm font-bold text-brand-yellow">
-                Operação sob seu comando
-              </p>
-            </div>
-          )}
-        </div>
+        {sidePanel && (
+          <div className="hidden shrink-0 sm:block sm:w-[300px] lg:w-[320px]">{sidePanel}</div>
+        )}
       </div>
     </motion.section>
   );

@@ -6,6 +6,7 @@ import { ModuleShell } from "@/components/layout/module-shell";
 import { DashboardWelcomeBanner } from "@/components/dashboard/dashboard-welcome-banner";
 import { DashboardDayView } from "@/components/dashboard/dashboard-day-view";
 import { DashboardGeneralView } from "@/components/dashboard/dashboard-general-view";
+import { WeekFocusSection } from "@/components/dashboard/week-focus-section";
 import { PageLoader } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, RefreshCw } from "lucide-react";
@@ -124,6 +125,11 @@ export default function DashboardPage() {
   const profitMargin =
     metrics.revenueToday > 0 ? (metrics.profitToday / metrics.revenueToday) * 100 : 0;
 
+  // Sábado/domingo: o dia é zerado por natureza, então a semana assume o topo
+  // e o detalhe do dia desce para o fim da página.
+  const weekPulse = payload.weekPulse ?? null;
+  const weekFirst = !isGeneralView && dayComparison.isNonOperationalDay && !!weekPulse;
+
   return (
     <ModuleShell
       title="Dashboard"
@@ -132,8 +138,10 @@ export default function DashboardPage() {
     >
       <DashboardWelcomeBanner
         viewDate={context.mode === "day" ? context.viewDate : null}
-        weekPulse={payload.weekPulse ?? null}
+        weekPulse={weekFirst ? null : weekPulse}
       />
+
+      {weekFirst && weekPulse && <WeekFocusSection pulse={weekPulse} />}
 
       {!isGeneralView && !metrics.hasOperations && !dayComparison.isNonOperationalDay && (
         <p className="text-sm text-text-muted mb-4">Nenhuma operação registrada nesta data.</p>
@@ -151,29 +159,36 @@ export default function DashboardPage() {
         />
       ) : (
         daySummary && (
-          <DashboardDayView
-            viewDate={context.viewDate}
-            viewingToday={viewingToday}
-            revenue={metrics.revenueToday}
-            profit={metrics.profitToday}
-            profitTrend={showTrend ? profitGrowthVsYesterday : undefined}
-            revenueTrend={showTrend ? metrics.growthVsYesterday : undefined}
-            trendLabel={dayComparison.label}
-            goalProgress={metrics.goalProgress}
-            goalUnits={daySummary.goalUnits}
-            soldUnits={daySummary.soldUnits}
-            profitMargin={profitMargin}
-            bonusIncome={diaryEntry?.bonusIncome}
-            operationResult={operationResult}
-            daySummary={daySummary}
-            customerInsight={customerInsight}
-            flavors={charts.flavors}
-            timeline={timeline}
-            alerts={alerts}
-            insights={autoInsights}
-            hasOperations={metrics.hasOperations}
-            nonOperational={dayComparison.isNonOperationalDay}
-          />
+          <div className={weekFirst ? "mt-8 border-t border-surface-border/70 pt-5" : undefined}>
+            {weekFirst && (
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                Detalhe do dia selecionado · sem operação
+              </p>
+            )}
+            <DashboardDayView
+              viewDate={context.viewDate}
+              viewingToday={viewingToday}
+              revenue={metrics.revenueToday}
+              profit={metrics.profitToday}
+              profitTrend={showTrend ? profitGrowthVsYesterday : undefined}
+              revenueTrend={showTrend ? metrics.growthVsYesterday : undefined}
+              trendLabel={dayComparison.label}
+              goalProgress={metrics.goalProgress}
+              goalUnits={daySummary.goalUnits}
+              soldUnits={daySummary.soldUnits}
+              profitMargin={profitMargin}
+              bonusIncome={diaryEntry?.bonusIncome}
+              operationResult={operationResult}
+              daySummary={daySummary}
+              customerInsight={customerInsight}
+              flavors={charts.flavors}
+              timeline={timeline}
+              alerts={alerts}
+              insights={autoInsights}
+              hasOperations={metrics.hasOperations}
+              nonOperational={dayComparison.isNonOperationalDay}
+            />
+          </div>
         )
       )}
     </ModuleShell>

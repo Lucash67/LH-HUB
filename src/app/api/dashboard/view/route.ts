@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
             ? buildWeekPulse(dayMetrics, viewDate, {
                 goalRevenue: weeklyGoal,
                 allowFallback: true,
+                sales,
               })
             : null,
           context: { mode: viewMode, viewDate },
@@ -112,6 +113,7 @@ export async function GET(request: NextRequest) {
           ? buildWeekPulse(dayMetrics, format(new Date(), "yyyy-MM-dd"), {
               goalRevenue: weeklyGoal,
               allowFallback: true,
+              sales,
             })
           : null,
         context: { mode: viewMode, viewDate },
