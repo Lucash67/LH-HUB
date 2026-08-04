@@ -14,11 +14,13 @@ import type { DiaryAutoInsight } from "@/lib/diary-auto-insights";
 import { isViewingToday, useTemporalViewContext } from "@/stores/temporal-context-store";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import type { OperationalDiaryEntry } from "@/lib/diary/types";
+import type { WeekPulse } from "@/lib/week-pulse";
 
 interface DashboardViewPayload {
   data: DashboardViewData;
   diaryEntry: OperationalDiaryEntry | null;
   autoInsights: DiaryAutoInsight[];
+  weekPulse?: WeekPulse | null;
   context?: { mode: "day" | "general"; viewDate: string };
 }
 
@@ -130,14 +132,8 @@ export default function DashboardPage() {
     >
       <DashboardWelcomeBanner
         viewDate={context.mode === "day" ? context.viewDate : null}
-        weekRevenue={metrics.revenueWeek}
+        weekPulse={payload.weekPulse ?? null}
       />
-
-      {!isGeneralView && dayComparison.isNonOperationalDay && (
-        <p className="text-sm text-text-muted mb-4">
-          Sem operação aos sábados e domingos — Salgados.
-        </p>
-      )}
 
       {!isGeneralView && !metrics.hasOperations && !dayComparison.isNonOperationalDay && (
         <p className="text-sm text-text-muted mb-4">Nenhuma operação registrada nesta data.</p>
@@ -176,6 +172,7 @@ export default function DashboardPage() {
             alerts={alerts}
             insights={autoInsights}
             hasOperations={metrics.hasOperations}
+            nonOperational={dayComparison.isNonOperationalDay}
           />
         )
       )}

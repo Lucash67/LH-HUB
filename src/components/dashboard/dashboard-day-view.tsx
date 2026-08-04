@@ -55,6 +55,8 @@ interface DashboardDayViewProps {
   alerts: DashboardActionableAlert[];
   insights: DiaryAutoInsight[];
   hasOperations: boolean;
+  /** Sábado/domingo em negócio que não opera no fim de semana: não existe meta. */
+  nonOperational?: boolean;
 }
 
 function MetaRing({ progress, sold, goal }: { progress: number; sold: number; goal: number | null }) {
@@ -111,7 +113,9 @@ export function DashboardDayView({
   alerts,
   insights,
   hasOperations,
+  nonOperational = false,
 }: DashboardDayViewProps) {
+  const idleDay = nonOperational && revenue === 0 && profit === 0;
   const profitPositive = profit >= 0;
   const maxFlavor = Math.max(...flavors.map((f) => f.value), 1);
   const dateLabel = format(parseISO(viewDate), "EEEE, dd 'de' MMMM", { locale: ptBR });
@@ -124,21 +128,29 @@ export function DashboardDayView({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className={cn(
-          "relative overflow-hidden rounded-3xl border p-6 sm:p-8",
-          profitPositive
-            ? "border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-surface-card to-blue-500/10"
-            : "border-red-500/30 bg-gradient-to-br from-red-500/15 via-surface-card to-[#FFD400]/10",
+          "relative overflow-hidden rounded-3xl border p-5 sm:p-6",
+          idleDay
+            ? "border-surface-border bg-gradient-to-br from-surface-elevated/60 via-surface-card to-surface-card"
+            : profitPositive
+              ? "border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-surface-card to-blue-500/10"
+              : "border-red-500/30 bg-gradient-to-br from-red-500/15 via-surface-card to-[#FFD400]/10",
         )}
       >
         <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-blue-500/10 blur-3xl" />
 
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex-1 space-y-3">
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex-1 space-y-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="info" className="capitalize">{dateLabel}</Badge>
-              {operationResult.tone === "success" && (
-                <Badge variant="success">{operationResult.headline}</Badge>
+              {idleDay ? (
+                <span className="inline-flex items-center rounded-full border border-[#FFD400]/30 bg-[#FFD400]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#FFD400]">
+                  Sem operação — Salgados não opera no fim de semana
+                </span>
+              ) : (
+                operationResult.tone === "success" && (
+                  <Badge variant="success">{operationResult.headline}</Badge>
+                )
               )}
             </div>
 
@@ -149,8 +161,12 @@ export function DashboardDayView({
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
                 className={cn(
-                  "text-5xl font-black tracking-tight sm:text-6xl",
-                  profitPositive ? "text-emerald-400" : "text-red-400",
+                  "text-4xl font-black tracking-tight sm:text-5xl",
+                  idleDay
+                    ? "text-text-secondary"
+                    : profitPositive
+                      ? "text-emerald-400"
+                      : "text-red-400",
                 )}
               >
                 {formatCurrency(profit)}
@@ -186,16 +202,26 @@ export function DashboardDayView({
             )}
           </div>
 
-          <div className="flex items-center gap-6">
-            <MetaRing progress={goalProgress} sold={soldUnits} goal={goalUnits} />
-            <div className="hidden sm:block space-y-2 text-right text-sm">
-              <p className="text-text-muted">Meta do dia</p>
-              <p className="text-2xl font-bold text-purple-400">
-                {goalUnits != null ? `${soldUnits}/${goalUnits}` : "—"}
+          {idleDay ? (
+            <div className="shrink-0 rounded-2xl border border-surface-border bg-surface-base/50 px-4 py-3 text-right">
+              <p className="text-xs text-text-muted">Meta do dia</p>
+              <p className="text-2xl font-bold text-text-secondary">—</p>
+              <p className="mt-1 max-w-[170px] text-xs text-text-secondary">
+                Dia não operacional: nenhuma meta é cobrada aqui.
               </p>
-              <p className="text-xs text-text-secondary max-w-[140px]">{operationResult.summary}</p>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-6">
+              <MetaRing progress={goalProgress} sold={soldUnits} goal={goalUnits} />
+              <div className="hidden sm:block space-y-2 text-right text-sm">
+                <p className="text-text-muted">Meta do dia</p>
+                <p className="text-2xl font-bold text-purple-400">
+                  {goalUnits != null ? `${soldUnits}/${goalUnits}` : "—"}
+                </p>
+                <p className="text-xs text-text-secondary max-w-[140px]">{operationResult.summary}</p>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -212,11 +238,17 @@ export function DashboardDayView({
         />
         <PulseMetric
           label="Meta (unidades)"
-          value={goalProgress}
-          format="percent"
+          value={idleDay ? "—" : goalProgress}
+          format={idleDay ? "raw" : "percent"}
           icon={Target}
-          variant="meta"
-          subtext={goalUnits != null ? `${soldUnits} de ${goalUnits} un.` : `${soldUnits} un. vendidas`}
+          variant={idleDay ? "neutral" : "meta"}
+          subtext={
+            idleDay
+              ? "Sem meta — dia não operacional"
+              : goalUnits != null
+                ? `${soldUnits} de ${goalUnits} un.`
+                : `${soldUnits} un. vendidas`
+          }
           delay={1}
         />
         <PulseMetric

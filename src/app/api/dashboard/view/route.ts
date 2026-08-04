@@ -5,6 +5,7 @@ import { generateDiaryAutoInsights } from "@/lib/diary-auto-insights";
 import { getDiaryEntry } from "@/lib/diary-service";
 import { getSmartGoalsView } from "@/lib/smart-goals-service";
 import { buildOperationalDayMetrics, sortOperationalDays } from "@/lib/operational-day-metrics";
+import { buildWeekPulse } from "@/lib/week-pulse";
 import { isAllBusinesses } from "@/lib/business-units";
 import { fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import { listSalesEnriched } from "@/platform/db/repositories/sale-repository";
@@ -40,6 +41,11 @@ export async function GET(request: NextRequest) {
       ]);
 
       let dailyGoal = goals.find((g) => g.type === "daily")?.targetAmount ?? 0;
+      let weeklyGoal = goals.find((g) => g.type === "weekly")?.targetAmount ?? 0;
+
+      // Base diário-primeiro: alimenta o resumo da semana nas duas visões.
+      const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
+      const dayMetrics = metricsMap ? sortOperationalDays(metricsMap) : null;
 
       let diaryEntry = null;
       let autoInsights: Awaited<ReturnType<typeof generateDiaryAutoInsights>> = [];
@@ -55,6 +61,9 @@ export async function GET(request: NextRequest) {
         if (dailyGoal <= 0) {
           dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
         }
+        if (weeklyGoal <= 0) {
+          weeklyGoal = smartGoals?.weekly.targetRevenue ?? 0;
+        }
         const diaryContext = enrichDiaryContext(entry, smartGoals?.daily?.targetUnits);
         const data = buildDashboardView(
           normalizeDashboardSales(sales),
@@ -69,16 +78,21 @@ export async function GET(request: NextRequest) {
           data,
           diaryEntry,
           autoInsights,
+          weekPulse: dayMetrics
+            ? buildWeekPulse(dayMetrics, viewDate, {
+                goalRevenue: weeklyGoal,
+                allowFallback: true,
+              })
+            : null,
           context: { mode: viewMode, viewDate },
         });
       }
 
       // Visão geral usa o diário homologado como fonte oficial de receita/lucro.
-      const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
-      const dayMetrics = metricsMap ? sortOperationalDays(metricsMap) : null;
-      if (dailyGoal <= 0 && !isAllBusinesses(businessId)) {
+      if ((dailyGoal <= 0 || weeklyGoal <= 0) && !isAllBusinesses(businessId)) {
         const smartGoals = await getSmartGoalsView(businessId).catch(() => null);
-        dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
+        if (dailyGoal <= 0) dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
+        if (weeklyGoal <= 0) weeklyGoal = smartGoals?.weekly.targetRevenue ?? 0;
       }
       const data = buildDashboardView(
         normalizeDashboardSales(sales),
@@ -94,6 +108,12 @@ export async function GET(request: NextRequest) {
         data,
         diaryEntry: null,
         autoInsights: [],
+        weekPulse: dayMetrics
+          ? buildWeekPulse(dayMetrics, format(new Date(), "yyyy-MM-dd"), {
+              goalRevenue: weeklyGoal,
+              allowFallback: true,
+            })
+          : null,
         context: { mode: viewMode, viewDate },
       });
     });
