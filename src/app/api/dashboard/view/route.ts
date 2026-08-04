@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         fetchMetricGoals(businessId),
       ]);
 
-      const dailyGoal = goals.find((g) => g.type === "daily")?.targetAmount ?? 0;
+      let dailyGoal = goals.find((g) => g.type === "daily")?.targetAmount ?? 0;
 
       let diaryEntry = null;
       let autoInsights: Awaited<ReturnType<typeof generateDiaryAutoInsights>> = [];
@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
         ]);
         diaryEntry = entry;
         autoInsights = insights;
+        if (dailyGoal <= 0) {
+          dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
+        }
         const diaryContext = enrichDiaryContext(entry, smartGoals?.daily?.targetUnits);
         const data = buildDashboardView(
           normalizeDashboardSales(sales),
@@ -73,6 +76,10 @@ export async function GET(request: NextRequest) {
       // Visão geral usa o diário homologado como fonte oficial de receita/lucro.
       const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
       const dayMetrics = metricsMap ? sortOperationalDays(metricsMap) : null;
+      if (dailyGoal <= 0 && !isAllBusinesses(businessId)) {
+        const smartGoals = await getSmartGoalsView(businessId).catch(() => null);
+        dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
+      }
       const data = buildDashboardView(
         normalizeDashboardSales(sales),
         context,

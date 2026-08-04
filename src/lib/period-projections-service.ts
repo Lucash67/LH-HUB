@@ -203,8 +203,19 @@ export async function getPeriodProjectionView(
 
   const goalType = period === "weekly" ? "weekly" : "monthly";
   const goalRow = goals.find((g) => g.type === goalType);
-  const goalRevenue = goalRow?.targetAmount ?? 0;
-  const goalUnits = goalRow?.targetUnits ?? null;
+  let goalRevenue = goalRow?.targetAmount ?? 0;
+  let goalUnits = goalRow?.targetUnits ?? null;
+
+  // Sem meta configurada: usa o alvo sugerido pelas Metas Inteligentes.
+  if (goalRevenue <= 0 && goalUnits == null && !isAllBusinesses(businessId)) {
+    const { getSmartGoalsView } = await import("./smart-goals-service");
+    const smart = await getSmartGoalsView(businessId).catch(() => null);
+    const smartPeriod = period === "weekly" ? smart?.weekly : smart?.monthly;
+    if (smartPeriod) {
+      goalRevenue = smartPeriod.targetRevenue;
+      goalUnits = smartPeriod.targetUnits;
+    }
+  }
 
   const revenueToProjection = Math.max(0, round2(projectedRevenue - actualRevenue));
   const profitToProjection = Math.max(0, round2(projectedProfit - actualProfit));

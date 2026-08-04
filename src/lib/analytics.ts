@@ -2,6 +2,7 @@ import { format, subDays, parseISO, getDay } from "date-fns";
 import { and, eq, inArray, lte } from "drizzle-orm";
 import { calcGrowth, getWeekRange, getMonthRange, goalProgress } from "./utils";
 import { getDailyGoalTarget } from "./goals-service";
+import { getSmartGoalsView } from "./smart-goals-service";
 import { ALL_BUSINESSES_ID, isAllBusinesses } from "./business-units";
 import { getTenantDbIds } from "@/lib/auth/tenant-context";
 import {
@@ -359,23 +360,87 @@ export async function getGoalsWithProgress(businessId: string = ALL_BUSINESSES_I
   // Diário homologado é a fonte de receita para progresso de metas.
   const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
 
+  // Períodos são recalculados ao vivo (os armazenados congelam na criação da meta).
+  // Âncora: último dia operacional homologado — mesma referência das Metas Inteligentes.
+  const today = format(new Date(), "yyyy-MM-dd");
+  const lastOperational =
+    metricsMap && metricsMap.size > 0
+      ? Array.from(metricsMap.keys()).sort().at(-1) ?? null
+      : null;
+  const anchorStr = lastOperational && lastOperational <= today ? lastOperational : today;
+  const anchor = parseISO(anchorStr);
+
+  const boundsFor = (type: string): { periodStart: string; periodEnd: string } => {
+    switch (type) {
+      case "weekly": {
+        const w = getWeekRange(anchor);
+        return { periodStart: w.start, periodEnd: w.end };
+      }
+      case "monthly": {
+        const m = getMonthRange(anchor);
+        return { periodStart: m.start, periodEnd: m.end };
+      }
+      case "yearly":
+        return {
+          periodStart: `${anchor.getFullYear()}-01-01`,
+          periodEnd: `${anchor.getFullYear()}-12-31`,
+        };
+      default:
+        return { periodStart: anchorStr, periodEnd: anchorStr };
+    }
+  };
+
+  // Metas sem alvo configurado usam o alvo sugerido pelas Metas Inteligentes.
+  let smartView: Awaited<ReturnType<typeof getSmartGoalsView>> = null;
+  if (!isAllBusinesses(businessId) && allGoals.some((g) => g.targetAmount <= 0)) {
+    smartView = await getSmartGoalsView(businessId).catch(() => null);
+  }
+  const suggestedTarget = (type: string): number => {
+    if (!smartView) return 0;
+    switch (type) {
+      case "daily":
+        return smartView.daily.targetRevenue;
+      case "weekly":
+        return smartView.weekly.targetRevenue;
+      case "monthly":
+        return smartView.monthly.targetRevenue;
+      case "yearly":
+        return smartView.monthly.targetRevenue * 12;
+      default:
+        return 0;
+    }
+  };
+
   const result = [];
   for (const goal of allGoals) {
+    const { periodStart, periodEnd } = boundsFor(goal.type);
     let current: number;
     if (metricsMap && metricsMap.size > 0) {
       current = Array.from(metricsMap.values())
-        .filter((d) => d.date >= goal.periodStart && d.date <= goal.periodEnd)
+        .filter((d) => d.date >= periodStart && d.date <= periodEnd)
         .reduce((s, d) => s + d.revenue, 0);
     } else {
       const periodSales = await fetchMetricSales({
         businessId,
-        dateGte: goal.periodStart,
-        dateLte: goal.periodEnd,
+        dateGte: periodStart,
+        dateLte: periodEnd,
       });
       current = periodSales.reduce((s, v) => s + v.totalAmount, 0);
     }
-    const progress = goalProgress(current, goal.targetAmount);
-    result.push({ ...goal, type: goal.type, current, progress, completed: progress >= 100 });
+    const targetSource = goal.targetAmount > 0 ? "custom" : "smart";
+    const targetAmount = goal.targetAmount > 0 ? goal.targetAmount : suggestedTarget(goal.type);
+    const progress = goalProgress(current, targetAmount);
+    result.push({
+      ...goal,
+      type: goal.type,
+      targetAmount,
+      targetSource,
+      periodStart,
+      periodEnd,
+      current,
+      progress,
+      completed: progress >= 100,
+    });
   }
   return result;
 }
@@ -389,7 +454,11 @@ export async function getCalendarData(
   month: number,
   businessId: string = ALL_BUSINESSES_ID,
 ) {
-  const target = await getDailyGoalTarget(businessId);
+  let target = await getDailyGoalTarget(businessId);
+  if (target <= 0 && !isAllBusinesses(businessId)) {
+    const smart = await getSmartGoalsView(businessId).catch(() => null);
+    target = smart?.daily.targetRevenue ?? 0;
+  }
   const startDate = format(new Date(year, month - 1, 1), "yyyy-MM-dd");
   const endDate = format(new Date(year, month, 0), "yyyy-MM-dd");
 
