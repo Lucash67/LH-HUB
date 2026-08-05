@@ -20,7 +20,7 @@ export function WeekdayProfileCard({ rows }: WeekdayProfileCardProps) {
   const maxProfit = Math.max(...rows.map((r) => r.avgProfit), 1);
 
   return (
-    <div className="card-surface p-6">
+    <div className="card-surface p-4 sm:p-6">
       <div className="mb-5">
         <h3 className="text-sm font-semibold text-text-primary">Força por dia da semana</h3>
         <p className="mt-0.5 text-xs text-text-muted">

@@ -58,8 +58,8 @@ export default function MetasPage() {
         title="Metas Inteligentes"
         subtitle="Centro de planejamento operacional baseado no seu histórico real"
       >
-        <Card className="p-8 text-center max-w-lg mx-auto">
-          <Target className="h-10 w-10 text-text-muted mx-auto mb-3" />
+        <Card className="mx-auto max-w-lg p-6 text-center sm:p-8">
+          <Target className="mx-auto mb-3 h-10 w-10 text-text-muted" />
           <p className="text-text-secondary mb-2">Não foi possível calcular metas inteligentes.</p>
           <p className="text-sm text-text-muted">
             {error instanceof Error ? error.message : "Registre vendas para gerar sugestões automáticas."}

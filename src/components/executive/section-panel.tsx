@@ -24,9 +24,9 @@ export function SectionPanel({
   return (
     <section className={cn("space-y-3", className)}>
       <div className="flex items-baseline justify-between gap-2">
-        <div>
+        <div className="min-w-0">
           <h2 className={cn("text-sm font-semibold", t.accent)}>{title}</h2>
-          {subtitle && <p className="text-xs text-text-muted mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 text-xs text-text-muted">{subtitle}</p>}
         </div>
       </div>
       {children}

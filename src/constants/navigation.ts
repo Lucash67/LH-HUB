@@ -51,5 +51,13 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const SIDEBAR_WIDTH = 240;
 
+/** Destinos da barra inferior no celular — o resto fica no menu lateral. */
+export const MOBILE_NAV_ITEMS: NavItem[] = [
+  { href: "/", label: "Painel", icon: LayoutDashboard },
+  { href: "/registro-dia", label: "Registrar", icon: ClipboardPaste },
+  { href: "/desempenho", label: "Semana", icon: TrendingUp },
+  { href: "/fechamento", label: "Tendência", icon: CalendarClock },
+];
+
 export const APP_NAME = "LH Hub";
 export const APP_TAGLINE = "Centro operacional";

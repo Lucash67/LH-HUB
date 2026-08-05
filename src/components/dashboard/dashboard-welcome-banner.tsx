@@ -174,7 +174,7 @@ export function DashboardWelcomeBanner({
       />
 
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-        <div className="min-w-0 space-y-2.5">
+        <div className="min-w-0 flex-1 space-y-2.5">
           <div className="inline-flex items-center gap-2 rounded-full border border-brand-yellow/25 bg-brand-yellow/[0.07] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-yellow">
             <Crown className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
             <span>Central de comando</span>
@@ -182,7 +182,7 @@ export function DashboardWelcomeBanner({
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-[1.3rem] font-black leading-[1.15] tracking-tight text-text-primary sm:text-2xl lg:text-[1.7rem]">
+            <h2 className="text-lg font-black leading-[1.2] tracking-tight text-text-primary sm:text-2xl sm:leading-[1.15] lg:text-[1.7rem]">
               {copy.greeting},{" "}
               <span className="bg-gradient-to-r from-brand-yellow via-[#FFEA70] to-brand-secondary bg-clip-text text-transparent">
                 {firstName}
@@ -192,7 +192,8 @@ export function DashboardWelcomeBanner({
             <p className="max-w-xl text-sm text-text-secondary sm:text-base">{copy.subtitle}</p>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* Celular: grade de dois, ação principal em linha cheia. Desktop: fileira rolável. */}
+          <div className="grid grid-cols-2 gap-2 pt-0.5 sm:flex sm:overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {quickActions.map((action, index) => {
               const { href, label, hint, icon: Icon, primary } = action;
               return (
@@ -200,7 +201,9 @@ export function DashboardWelcomeBanner({
                 key={href}
                 href={href}
                 className={cn(
-                  "group flex min-w-[128px] shrink-0 flex-col gap-0.5 rounded-2xl border px-3 py-2.5 transition-all duration-200",
+                  "group flex flex-col gap-0.5 rounded-2xl border px-3 py-2.5 transition-all duration-200",
+                  "sm:min-w-[128px] sm:shrink-0",
+                  primary && "col-span-2 sm:col-span-1",
                   primary
                     ? "border-brand-yellow/40 bg-brand-yellow/15 hover:border-brand-yellow/60 hover:bg-brand-yellow/20"
                     : "border-surface-border bg-surface-base/50 hover:border-brand-yellow/30 hover:bg-brand-yellow/[0.06]",
@@ -238,7 +241,7 @@ export function DashboardWelcomeBanner({
         </div>
 
         {sidePanel && (
-          <div className="hidden shrink-0 sm:block sm:w-[300px] lg:w-[320px]">{sidePanel}</div>
+          <div className="w-full shrink-0 sm:w-[300px] lg:w-[320px]">{sidePanel}</div>
         )}
       </div>
     </motion.section>

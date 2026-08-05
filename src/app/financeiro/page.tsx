@@ -158,7 +158,7 @@ export default function FinanceiroPage() {
         </div>
 
         <SectionPanel theme="finance" title="Indicadores operacionais" subtitle="Desempenho do negócio">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <KpiCard title="Receita Líquida" value={data.netRevenue} icon={DollarSign} delay={0} />
             <KpiCard
               title="Investimento Operacional"
@@ -194,7 +194,7 @@ export default function FinanceiroPage() {
               { label: "Invest. próprio", value: formatCurrency(operator.ownInvestment) },
             ]}
           />
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-3">
             <KpiCard
               title="Ganho Líquido do Operador"
               value={operator.operatorNetGain}
@@ -228,18 +228,24 @@ export default function FinanceiroPage() {
               <ArrowDownUp className="h-4 w-4 text-brand-green" />
               <h3 className="text-sm font-semibold text-brand-green">Fluxo de Caixa</h3>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-brand-green/10 p-4 text-center transition-transform hover:scale-[1.02]">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-brand-green/10 p-3 text-center transition-transform hover:scale-[1.02] sm:p-4">
                 <p className="label-upper mb-1">Entradas</p>
-                <p className="text-2xl font-bold text-brand-green">{formatCurrency(data.cashFlow.income)}</p>
+                <p className="text-xl font-bold text-brand-green sm:text-2xl">
+                  {formatCurrency(data.cashFlow.income)}
+                </p>
               </div>
-              <div className="rounded-xl bg-brand-red/10 p-4 text-center transition-transform hover:scale-[1.02]">
+              <div className="rounded-xl bg-brand-red/10 p-3 text-center transition-transform hover:scale-[1.02] sm:p-4">
                 <p className="label-upper mb-1">Saídas</p>
-                <p className="text-2xl font-bold text-brand-red">{formatCurrency(data.cashFlow.expenses)}</p>
+                <p className="text-xl font-bold text-brand-red sm:text-2xl">
+                  {formatCurrency(data.cashFlow.expenses)}
+                </p>
               </div>
-              <div className="rounded-xl bg-brand-orange/10 p-4 text-center transition-transform hover:scale-[1.02]">
+              <div className="col-span-2 rounded-xl bg-brand-orange/10 p-3 text-center transition-transform hover:scale-[1.02] sm:col-span-1 sm:p-4">
                 <p className="label-upper mb-1">Saldo</p>
-                <p className="text-2xl font-bold text-brand-orange">{formatCurrency(data.cashFlow.balance)}</p>
+                <p className="text-xl font-bold text-brand-orange sm:text-2xl">
+                  {formatCurrency(data.cashFlow.balance)}
+                </p>
               </div>
             </div>
           </CardContent>

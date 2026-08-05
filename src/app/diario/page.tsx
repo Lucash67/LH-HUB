@@ -279,9 +279,9 @@ export default function DiarioPage() {
       }
     >
       <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => shiftDate(-1)}>
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="flex flex-1 items-center gap-2 sm:flex-none">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => shiftDate(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Input
@@ -291,13 +291,13 @@ export default function DiarioPage() {
                 setViewDate(e.target.value);
                 setEditing(false);
               }}
-              className="w-auto"
+              className="min-w-0 flex-1 sm:w-auto sm:flex-none"
             />
-            <Button variant="ghost" size="icon" onClick={() => shiftDate(1)}>
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => shiftDate(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-sm text-text-muted capitalize">
+          <p className="text-sm capitalize text-text-muted">
             {format(parseISO(selectedDate), "EEEE, dd 'de' MMMM", { locale: ptBR })}
           </p>
         </div>
@@ -444,15 +444,18 @@ export default function DiarioPage() {
                 onChange={(e) => setForm({ ...form, lessonsLearned: e.target.value })}
               />
               {saveError && <p className="text-sm text-brand-red">{saveError}</p>}
-              <div className="flex gap-2">
+              {/* Salvar acompanha o rodapé no celular — o formulário é longo. */}
+              <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 flex gap-2 rounded-2xl border border-surface-border bg-surface-base/95 p-2 shadow-lg backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
                 <Button
+                  size="lg"
+                  className="flex-1 sm:flex-none"
                   onClick={() => saveMutation.mutate({ ...form, businessId: activeBusinessId, date: selectedDate })}
                   disabled={saveMutation.isPending}
                 >
                   <Save className="h-4 w-4" />
-                  Salvar
+                  {saveMutation.isPending ? "Salvando..." : "Salvar"}
                 </Button>
-                <Button variant="secondary" onClick={() => setEditing(false)}>
+                <Button size="lg" variant="secondary" onClick={() => setEditing(false)}>
                   Cancelar
                 </Button>
               </div>

@@ -29,8 +29,8 @@ export function GoalSimulator({
 
   return (
     <SectionPanel theme="goals" title="Simulador" subtitle="Projeção sem alterar dados reais">
-      <div className="rounded-2xl border border-purple-500/20 bg-surface-card p-5">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="rounded-2xl border border-purple-500/20 bg-surface-card p-4 sm:p-5">
+        <div className="mb-4 flex items-center gap-2">
           <Calculator className="h-4 w-4 text-purple-400" />
           <span className="text-sm text-text-secondary">Se vender mais unidades hoje:</span>
         </div>
@@ -43,7 +43,7 @@ export function GoalSimulator({
             max={50}
             value={extraUnits}
             onChange={(e) => setExtraUnits(Math.max(0, Number(e.target.value) || 0))}
-            className="w-20 text-center"
+            className="w-24 text-center"
           />
           <span className="text-sm text-text-muted">unidades</span>
         </div>

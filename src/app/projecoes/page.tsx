@@ -108,11 +108,11 @@ export default function ProjecoesPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setOffset((o) => o - 1)}>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => setOffset((o) => o - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="min-w-[180px] text-center text-sm font-medium capitalize text-text-primary">
+            <span className="min-w-0 flex-1 text-center text-sm font-medium capitalize text-text-primary sm:min-w-[180px] sm:flex-none">
               {data.periodLabel}
             </span>
             <Button
@@ -131,7 +131,7 @@ export default function ProjecoesPage() {
           {data.insight}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <KpiCard
             title="Receita realizada"
             value={data.actual.revenue}
@@ -167,32 +167,44 @@ export default function ProjecoesPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <SectionPanel title="Comparativo" subtitle="Realizado × projetado × meta">
             <div className="space-y-3">
+              {/* Celular: rótulo em cima e três valores legendados. Desktop: 4 colunas. */}
               {data.comparison.map((row) => (
                 <div
                   key={row.label}
-                  className="grid grid-cols-4 gap-2 rounded-xl border border-surface-border bg-surface-elevated/40 px-3 py-2 text-sm"
+                  className="rounded-xl border border-surface-border bg-surface-elevated/40 px-3 py-2.5 text-sm sm:grid sm:grid-cols-4 sm:gap-2 sm:py-2"
                 >
                   <span className="font-medium text-text-primary">{row.label}</span>
-                  <span className="text-text-secondary">
-                    {row.label === "Unidades"
-                      ? formatNumber(row.actual)
-                      : formatCurrency(row.actual)}
-                  </span>
-                  <span className="text-brand-orange">
-                    {row.label === "Unidades"
-                      ? formatNumber(row.projected)
-                      : formatCurrency(row.projected)}
-                  </span>
-                  <span className="text-text-muted">
-                    {row.goal > 0
-                      ? row.label === "Unidades"
-                        ? formatNumber(row.goal)
-                        : formatCurrency(row.goal)
-                      : "—"}
-                  </span>
+                  <div className="mt-1.5 grid grid-cols-3 gap-2 sm:mt-0 sm:contents">
+                    <span className="text-text-secondary">
+                      <span className="block text-[10px] uppercase tracking-wide text-text-muted sm:hidden">
+                        Realizado
+                      </span>
+                      {row.label === "Unidades"
+                        ? formatNumber(row.actual)
+                        : formatCurrency(row.actual)}
+                    </span>
+                    <span className="text-brand-orange">
+                      <span className="block text-[10px] uppercase tracking-wide text-text-muted sm:hidden">
+                        Projetado
+                      </span>
+                      {row.label === "Unidades"
+                        ? formatNumber(row.projected)
+                        : formatCurrency(row.projected)}
+                    </span>
+                    <span className="text-text-muted">
+                      <span className="block text-[10px] uppercase tracking-wide text-text-muted sm:hidden">
+                        Meta
+                      </span>
+                      {row.goal > 0
+                        ? row.label === "Unidades"
+                          ? formatNumber(row.goal)
+                          : formatCurrency(row.goal)
+                        : "—"}
+                    </span>
+                  </div>
                 </div>
               ))}
-              <div className="grid grid-cols-4 gap-2 px-3 text-[11px] uppercase tracking-wide text-text-muted">
+              <div className="hidden grid-cols-4 gap-2 px-3 text-[11px] uppercase tracking-wide text-text-muted sm:grid">
                 <span />
                 <span>Realizado</span>
                 <span>Projetado</span>
@@ -242,7 +254,7 @@ export default function ProjecoesPage() {
           </SectionPanel>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           <ChartCard
             data={data.dailyChart}
             title="Receita por dia útil"
@@ -251,7 +263,7 @@ export default function ProjecoesPage() {
           />
           <ChartCard
             data={comparisonChart}
-            title="Realizado vs projetado (barras) / meta (linha de referência no valor)"
+            title="Realizado vs projetado · meta como referência"
             type="bar"
             height={300}
           />
@@ -272,10 +284,12 @@ export default function ProjecoesPage() {
                 Simulação hipotética com preço/custo médio do catálogo (22 dias úteis fixos) — não
                 substitui a projeção por ritmo acima.
               </p>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 {scenarios.map((p) => (
-                  <Card key={p.dailyUnits} className="p-5 text-center">
-                    <p className="mb-1 text-3xl font-bold text-brand-orange">{p.dailyUnits}</p>
+                  <Card key={p.dailyUnits} className="p-4 text-center sm:p-5">
+                    <p className="mb-1 text-2xl font-bold text-brand-orange sm:text-3xl">
+                      {p.dailyUnits}
+                    </p>
                     <p className="mb-4 text-xs text-text-muted">unidades/dia</p>
                     <div className="space-y-2 text-sm">
                       <div>

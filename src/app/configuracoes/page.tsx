@@ -92,7 +92,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <AppShell title="Configurações" subtitle="Personalize seu sistema">
-      <div className="grid gap-6 lg:grid-cols-2 max-w-4xl">
+      <div className="grid max-w-4xl gap-4 sm:gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" />Metas</CardTitle>
@@ -117,9 +117,11 @@ export default function ConfiguracoesPage() {
                   yearly_goal: goals.yearly,
                 });
               }}
+              size="lg"
+              className="w-full sm:w-auto"
               disabled={!canWrite || saveSettings.isPending}
             >
-              Salvar Metas
+              {saveSettings.isPending ? "Salvando..." : "Salvar Metas"}
             </Button>
             {saveError && <p className="text-sm text-brand-red">{saveError}</p>}
             {saveSuccess && <p className="text-sm text-brand-green">Metas salvas com sucesso.</p>}
@@ -163,7 +165,7 @@ export default function ConfiguracoesPage() {
             <p className="text-sm text-text-secondary">
               Faça backup dos seus dados para manter tudo seguro.
             </p>
-            <Button variant="secondary" onClick={handleBackup}>
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto" onClick={handleBackup}>
               <Download className="h-4 w-4" />
               Exportar Backup
             </Button>

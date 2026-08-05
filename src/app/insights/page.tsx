@@ -60,7 +60,7 @@ export default function InsightsPage() {
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-orange/10">
             <Sparkles className="h-5 w-5 text-brand-orange" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="font-semibold text-text-primary">Análise consultiva automática</p>
             <p className="text-sm text-text-secondary">
               {insights.length} recomendações · diário + analytics engine
@@ -87,8 +87,8 @@ export default function InsightsPage() {
                     className={`rounded-2xl border p-4 ${config.accent}`}
                   >
                     <div className="flex items-start gap-3">
-                      <Icon className={`h-4 w-4 mt-1 ${config.iconColor}`} />
-                      <div>
+                      <Icon className={`mt-1 h-4 w-4 shrink-0 ${config.iconColor}`} />
+                      <div className="min-w-0">
                         <h3 className="font-semibold text-text-primary">{insight.title}</h3>
                         <p className="mt-1 text-sm text-text-secondary">{insight.description}</p>
                       </div>

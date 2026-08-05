@@ -72,10 +72,10 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
   const totalEntries = groups.reduce((sum, g) => sum + g.entries.length, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between text-xs text-text-muted">
+    <div className="space-y-5 sm:space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-text-muted">
         <span>{totalEntries} movimentações</span>
-        <span className="flex items-center gap-3">
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-emerald-400" /> Pago
           </span>
@@ -137,7 +137,8 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
                       )}
                     />
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    {/* Valor sempre à direita: no celular economiza altura da linha do tempo. */}
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5 text-xs font-bold text-text-primary">
@@ -170,8 +171,8 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
                         )}
                       </div>
 
-                      <div className="sm:text-right sm:shrink-0">
-                        <p className={cn("text-lg font-black tracking-tight", isLoss ? "text-red-400" : styles.amount)}>
+                      <div className="shrink-0 text-right">
+                        <p className={cn("text-base font-black tracking-tight sm:text-lg", isLoss ? "text-red-400" : styles.amount)}>
                           {isLoss ? "—" : formatCurrency(entry.amount)}
                         </p>
                       </div>

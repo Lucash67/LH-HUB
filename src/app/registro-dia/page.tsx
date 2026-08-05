@@ -102,6 +102,8 @@ export default function RegistroDiaPage() {
       setPreview(null);
       setDraft("");
       queryClient.invalidateQueries();
+      // No celular a confirmação fica no topo, longe do botão: sobe até ela.
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
   });
 
@@ -133,9 +135,9 @@ export default function RegistroDiaPage() {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardPaste className="h-4 w-4 text-brand-orange" />
               Rascunho do dia
@@ -155,7 +157,7 @@ export default function RegistroDiaPage() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Cole aqui seu rascunho (DD/MM, Encomendados, Histórico de vendas...)"
-              className="min-h-[480px] font-mono text-xs leading-relaxed"
+              className="min-h-[240px] font-mono text-base leading-relaxed sm:min-h-[340px] sm:text-xs xl:min-h-[480px]"
             />
 
             <div className="rounded-lg border border-surface-border bg-surface-base p-3 text-xs text-text-muted">
@@ -166,6 +168,7 @@ export default function RegistroDiaPage() {
             </div>
 
             <Button
+              size="lg"
               className="w-full"
               onClick={() => parseMutation.mutate(draft)}
               disabled={!canWrite || !draft.trim() || parseMutation.isPending}
@@ -262,7 +265,8 @@ export default function RegistroDiaPage() {
               )}
 
               <PreviewSection title={`Vendas (${preview.sales.length})`} icon={ShoppingCart}>
-                <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                {/* Sem scroll aninhado no celular: a página inteira rola. */}
+                <ul className="space-y-2 text-sm xl:max-h-48 xl:overflow-y-auto">
                   {preview.sales.map((sale, i) => (
                     <li key={`${sale.time}-${sale.clientName}-${i}`} className="border-b border-surface-border pb-2 last:border-0">
                       <span className="text-text-muted">{sale.time}</span> · {sale.clientName} ·{" "}
@@ -292,14 +296,18 @@ export default function RegistroDiaPage() {
                 </ul>
               </PreviewSection>
 
-              <Button
-                className="w-full"
-                onClick={() => preview && canCommit && commitMutation.mutate(preview)}
-                disabled={!canCommit}
-              >
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                {commitMutation.isPending ? "Registrando..." : "Confirmar e registrar dia"}
-              </Button>
+              {/* CTA colado no rodapé no celular: registrar sem rolar tudo de volta. */}
+              <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 rounded-2xl border border-surface-border bg-surface-base/95 p-2 shadow-lg backdrop-blur xl:static xl:border-0 xl:bg-transparent xl:p-0 xl:shadow-none xl:backdrop-blur-none">
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={() => preview && canCommit && commitMutation.mutate(preview)}
+                  disabled={!canCommit}
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  {commitMutation.isPending ? "Registrando..." : "Confirmar e registrar dia"}
+                </Button>
+              </div>
 
               {commitBlockReason && (
                 <p className="text-sm text-brand-orange">{commitBlockReason}</p>

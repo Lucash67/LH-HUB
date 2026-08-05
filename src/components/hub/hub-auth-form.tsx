@@ -307,7 +307,7 @@ export function HubAuthForm({ compact = false }: { compact?: boolean }) {
               <button
                 type="button"
                 onClick={() => switchTab("login")}
-                className="flex items-center gap-1.5 text-xs text-[#A3A3A3] transition-colors hover:text-white"
+                className="-ml-1 flex min-h-[40px] items-center gap-1.5 px-1 text-xs text-[#A3A3A3] transition-colors hover:text-white"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Voltar ao login
@@ -444,18 +444,18 @@ export function HubAuthForm({ compact = false }: { compact?: boolean }) {
 
             {tab === "login" && (
               <div className="flex items-center justify-between gap-3 text-sm">
-                <label className="flex cursor-pointer items-center gap-2 text-[#A3A3A3]">
+                <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-[#A3A3A3]">
                   <input
                     type="checkbox"
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
-                    className="h-4 w-4 rounded border-[#333333] bg-[#0B0B0B] accent-[#FFD400]"
+                    className="h-5 w-5 rounded border-[#333333] bg-[#0B0B0B] accent-[#FFD400] sm:h-4 sm:w-4"
                   />
                   Lembrar de mim
                 </label>
                 <button
                   type="button"
-                  className="text-[#FFD400] transition-opacity duration-[250ms] hover:opacity-80"
+                  className="min-h-[40px] px-1 text-[#FFD400] transition-opacity duration-[250ms] hover:opacity-80"
                   onClick={() => switchTab("forgot")}
                 >
                   Esqueci minha senha
@@ -600,8 +600,9 @@ function HubField({
           placeholder={placeholder}
           autoComplete={autoComplete}
           className={cn(
-            "h-11 w-full rounded-xl border bg-[#0B0B0B]/70 pl-10 pr-10 text-sm text-white backdrop-blur-sm placeholder:text-[#525252] transition-all duration-300 focus:outline-none focus:ring-2",
-            compact && "h-10 text-[13px]",
+            // text-base no celular evita o zoom automático do iOS ao focar.
+            "h-12 w-full rounded-xl border bg-[#0B0B0B]/70 pl-10 pr-10 text-base text-white backdrop-blur-sm transition-all duration-300 placeholder:text-[#525252] focus:outline-none focus:ring-2 sm:h-11 sm:text-sm",
+            compact && "sm:h-10 sm:text-[13px]",
             error
               ? "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20"
               : "border-[#333333]/80 focus:border-[#FFD400]/60 focus:ring-[#FFD400]/20 focus:shadow-[0_0_16px_rgba(255,212,0,0.08)]",

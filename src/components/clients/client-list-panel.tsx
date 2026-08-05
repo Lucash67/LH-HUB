@@ -67,7 +67,7 @@ export function ClientListPanel({
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Buscar por nome, produto ou telefone..."
-        className="w-full rounded-xl border border-surface-border bg-surface-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-blue-500/40 focus:outline-none"
+        className="h-11 w-full rounded-xl border border-surface-border bg-surface-elevated px-3 py-2 text-base text-text-primary placeholder:text-text-muted focus:border-blue-500/40 focus:outline-none sm:h-10 sm:text-sm"
       />
 
       <div className="flex flex-wrap gap-1.5">
@@ -77,7 +77,7 @@ export function ClientListPanel({
             type="button"
             onClick={() => onFilterChange(item.id)}
             className={cn(
-              "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
+              "min-h-[34px] rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors sm:min-h-0 sm:py-1",
               filter === item.id
                 ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
                 : "border-surface-border bg-surface-elevated text-text-secondary hover:text-text-primary",
@@ -92,7 +92,8 @@ export function ClientListPanel({
         {visible.length} de {clients.length} clientes
       </p>
 
-      <div className="space-y-2 max-h-[62vh] overflow-y-auto pr-1">
+      {/* No celular a lista rola com a página; no desktop fica com scroll próprio. */}
+      <div className="space-y-2 lg:max-h-[62vh] lg:overflow-y-auto lg:pr-1">
         {visible.map((client) => (
           <button
             key={client.id}

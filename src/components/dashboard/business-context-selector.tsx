@@ -78,7 +78,7 @@ export function BusinessContextSelector({ variant = "inline" }: BusinessContextS
         size="sm"
         className={cn(
           "gap-1.5 border-surface-border bg-surface-elevated/50 font-normal",
-          isSidebar ? "h-9 w-full justify-between px-3 text-[13px]" : "h-8",
+          isSidebar ? "h-11 w-full justify-between px-3 text-sm lg:h-9 lg:text-[13px]" : "sm:h-8",
         )}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
@@ -112,7 +112,7 @@ export function BusinessContextSelector({ variant = "inline" }: BusinessContextS
                 aria-selected={activeBusinessId === option.id}
                 onClick={() => selectBusiness(option.id)}
                 className={cn(
-                  "flex w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface-hover text-text-secondary hover:text-text-primary",
+                  "flex min-h-[44px] w-full items-center px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary lg:min-h-0",
                   activeBusinessId === option.id && "text-brand-orange",
                 )}
               >

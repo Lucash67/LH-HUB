@@ -13,11 +13,12 @@ const buttonVariants = cva(
         destructive: "bg-brand-red/10 text-brand-red hover:bg-brand-red/20 rounded-lg",
         outline: "border border-surface-border bg-transparent text-text-primary hover:bg-surface-hover rounded-lg",
       },
+      // Alturas maiores no celular (alvo de toque) e as originais no desktop.
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 px-3 text-xs rounded-md",
-        lg: "h-10 px-5 rounded-lg",
-        icon: "h-9 w-9 rounded-lg",
+        default: "h-10 px-4 py-2 sm:h-9",
+        sm: "h-9 px-3 text-xs rounded-md sm:h-8",
+        lg: "h-12 px-5 rounded-lg text-base sm:h-10 sm:text-sm",
+        icon: "h-10 w-10 rounded-lg sm:h-9 sm:w-9",
       },
     },
     defaultVariants: {

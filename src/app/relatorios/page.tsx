@@ -217,22 +217,24 @@ export default function RelatoriosPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <div className="rounded-xl bg-surface-elevated p-3">
                   <p className="label-upper">Receita</p>
-                  <p className="text-xl font-bold">{formatCurrency(summary.revenue)}</p>
+                  <p className="text-lg font-bold sm:text-xl">{formatCurrency(summary.revenue)}</p>
                 </div>
                 <div className="rounded-xl bg-surface-elevated p-3">
                   <p className="label-upper">Lucro</p>
-                  <p className="text-xl font-bold text-brand-green">{formatCurrency(data.totalProfit ?? data.profit ?? 0)}</p>
+                  <p className="text-lg font-bold text-brand-green sm:text-xl">
+                    {formatCurrency(data.totalProfit ?? data.profit ?? 0)}
+                  </p>
                 </div>
                 <div className="rounded-xl bg-surface-elevated p-3">
                   <p className="label-upper">Itens</p>
-                  <p className="text-xl font-bold">{summary.items}</p>
+                  <p className="text-lg font-bold sm:text-xl">{summary.items}</p>
                 </div>
                 <div className="rounded-xl bg-surface-elevated p-3">
                   <p className="label-upper">Vendas</p>
-                  <p className="text-xl font-bold">{summary.sales}</p>
+                  <p className="text-lg font-bold sm:text-xl">{summary.sales}</p>
                 </div>
               </div>
 
@@ -255,9 +257,9 @@ export default function RelatoriosPage() {
                   <h4 className="label-upper mb-2">Produtos</h4>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {Object.entries(data.productBreakdown).sort((a, b) => b[1] - a[1]).map(([name, qty]) => (
-                      <div key={name} className="flex justify-between rounded-lg bg-surface-elevated px-4 py-2 text-sm">
-                        <span>{name}</span>
-                        <span className="font-semibold">{qty} un.</span>
+                      <div key={name} className="flex justify-between gap-2 rounded-lg bg-surface-elevated px-4 py-2 text-sm">
+                        <span className="truncate">{name}</span>
+                        <span className="shrink-0 font-semibold">{qty} un.</span>
                       </div>
                     ))}
                   </div>

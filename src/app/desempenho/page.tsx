@@ -58,8 +58,8 @@ export default function DesempenhoPage() {
   return (
     <ModuleShell title="Desempenho" subtitle="Visão semanal e mensal da operação">
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex rounded-xl border border-surface-border bg-surface-card p-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="flex w-full rounded-xl border border-surface-border bg-surface-card p-1 sm:w-auto">
             {(["weekly", "monthly"] as const).map((p) => (
               <button
                 key={p}
@@ -69,7 +69,7 @@ export default function DesempenhoPage() {
                   setOffset(0);
                 }}
                 className={cn(
-                  "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  "flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors sm:flex-none sm:py-2",
                   period === p
                     ? "bg-brand-orange text-brand-on"
                     : "text-text-secondary hover:text-text-primary",
@@ -80,11 +80,11 @@ export default function DesempenhoPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => setOffset((o) => o - 1)}>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <Button variant="outline" size="icon" className="shrink-0" onClick={() => setOffset((o) => o - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="min-w-[180px] text-center text-sm font-medium text-text-primary">
+            <span className="min-w-0 flex-1 text-center text-sm font-medium text-text-primary sm:min-w-[180px] sm:flex-none">
               {data.periodLabel}
             </span>
             <Button
@@ -110,7 +110,7 @@ export default function DesempenhoPage() {
           ]}
         />
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <KpiCard title="Faturamento" value={data.metrics.revenue} icon={RevenueGrowthIcon} trend={data.comparison.revenueGrowth} />
           <KpiCard title="Lucro" value={data.metrics.profit} icon={ProfitGrowthIcon} trend={data.comparison.profitGrowth} variant="profit" />
           <KpiCard title="Ticket médio" value={data.metrics.averageTicket} icon={Receipt} />

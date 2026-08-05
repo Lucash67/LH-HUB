@@ -137,7 +137,7 @@ export default function FechamentoPage() {
                 type="button"
                 onClick={() => setMonthKey(month.monthKey)}
                 className={cn(
-                  "rounded-lg border px-3 py-1.5 text-xs font-medium capitalize transition-colors",
+                  "min-h-[36px] rounded-lg border px-3 py-2 text-xs font-medium capitalize transition-colors sm:min-h-0 sm:py-1.5",
                   month.monthKey === reference.monthKey
                     ? "border-brand-orange/60 bg-brand-orange/10 text-brand-orange"
                     : "border-surface-border text-text-secondary hover:text-text-primary",
@@ -167,7 +167,7 @@ export default function FechamentoPage() {
           title={`Como ${reference.label} fechou`}
           subtitle={`${reference.daysOperated} dias operados de ${reference.daysAvailableSinceStart} possíveis · presença ${(reference.attendanceRate * 100).toFixed(0)}%`}
         >
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <KpiCard
               title="Faturamento"
               value={reference.revenue}
@@ -224,9 +224,9 @@ export default function FechamentoPage() {
           </div>
         </SectionPanel>
 
-        <div className="card-surface p-6">
+        <div className="card-surface p-4 sm:p-6">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-semibold text-text-primary">
                 Metas que saem deste cenário
               </h3>
@@ -235,9 +235,8 @@ export default function FechamentoPage() {
                 Relatórios passam a medir por eles)
               </p>
             </div>
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
               <Button
-                size="sm"
                 disabled={!canWrite || applyGoals.isPending}
                 onClick={() => applyGoals.mutate(selected)}
               >
@@ -257,7 +256,7 @@ export default function FechamentoPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             {derivedGoals.map((goal) => (
               <div
                 key={goal.type}
@@ -302,7 +301,7 @@ export default function FechamentoPage() {
           <div className="space-y-6">
             <WeekdayProfileCard rows={data.weekdayProfile} />
             {capitalPlan && (
-              <div className="card-surface p-6">
+              <div className="card-surface p-4 sm:p-6">
                 <div className="mb-4 flex items-center gap-2">
                   <PiggyBank className="h-4 w-4 text-brand-green" />
                   <h3 className="text-sm font-semibold text-text-primary">
@@ -356,7 +355,7 @@ export default function FechamentoPage() {
 
           <div className="space-y-6">
             {milestones.length > 0 && (
-              <div className="card-surface p-6">
+              <div className="card-surface p-4 sm:p-6">
                 <div className="mb-4 flex items-center gap-2">
                   <Flag className="h-4 w-4 text-brand-orange" />
                   <h3 className="text-sm font-semibold text-text-primary">
@@ -386,7 +385,7 @@ export default function FechamentoPage() {
               </div>
             )}
 
-            <div className="card-surface p-6">
+            <div className="card-surface p-4 sm:p-6">
               <div className="mb-3 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-purple-400" />
                 <h3 className="text-sm font-semibold text-text-primary">

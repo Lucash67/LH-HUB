@@ -128,7 +128,7 @@ export function DashboardDayView({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className={cn(
-          "relative overflow-hidden rounded-3xl border p-5 sm:p-6",
+          "relative overflow-hidden rounded-3xl border p-4 sm:p-6",
           idleDay
             ? "border-surface-border bg-gradient-to-br from-surface-elevated/60 via-surface-card to-surface-card"
             : profitPositive
@@ -161,7 +161,7 @@ export function DashboardDayView({
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
                 className={cn(
-                  "text-4xl font-black tracking-tight sm:text-5xl",
+                  "text-[2rem] font-black tracking-tight sm:text-4xl lg:text-5xl",
                   idleDay
                     ? "text-text-secondary"
                     : profitPositive
@@ -211,14 +211,16 @@ export function DashboardDayView({
               </p>
             </div>
           ) : (
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 sm:gap-6">
               <MetaRing progress={goalProgress} sold={soldUnits} goal={goalUnits} />
-              <div className="hidden sm:block space-y-2 text-right text-sm">
+              <div className="min-w-0 space-y-1.5 text-sm sm:space-y-2 sm:text-right">
                 <p className="text-text-muted">Meta do dia</p>
                 <p className="text-2xl font-bold text-purple-400">
                   {goalUnits != null ? `${soldUnits}/${goalUnits}` : "—"}
                 </p>
-                <p className="text-xs text-text-secondary max-w-[140px]">{operationResult.summary}</p>
+                <p className="max-w-[190px] text-xs text-text-secondary sm:max-w-[140px]">
+                  {operationResult.summary}
+                </p>
               </div>
             </div>
           )}
@@ -226,7 +228,7 @@ export function DashboardDayView({
       </motion.div>
 
       {/* KPIs secundários */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <PulseMetric
           label="Faturamento"
           value={revenue}
@@ -263,6 +265,7 @@ export function DashboardDayView({
               : "Dia limpo — sem pendências"
           }
           delay={2}
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 
@@ -272,7 +275,7 @@ export function DashboardDayView({
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="lg:col-span-3 rounded-2xl border border-blue-500/20 bg-surface-card/80 p-5"
+          className="rounded-2xl border border-blue-500/20 bg-surface-card/80 p-4 sm:p-5 lg:col-span-3"
         >
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -287,9 +290,9 @@ export function DashboardDayView({
             <div className="space-y-3">
               {flavors.slice(0, 5).map((f, i) => (
                 <div key={f.label}>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="font-medium text-text-primary">{f.label}</span>
-                    <span className="text-text-secondary">{f.value} un.</span>
+                  <div className="mb-1 flex justify-between gap-2 text-sm">
+                    <span className="truncate font-medium text-text-primary">{f.label}</span>
+                    <span className="shrink-0 text-text-secondary">{f.value} un.</span>
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-surface-elevated">
                     <motion.div
@@ -394,9 +397,9 @@ export function DashboardDayView({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
-          className="overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-surface-card via-surface-card to-emerald-500/5 p-5 sm:p-6"
+          className="overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-surface-card via-surface-card to-emerald-500/5 p-4 sm:p-6"
         >
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3 sm:mb-5">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/80">
                 Histórico de vendas

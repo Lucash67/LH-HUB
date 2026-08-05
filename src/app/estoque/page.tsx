@@ -97,18 +97,18 @@ export default function EstoquePage() {
           </motion.div>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="p-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <Card className="p-4 sm:p-5">
             <p className="text-sm text-text-muted">Saldo Total</p>
-            <p className="text-3xl font-bold text-text-primary">{totalStock}</p>
+            <p className="text-2xl font-bold text-text-primary sm:text-3xl">{totalStock}</p>
           </Card>
-          <Card className="p-5">
+          <Card className="p-4 sm:p-5">
             <p className="text-sm text-text-muted">Produtos</p>
-            <p className="text-3xl font-bold text-text-primary">{data.products.length}</p>
+            <p className="text-2xl font-bold text-text-primary sm:text-3xl">{data.products.length}</p>
           </Card>
-          <Card className="p-5">
+          <Card className="col-span-2 p-4 sm:col-span-1 sm:p-5">
             <p className="text-sm text-text-muted">Alertas</p>
-            <p className="text-3xl font-bold text-brand-red">{data.lowStock.length}</p>
+            <p className="text-2xl font-bold text-brand-red sm:text-3xl">{data.lowStock.length}</p>
           </Card>
         </div>
 
@@ -124,7 +124,7 @@ export default function EstoquePage() {
                 }
                 updateStock.mutate(form);
               }}
-              className="grid gap-4 sm:grid-cols-4"
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
             >
               <Select label="Produto" value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })} required disabled={!canWrite}>
                 <option value="">Selecione</option>
@@ -137,28 +137,30 @@ export default function EstoquePage() {
               </Select>
               <Input label="Quantidade" type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} required disabled={!canWrite} />
               <Input label="Motivo" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} disabled={!canWrite} />
-              {formError && <p className="sm:col-span-4 text-sm text-brand-red">{formError}</p>}
-              <div className="sm:col-span-4">
-                <Button type="submit" disabled={!canWrite || updateStock.isPending}>Registrar Movimentação</Button>
+              {formError && <p className="text-sm text-brand-red sm:col-span-2 lg:col-span-4">{formError}</p>}
+              <div className="sm:col-span-2 lg:col-span-4">
+                <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={!canWrite || updateStock.isPending}>
+                  Registrar Movimentação
+                </Button>
               </div>
             </form>
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle>Produtos em Estoque</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {data.products.map((p) => (
-                <div key={p.id} className="flex items-center justify-between rounded-xl bg-surface-elevated p-3">
-                  <div className="flex items-center gap-3">
-                    <Package className="h-4 w-4 text-text-muted" />
-                    <div>
-                      <p className="text-sm font-medium">{p.name}</p>
-                      <p className="text-xs text-text-muted">{p.category}</p>
+                <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl bg-surface-elevated p-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Package className="h-4 w-4 shrink-0 text-text-muted" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{p.name}</p>
+                      <p className="truncate text-xs text-text-muted">{p.category}</p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <p className={`font-bold ${p.stockQuantity <= p.minStock ? "text-brand-red" : "text-text-primary"}`}>{p.stockQuantity}</p>
                     <p className="text-xs text-text-muted">mín: {p.minStock}</p>
                   </div>
@@ -169,21 +171,21 @@ export default function EstoquePage() {
 
           <Card>
             <CardHeader><CardTitle>Histórico</CardTitle></CardHeader>
-            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+            <CardContent className="space-y-2 lg:max-h-96 lg:overflow-y-auto">
               {data.movements.map((m) => (
-                <div key={m.id} className="flex items-center justify-between rounded-xl bg-surface-elevated p-3">
-                  <div className="flex items-center gap-3">
+                <div key={m.id} className="flex items-center justify-between gap-3 rounded-xl bg-surface-elevated p-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     {m.type === "entry" ? (
-                      <ArrowUp className="h-4 w-4 text-brand-green" />
+                      <ArrowUp className="h-4 w-4 shrink-0 text-brand-green" />
                     ) : (
-                      <ArrowDown className="h-4 w-4 text-brand-red" />
+                      <ArrowDown className="h-4 w-4 shrink-0 text-brand-red" />
                     )}
-                    <div>
-                      <p className="text-sm font-medium">{m.product?.name}</p>
-                      <p className="text-xs text-text-muted">{m.reason || m.type}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{m.product?.name}</p>
+                      <p className="truncate text-xs text-text-muted">{m.reason || m.type}</p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <Badge variant={m.type === "entry" ? "success" : "error"}>
                       {m.type === "entry" ? "+" : "-"}{m.quantity}
                     </Badge>

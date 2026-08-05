@@ -24,6 +24,11 @@ const WEEKDAY_FULL: Record<string, string> = {
   dom: "domingo",
 };
 
+/** Sem centavos e sem espaço: cabe nas colunas estreitas do celular. */
+function compactBRL(value: number): string {
+  return `R$${Math.round(value).toLocaleString("pt-BR")}`;
+}
+
 function TrendChip({ value, label }: { value: number | null; label: string }) {
   if (value == null) return null;
   const positive = value >= 0;
@@ -73,7 +78,7 @@ function StatCard({
       <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
         {label}
       </p>
-      <p className={cn("mt-1 text-2xl font-black leading-none tracking-tight", tones.text)}>
+      <p className={cn("mt-1 text-xl font-black leading-none tracking-tight sm:text-2xl", tones.text)}>
         {value}
       </p>
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -88,15 +93,22 @@ function DayBars({ days }: { days: WeekPulseDay[] }) {
   const max = Math.max(...days.map((day) => day.revenue), 1);
 
   return (
-    <div className="flex h-full items-end gap-2">
+    <div className="flex h-full items-end gap-1 sm:gap-2">
       {days.map((day, index) => {
         const height = day.revenue > 0 ? Math.max((day.revenue / max) * 100, 8) : 0;
         return (
           <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-            <span className="text-[11px] font-bold text-text-secondary">
-              {day.revenue > 0 ? formatCurrency(day.revenue) : "—"}
+            <span className="text-[10px] font-bold text-text-secondary sm:text-[11px]">
+              {day.revenue > 0 ? (
+                <>
+                  <span className="lg:hidden">{compactBRL(day.revenue)}</span>
+                  <span className="hidden lg:inline">{formatCurrency(day.revenue)}</span>
+                </>
+              ) : (
+                "—"
+              )}
             </span>
-            <div className="flex h-24 w-full items-end overflow-hidden rounded-lg bg-surface-hover/50">
+            <div className="flex h-20 w-full items-end overflow-hidden rounded-lg bg-surface-hover/50 sm:h-24">
               <motion.div
                 initial={{ height: 0 }}
                 animate={{ height: `${height}%` }}
@@ -108,7 +120,14 @@ function DayBars({ days }: { days: WeekPulseDay[] }) {
               {day.label}
             </span>
             <span className="text-[10px] text-emerald-400/90">
-              {day.profit > 0 ? formatCurrency(day.profit) : "—"}
+              {day.profit > 0 ? (
+                <>
+                  <span className="lg:hidden">{compactBRL(day.profit)}</span>
+                  <span className="hidden lg:inline">{formatCurrency(day.profit)}</span>
+                </>
+              ) : (
+                "—"
+              )}
             </span>
           </div>
         );
@@ -145,17 +164,17 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
             Desempenho da semana
           </h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Link
             href="/desempenho"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-surface-border bg-surface-card/70 px-3 py-1.5 text-xs font-bold text-text-secondary transition-colors hover:border-brand-yellow/40 hover:text-brand-yellow"
+            className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-surface-border bg-surface-card/70 px-3 py-2 text-xs font-bold text-text-secondary transition-colors hover:border-brand-yellow/40 hover:text-brand-yellow sm:min-h-0 sm:flex-none sm:py-1.5"
           >
             Desempenho completo
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
           <Link
             href="/fechamento"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-1.5 text-xs font-bold text-brand-yellow transition-colors hover:bg-brand-yellow/20"
+            className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs font-bold text-brand-yellow transition-colors hover:bg-brand-yellow/20 sm:min-h-0 sm:flex-none sm:py-1.5"
           >
             <CalendarClock className="h-3.5 w-3.5" />
             Tendência do mês
@@ -163,7 +182,7 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         <StatCard
           label="Faturamento"
           value={formatCurrency(pulse.revenue)}
@@ -213,7 +232,7 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
               <TrendingUp className="h-4 w-4 text-blue-400" />
               <h3 className="text-sm font-bold text-text-primary">Faturamento por dia</h3>
             </div>
-            <span className="text-[11px] text-text-muted">valor em cima · lucro embaixo</span>
+            <span className="hidden text-[11px] text-text-muted sm:inline">valor em cima · lucro embaixo</span>
           </div>
           <DayBars days={pulse.days} />
         </div>
@@ -233,9 +252,9 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
               <div className="space-y-2">
                 {pulse.products.slice(0, 4).map((product, index) => (
                   <div key={product.label}>
-                    <div className="mb-1 flex items-center justify-between text-xs">
-                      <span className="font-medium text-text-primary">{product.label}</span>
-                      <span className="text-text-secondary">{product.units} un</span>
+                    <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate font-medium text-text-primary">{product.label}</span>
+                      <span className="shrink-0 text-text-secondary">{product.units} un</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-surface-hover/60">
                       <motion.div

@@ -22,7 +22,7 @@ export function WeeklyPlanTable({ rows, monthLabel }: WeeklyPlanTableProps) {
 
   return (
     <div className="card-surface overflow-hidden">
-      <div className="border-b border-surface-border px-5 py-4">
+      <div className="border-b border-surface-border px-4 py-4 sm:px-5">
         <h3 className="text-sm font-semibold text-text-primary">Plano semanal de {monthLabel}</h3>
         <p className="mt-0.5 text-xs text-text-muted">
           Metas distribuídas pelos dias úteis de cada semana, com peso pelo desempenho de cada dia
@@ -32,7 +32,7 @@ export function WeeklyPlanTable({ rows, monthLabel }: WeeklyPlanTableProps) {
 
       <div className="divide-y divide-surface-border">
         {rows.map((row) => (
-          <div key={row.index} className="px-5 py-4">
+          <div key={row.index} className="px-4 py-4 sm:px-5">
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
               <div>
                 <span className="text-sm font-medium text-text-primary">{row.label}</span>
@@ -79,7 +79,7 @@ export function WeeklyPlanTable({ rows, monthLabel }: WeeklyPlanTableProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-surface-border bg-surface-elevated/40 px-5 py-3 text-xs sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-surface-border bg-surface-elevated/40 px-4 py-3 text-xs sm:grid-cols-4 sm:px-5">
         <div>
           <span className="text-text-muted">Total mês </span>
           <span className="font-semibold text-text-primary">{formatCurrency(totals.revenue)}</span>

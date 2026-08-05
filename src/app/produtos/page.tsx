@@ -98,7 +98,7 @@ export default function ProdutosPage() {
       <div className="space-y-6">
         {!canWrite && <BusinessWriteNotice message={writeBlockedMessage} />}
 
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-text-secondary">{products?.length ?? 0} produtos cadastrados</p>
           <Button onClick={handleNewProduct} disabled={!canWrite}>
             <Plus className="h-4 w-4" />
@@ -123,9 +123,13 @@ export default function ProdutosPage() {
                     <Input label="Preço (R$)" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
                     <Input label="Custo (R$)" type="number" step="0.01" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} required />
                     {formError && <p className="sm:col-span-2 lg:col-span-3 text-sm text-brand-red">{formError}</p>}
-                    <div className="sm:col-span-2 lg:col-span-3 flex gap-3">
-                      <Button type="submit" disabled={createProduct.isPending}>Salvar</Button>
-                      <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>Cancelar</Button>
+                    <div className="flex gap-3 sm:col-span-2 lg:col-span-3">
+                      <Button type="submit" size="lg" className="flex-1 sm:flex-none" disabled={createProduct.isPending}>
+                        Salvar
+                      </Button>
+                      <Button type="button" size="lg" variant="secondary" onClick={() => setShowForm(false)}>
+                        Cancelar
+                      </Button>
                     </div>
                   </form>
                 </CardContent>
@@ -135,7 +139,7 @@ export default function ProdutosPage() {
         </AnimatePresence>
 
         {products && products.length === 0 && !showForm && (
-          <Card className="p-8 text-center">
+          <Card className="p-6 text-center sm:p-8">
             <Package className="h-10 w-10 text-text-muted mx-auto mb-3" />
             <p className="text-text-secondary mb-4">Nenhum produto cadastrado nesta operação.</p>
             {canWrite && (
@@ -156,9 +160,9 @@ export default function ProdutosPage() {
                     {product.status === "active" ? "Ativo" : "Inativo"}
                   </Badge>
                 </div>
-                <h3 className="text-lg font-semibold text-text-primary">{product.name}</h3>
-                <p className="text-xs text-text-muted mb-4">{product.category}</p>
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <h3 className="truncate text-lg font-semibold text-text-primary">{product.name}</h3>
+                <p className="mb-4 text-xs text-text-muted">{product.category}</p>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm">
                   <div>
                     <p className="text-text-muted text-xs">Preço</p>
                     <p className="font-semibold">{formatCurrency(product.price)}</p>

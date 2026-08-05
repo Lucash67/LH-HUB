@@ -20,12 +20,12 @@ export function ExecutiveSummary({
   const t = MODULE_THEMES[theme];
 
   return (
-    <div className={cn("rounded-2xl border bg-surface-card p-5 shadow-card", t.border)}>
-      <div className="mb-4 flex items-center gap-2">
-        <div className={cn("h-2 w-2 rounded-full", t.accentDim.replace("/10", ""))} />
+    <div className={cn("rounded-2xl border bg-surface-card p-4 shadow-card sm:p-5", t.border)}>
+      <div className="mb-3 flex items-center gap-2 sm:mb-4">
+        <div className={cn("h-2 w-2 shrink-0 rounded-full", t.accentDim.replace("/10", ""))} />
         <h3 className={cn("text-sm font-semibold uppercase tracking-wide", t.accent)}>{title}</h3>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         {items.map((item) => (
           <div
             key={item.label}
@@ -35,7 +35,7 @@ export function ExecutiveSummary({
             )}
           >
             <p className="text-[11px] font-medium uppercase tracking-wide text-text-muted">{item.label}</p>
-            <p className={cn("mt-1 text-lg font-bold", item.highlight ? t.accent : "text-text-primary")}>
+            <p className={cn("mt-1 text-base font-bold sm:text-lg", item.highlight ? t.accent : "text-text-primary")}>
               {item.value}
             </p>
           </div>

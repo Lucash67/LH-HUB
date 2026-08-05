@@ -80,7 +80,7 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
         type="button"
         variant="outline"
         size="sm"
-        className="h-8 gap-1.5 border-surface-border bg-surface-elevated/50 font-normal"
+        className="gap-1.5 border-surface-border bg-surface-elevated/50 font-normal sm:h-8"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -152,7 +152,7 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
                 onChange={(e) => {
                   if (e.target.value) selectDate(e.target.value);
                 }}
-                className="w-full rounded-lg border border-surface-border bg-surface-base px-2 py-1.5 text-sm text-text-primary"
+                className="h-11 w-full rounded-lg border border-surface-border bg-surface-base px-2 py-1.5 text-base text-text-primary sm:h-auto sm:text-sm"
               />
             </div>
           )}
@@ -182,7 +182,7 @@ function MenuItem({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex w-full items-center px-3 py-2 text-left text-sm transition-colors",
+        "flex min-h-[44px] w-full items-center px-3 py-2 text-left text-sm transition-colors sm:min-h-0",
         disabled && "cursor-not-allowed opacity-40",
         !disabled && "hover:bg-surface-hover text-text-secondary hover:text-text-primary",
         active && !disabled && "text-brand-orange",

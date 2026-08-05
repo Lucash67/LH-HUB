@@ -65,7 +65,7 @@ export default function RankingsPage() {
 
   return (
     <ModuleShell title="Rankings" subtitle="Os melhores do seu negócio">
-      <div className="grid gap-6 lg:grid-cols-2 mt-6">
+      <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5 text-brand-orange" />Produtos Mais Vendidos</CardTitle>
@@ -74,12 +74,12 @@ export default function RankingsPage() {
             <RankingList
               items={data.topProducts as Array<Record<string, unknown>>}
               renderItem={(item, i) => (
-                <div className="flex items-center justify-between rounded-xl bg-surface-elevated p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-orange/10 text-xs font-bold text-brand-orange">{i + 1}</span>
-                    <span className="font-medium">{item.name as string}</span>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-elevated p-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-orange/10 text-xs font-bold text-brand-orange">{i + 1}</span>
+                    <span className="truncate font-medium">{item.name as string}</span>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <p className="font-semibold">{item.quantity as number} un.</p>
                     <p className="text-xs text-brand-green">{formatCurrency(item.profit as number)}</p>
                   </div>
@@ -97,15 +97,15 @@ export default function RankingsPage() {
             <RankingList
               items={data.topClients as Array<Record<string, unknown>>}
               renderItem={(item, i) => (
-                <div className="flex items-center justify-between rounded-xl bg-surface-elevated p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-orange/10 text-xs font-bold text-brand-orange">{i + 1}</span>
-                    <div>
-                      <p className="font-medium">{item.name as string}</p>
-                      <p className="text-xs text-text-muted">{item.count as number} compras · Favorito: {item.favorite as string}</p>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-elevated p-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-orange/10 text-xs font-bold text-brand-orange">{i + 1}</span>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{item.name as string}</p>
+                      <p className="truncate text-xs text-text-muted">{item.count as number} compras · Favorito: {item.favorite as string}</p>
                     </div>
                   </div>
-                  <p className="font-semibold">{formatCurrency(item.total as number)}</p>
+                  <p className="shrink-0 font-semibold">{formatCurrency(item.total as number)}</p>
                 </div>
               )}
             />
@@ -154,9 +154,9 @@ export default function RankingsPage() {
             <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5 text-brand-orange" />Recordes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
               {data.highestRevenue && (
-                <div className="rounded-2xl bg-brand-orange/10 p-5 text-center">
+                <div className="rounded-2xl bg-brand-orange/10 p-4 text-center sm:p-5">
                   <p className="text-xs text-text-muted mb-1">Maior Faturamento</p>
                   <p className="text-xl font-bold">{formatCurrency(data.highestRevenue[1])}</p>
                   <p className="text-xs text-text-muted mt-1">{formatDate(data.highestRevenue[0])}</p>

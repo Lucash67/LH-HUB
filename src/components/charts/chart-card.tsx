@@ -58,6 +58,14 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
+/** Eixo Y curto: 1.250 vira "1,2k" e cabe nos 32px de largura no celular. */
+function formatAxisValue(value: number): string {
+  if (!Number.isFinite(value)) return "";
+  const abs = Math.abs(value);
+  if (abs >= 1000) return `${(value / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k`;
+  return String(Math.round(value));
+}
+
 export function ChartCard({ data, title, subtitle, type = "area", height = 260, showLegend }: ChartCardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -70,14 +78,14 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
   }));
 
   return (
-    <div className="card-surface p-6">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
+    <div className="card-surface p-4 sm:p-6">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-2 sm:mb-6">
+        <div className="min-w-0">
           <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
           {subtitle && <p className="mt-0.5 text-xs text-text-muted">{subtitle}</p>}
         </div>
         {type === "area" && showLegend && (
-          <div className="flex items-center gap-4 text-xs text-text-muted">
+          <div className="flex items-center gap-3 text-xs text-text-muted sm:gap-4">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-brand-orange" />
               Receita
@@ -89,10 +97,15 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
           </div>
         )}
       </div>
+      {/* Altura menor no celular sem depender de JS: variável CSS + breakpoint. */}
+      <div
+        className="h-[210px] sm:h-[var(--chart-height)]"
+        style={{ "--chart-height": `${height}px` } as React.CSSProperties}
+      >
       {!mounted ? (
-        <div className="animate-pulse rounded-lg bg-surface-elevated" style={{ height }} />
+        <div className="h-full animate-pulse rounded-lg bg-surface-elevated" />
       ) : (
-        <ResponsiveContainer width="100%" height={height}>
+        <ResponsiveContainer width="100%" height="100%">
           {type === "area" ? (
             <AreaChart data={chartData}>
               <defs>
@@ -106,8 +119,23 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-              <XAxis dataKey="name" stroke="#737373" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#737373" fontSize={11} tickLine={false} axisLine={false} width={32} />
+              <XAxis
+                dataKey="name"
+                stroke="#737373"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
+                minTickGap={18}
+              />
+              <YAxis
+                stroke="#737373"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                width={36}
+                tickFormatter={formatAxisValue}
+              />
               <Tooltip content={<ChartTooltip />} />
               <Area type="monotone" dataKey="revenue" stroke={BRAND_PRIMARY} fill="url(#gradRevenue)" strokeWidth={2} name="Receita" />
               {chartData.some((d) => d.profit !== undefined) && (
@@ -117,8 +145,23 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
           ) : type === "bar" ? (
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-              <XAxis dataKey="name" stroke="#737373" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#737373" fontSize={11} tickLine={false} axisLine={false} width={32} />
+              <XAxis
+                dataKey="name"
+                stroke="#737373"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
+                minTickGap={18}
+              />
+              <YAxis
+                stroke="#737373"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                width={36}
+                tickFormatter={formatAxisValue}
+              />
               <Tooltip content={<ChartTooltip />} />
               <Bar dataKey="value" fill={BRAND_PRIMARY} radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -144,6 +187,7 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
           )}
         </ResponsiveContainer>
       )}
+      </div>
       {type === "pie" && mounted && (
         <div className="mt-4 space-y-2">
           {chartData.map((item, i) => (
@@ -170,8 +214,8 @@ export function TopProductsCard({ products, subtitle = "Este mês" }: TopProduct
   const max = Math.max(...products.map((p) => p.value), 1);
 
   return (
-    <div className="card-surface p-6">
-      <div className="mb-6">
+    <div className="card-surface p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
         <h3 className="text-sm font-semibold text-text-primary">Top produtos</h3>
         <p className="mt-0.5 text-xs text-text-muted">{subtitle}</p>
       </div>

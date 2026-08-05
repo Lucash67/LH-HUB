@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -15,6 +15,16 @@ export const metadata: Metadata = {
   icons: {
     icon: "/brand/lh-empreendimentos-favicon.png?v=3",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Zoom liberado de propósito: acessibilidade acima de "app nativo".
+  maximumScale: 5,
+  themeColor: "#050505",
+  // A barra do teclado não deve empurrar o layout fixo no Android.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

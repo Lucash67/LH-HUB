@@ -97,19 +97,21 @@ export function PulseMetric({
       transition={{ duration: 0.45, delay: delay * 0.08, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border bg-surface-card/90 p-4 backdrop-blur-sm",
+        "relative overflow-hidden rounded-2xl border bg-surface-card/90 p-3.5 backdrop-blur-sm sm:p-4",
         v.ring,
         v.glow,
         className,
       )}
     >
       <div className={cn("absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl", v.blob)} />
-      <div className="relative flex items-start justify-between gap-3">
+      <div className="relative flex items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-1.5">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
             {label}
           </p>
-          <p className={cn("text-2xl font-bold tracking-tight sm:text-3xl", v.value)}>{formatted}</p>
+          <p className={cn("text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl", v.value)}>
+            {formatted}
+          </p>
           {trend !== undefined && (
             <p
               className={cn(
@@ -127,8 +129,13 @@ export function PulseMetric({
           )}
           {subtext && <p className="mt-1 text-xs text-text-secondary leading-snug">{subtext}</p>}
         </div>
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", v.icon)}>
-          <Icon className="h-5 w-5" strokeWidth={2} />
+        <div
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10",
+            v.icon,
+          )}
+        >
+          <Icon className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2} />
         </div>
       </div>
     </motion.div>

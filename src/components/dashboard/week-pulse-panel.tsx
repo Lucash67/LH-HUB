@@ -99,7 +99,7 @@ export function WeekPulsePanel({
             </div>
             <span
               className={cn(
-                "text-[9px] leading-none",
+                "text-[10px] leading-none",
                 day.isFocus ? "font-bold text-brand-yellow" : "text-text-muted",
               )}
             >

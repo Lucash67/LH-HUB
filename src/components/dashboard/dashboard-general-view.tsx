@@ -30,13 +30,13 @@ export function DashboardGeneralView({
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-surface-card to-purple-500/10 p-6 sm:p-8"
+        className="rounded-3xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-surface-card to-purple-500/10 p-4 sm:p-8"
       >
-        <p className="text-sm text-text-secondary mb-1">Visão executiva · histórico completo</p>
-        <p className="text-4xl sm:text-5xl font-black text-blue-400 tracking-tight">
+        <p className="mb-1 text-sm text-text-secondary">Visão executiva · histórico completo</p>
+        <p className="text-[2rem] font-black tracking-tight text-blue-400 sm:text-4xl lg:text-5xl">
           {formatCurrency(revenue)}
         </p>
-        <p className="mt-2 text-text-secondary">
+        <p className="mt-2 text-sm text-text-secondary sm:text-base">
           Lucro acumulado{" "}
           <span className="text-emerald-400 font-bold">{formatCurrency(profit)}</span>
           {" · "}
@@ -44,7 +44,7 @@ export function DashboardGeneralView({
         </p>
       </motion.div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <PulseMetric label="Receita total" value={revenue} icon={DollarSign} variant="revenue" delay={0} />
         <PulseMetric
           label="Lucro total"

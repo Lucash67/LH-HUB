@@ -47,7 +47,7 @@ export function GoalPeriodCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: delay * 0.08 }}
-      className="rounded-2xl border border-purple-500/20 bg-surface-card p-5 shadow-card"
+      className="rounded-2xl border border-purple-500/20 bg-surface-card p-4 shadow-card sm:p-5"
     >
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">

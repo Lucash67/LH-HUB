@@ -12,8 +12,8 @@ import { PageLoader } from "@/components/ui/loading";
 import { SectionPanel } from "@/components/executive/section-panel";
 import { ClientListPanel } from "@/components/clients/client-list-panel";
 import { ClientProfilePanel } from "@/components/clients/client-profile-panel";
-import { Plus, User } from "lucide-react";
-import { DEPARTMENTS } from "@/lib/utils";
+import { ArrowLeft, Plus, User } from "lucide-react";
+import { cn, DEPARTMENTS } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ClientCrmListItem, ClientCrmProfile } from "@/lib/client-crm-service";
 import type { ClientFilterId } from "@/lib/client-crm-view";
@@ -112,6 +112,8 @@ export default function ClientesPage() {
                       label="Nome"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      autoComplete="name"
+                      autoCapitalize="words"
                       required
                     />
                     <Select
@@ -133,6 +135,9 @@ export default function ClientesPage() {
                     />
                     <Input
                       label="Telefone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     />
@@ -144,9 +149,16 @@ export default function ClientesPage() {
                       />
                     </div>
                     {formError && <p className="sm:col-span-2 text-sm text-brand-red">{formError}</p>}
-                    <div className="sm:col-span-2 flex gap-3">
-                      <Button type="submit">Salvar</Button>
-                      <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
+                    <div className="flex gap-3 sm:col-span-2">
+                      <Button type="submit" size="lg" className="flex-1 sm:flex-none">
+                        Salvar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant="secondary"
+                        onClick={() => setShowForm(false)}
+                      >
                         Cancelar
                       </Button>
                     </div>
@@ -167,8 +179,13 @@ export default function ClientesPage() {
           </Card>
         )}
 
+        {/* No celular é lista OU perfil (com voltar); no desktop, os dois lado a lado. */}
         <div className="grid gap-5 lg:grid-cols-3">
-          <SectionPanel theme="clients" title="Clientes" className="lg:col-span-1">
+          <SectionPanel
+            theme="clients"
+            title="Clientes"
+            className={cn("lg:col-span-1", selectedId && "hidden lg:block")}
+          >
             <ClientListPanel
               clients={clients ?? []}
               selectedId={selectedId}
@@ -180,7 +197,18 @@ export default function ClientesPage() {
             />
           </SectionPanel>
 
-          <div className="lg:col-span-2">
+          <div className={cn("space-y-3 lg:col-span-2", !selectedId && "hidden lg:block")}>
+            {selectedId && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="lg:hidden"
+                onClick={() => setSelectedId(null)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar aos clientes
+              </Button>
+            )}
             {profile ? (
               <ClientProfilePanel profile={profile} />
             ) : (

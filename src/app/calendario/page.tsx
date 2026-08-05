@@ -164,12 +164,15 @@ export default function CalendarioPage() {
           <SectionPanel theme="goals" title="Calendário" className="lg:col-span-2">
             <Card>
               <CardContent className="pt-5">
-                <div className="mb-2 grid grid-cols-7 gap-1.5">
+                <div className="mb-2 grid grid-cols-7 gap-1 sm:gap-1.5">
                   {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
-                    <div key={d} className="py-1.5 text-center text-[11px] font-medium text-text-muted">{d}</div>
+                    <div key={d} className="py-1.5 text-center text-[11px] font-medium text-text-muted">
+                      <span className="sm:hidden">{d.charAt(0)}</span>
+                      <span className="hidden sm:inline">{d}</span>
+                    </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-1.5">
+                <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                   {days.map((day, i) => {
                     if (day === null) return <div key={`empty-${i}`} />;
                     const dateStr = format(new Date(year, month - 1, day), "yyyy-MM-dd");
@@ -183,15 +186,18 @@ export default function CalendarioPage() {
                           setSelectedDate(dateStr);
                           setViewDate(dateStr);
                         }}
-                        className={`relative flex min-h-[64px] flex-col items-center justify-center rounded-xl p-2 transition-all hover:scale-[1.03] ${
+                        className={`relative flex min-h-[52px] flex-col items-center justify-center rounded-xl p-1 transition-all hover:scale-[1.03] sm:min-h-[64px] sm:p-2 ${
                           selectedDate === dateStr ? "ring-2 ring-purple-400 bg-purple-500/5" : "bg-surface-elevated"
                         }`}
                       >
-                        <span className="text-sm font-medium">{day}</span>
+                        <span className="text-sm font-semibold">{day}</span>
                         {dayInfo && (
                           <>
-                            <div className={`absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full ${statusColors[status]}`} />
-                            <span className="mt-0.5 text-[9px] text-text-muted">{formatCurrency(dayInfo.revenue)}</span>
+                            <div className={`absolute right-1 top-1 h-1.5 w-1.5 rounded-full sm:right-1.5 sm:top-1.5 ${statusColors[status]}`} />
+                            {/* Receita em 9px é ilegível no celular: só do sm pra cima. */}
+                            <span className="mt-0.5 hidden text-[10px] text-text-muted sm:inline">
+                              {formatCurrency(dayInfo.revenue)}
+                            </span>
                           </>
                         )}
                       </button>

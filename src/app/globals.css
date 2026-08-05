@@ -89,6 +89,13 @@
   background-attachment: fixed;
 }
 
+/* background-attachment: fixed causa travamento de scroll no iOS/Android. */
+@media (max-width: 1023px) {
+  .brand body {
+    background-attachment: scroll;
+  }
+}
+
 .brand ::-webkit-scrollbar-thumb {
   background: rgba(255, 212, 0, 0.18);
   border-radius: 9999px;
@@ -99,9 +106,18 @@
     @apply border-surface-border;
   }
 
+  html {
+    /* Evita o iOS inflar a fonte em landscape e o realce cinza ao tocar. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-surface-base text-text-primary antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* clip (e não hidden) para não criar contexto de scroll e quebrar o sticky. */
+    overflow-x: clip;
   }
 
   ::-webkit-scrollbar {

@@ -49,7 +49,9 @@ function MetricCard({
         <Icon className="h-3.5 w-3.5 text-text-muted" />
         <p className="label-upper">{label}</p>
       </div>
-      <p className={cn("text-lg font-bold", accent && "text-blue-400")}>{value}</p>
+      <p className={cn("truncate text-base font-bold sm:text-lg", accent && "text-blue-400")} title={value}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -58,10 +60,10 @@ export function ClientProfilePanel({ profile }: ClientProfilePanelProps) {
   const { client, summary, behavior, relationship, timeline, insights, suggestedAction } = profile;
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-blue-500/20 bg-surface-card p-5">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <h2 className="text-xl font-bold text-text-primary">{client.name}</h2>
+    <div className="space-y-4 sm:space-y-5">
+      <div className="rounded-2xl border border-blue-500/20 bg-surface-card p-4 sm:p-5">
+        <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
+          <h2 className="text-lg font-bold text-text-primary sm:text-xl">{client.name}</h2>
           {summary.badge && <ClientBadgeChip badge={summary.badge} />}
         </div>
         <p className="text-sm text-text-muted">
@@ -71,7 +73,7 @@ export function ClientProfilePanel({ profile }: ClientProfilePanelProps) {
       </div>
 
       <SectionPanel theme="clients" title="Resumo">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
           <MetricCard label="Total gasto" value={formatCurrency(summary.totalReceived)} icon={ShoppingBag} accent />
           <MetricCard label="Compras" value={String(summary.purchaseCount)} icon={Repeat} />
           <MetricCard label="Ticket médio" value={formatCurrency(summary.averageTicket)} icon={Receipt} />
@@ -95,7 +97,7 @@ export function ClientProfilePanel({ profile }: ClientProfilePanelProps) {
       </SectionPanel>
 
       <SectionPanel theme="clients" title="Comportamento">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           <MetricCard
             label="Horário preferido"
             value={behavior.preferredHour ?? "—"}
@@ -116,7 +118,7 @@ export function ClientProfilePanel({ profile }: ClientProfilePanelProps) {
             value={behavior.preferredPaymentLabel}
             icon={CreditCard}
           />
-          <div className="rounded-xl border border-surface-border bg-surface-elevated p-3 sm:col-span-2">
+          <div className="col-span-2 rounded-xl border border-surface-border bg-surface-elevated p-3">
             <div className="mb-1 flex items-center gap-1.5">
               <TrendIcon trend={behavior.trend} />
               <p className="label-upper">Tendência</p>
@@ -127,7 +129,7 @@ export function ClientProfilePanel({ profile }: ClientProfilePanelProps) {
       </SectionPanel>
 
       <SectionPanel theme="clients" title="Relacionamento">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           <MetricCard
             label="Primeira compra"
             value={relationship.firstPurchaseDate ? formatDate(relationship.firstPurchaseDate) : "—"}
@@ -164,23 +166,23 @@ export function ClientProfilePanel({ profile }: ClientProfilePanelProps) {
         ) : (
           <div className="relative space-y-0">
             {timeline.map((sale, index) => (
-              <div key={sale.id} className="relative flex gap-4 pb-5 last:pb-0">
+              <div key={sale.id} className="relative flex gap-3 pb-4 last:pb-0 sm:gap-4 sm:pb-5">
                 {index < timeline.length - 1 && (
                   <span className="absolute left-[11px] top-6 h-[calc(100%-8px)] w-px bg-surface-border" />
                 )}
                 <div className="relative z-10 mt-1 h-[22px] w-[22px] shrink-0 rounded-full border-2 border-blue-500/40 bg-blue-500/10" />
                 <div className="min-w-0 flex-1 rounded-xl border border-surface-border bg-surface-elevated p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <p className="text-sm font-semibold text-text-primary">
                         {formatDateTime(sale.date, sale.time)}
                       </p>
-                      <p className="text-xs text-text-muted mt-0.5">
+                      <p className="mt-0.5 text-xs text-text-muted">
                         {paymentMethodLabel(sale.paymentMethod)}
                         {sale.paymentStatus === "pending" ? " · Pendente" : ""}
                       </p>
                     </div>
-                    <p className="text-sm font-bold text-blue-400">{formatCurrency(sale.totalAmount)}</p>
+                    <p className="shrink-0 text-sm font-bold text-blue-400">{formatCurrency(sale.totalAmount)}</p>
                   </div>
                   <ul className="mt-2 space-y-1">
                     {sale.items.map((item, itemIndex) => (

@@ -25,7 +25,7 @@ export function TemporalDayChip() {
       </span>
       <Link
         href="/diario"
-        className="ml-auto text-xs font-medium text-brand-orange hover:underline"
+        className="ml-auto inline-flex min-h-[32px] items-center px-1 text-xs font-medium text-brand-orange hover:underline"
       >
         Abrir diário →
       </Link>
