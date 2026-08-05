@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  LayoutGrid,
   ShoppingCart,
   Package,
   Warehouse,
@@ -27,8 +28,9 @@ export interface NavItem {
   paused?: boolean;
 }
 
-/** Ordem e itens idênticos à versão Lovable oficial */
+/** Ordem e itens idênticos à versão Lovable oficial (+ Visão Geral no topo). */
 export const NAV_ITEMS: NavItem[] = [
+  { href: "/visao-geral", label: "Visão Geral", icon: LayoutGrid },
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   // Vendas pausado — histórico de vendas agora aparece por dia no Dashboard/Calendário.
   { href: "/vendas", label: "Vendas", icon: ShoppingCart, paused: true },
@@ -53,7 +55,7 @@ export const SIDEBAR_WIDTH = 240;
 
 /** Destinos da barra inferior no celular — o resto fica no menu lateral. */
 export const MOBILE_NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Painel", icon: LayoutDashboard },
+  { href: "/visao-geral", label: "Hub", icon: LayoutGrid },
   { href: "/registro-dia", label: "Registrar", icon: ClipboardPaste },
   { href: "/desempenho", label: "Semana", icon: TrendingUp },
   { href: "/fechamento", label: "Tendência", icon: CalendarClock },
