@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import type { EffectRecord, OperationInterpretation } from "@/core/contracts";
 import { createEngineError } from "@/shared/errors/engine-errors";
 import type { PaymentStatus } from "@/lib/operational-data-service";
+import { normalizeSaleShiftTime } from "@/lib/sale-shift";
 import { executeSaleRecord } from "@/platform/db/repositories/sale-repository";
 import { getClientById } from "@/platform/db/repositories/client-repository";
 import { generateId } from "@/shared/ids/generate-id";
@@ -39,7 +40,7 @@ export function extractSaleParams(interpretation: OperationInterpretation): Sale
     clientId: client?.resolvedId ?? null,
     paymentMethod: payment.rawValue as "pix" | "card" | "cash",
     date: format(new Date(), "yyyy-MM-dd"),
-    time: format(new Date(), "HH:mm"),
+    time: normalizeSaleShiftTime(format(new Date(), "HH:mm")),
     notes: null,
     department: null,
   };

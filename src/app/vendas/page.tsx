@@ -11,7 +11,7 @@ import { Input, Select, Textarea } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/ui/loading";
 import { Plus, ShoppingCart, Package } from "lucide-react";
-import { formatCurrency, formatDate, paymentMethodLabel, todayISO, nowTime, DEPARTMENTS, PAYMENT_METHODS } from "@/lib/utils";
+import { formatCurrency, formatDateTime, paymentMethodLabel, todayISO, nowTime, DEPARTMENTS, PAYMENT_METHODS } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { asArray, fetchJsonArray } from "@/lib/api/safe-json";
@@ -254,7 +254,7 @@ export default function VendasPage() {
                         {sale.items?.map((item) => `${item.quantity}x ${item.product?.name}`).join(", ") || "Venda"}
                       </p>
                       <p className="text-xs text-text-muted">
-                        {formatDate(sale.date)} às {sale.time}
+                        {formatDateTime(sale.date, sale.time)}
                         {sale.client && ` · ${sale.client.name}`}
                         {sale.department && ` · ${sale.department}`}
                       </p>

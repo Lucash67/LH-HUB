@@ -2,8 +2,6 @@
 
 import { motion } from "framer-motion";
 import {
-  Clock,
-  Coffee,
   Sun,
   Sunset,
   User,
@@ -11,6 +9,7 @@ import {
   AlertOctagon,
 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
+import { formatSaleShift } from "@/lib/sale-shift";
 import type { DayTimelineGroup } from "@/lib/dashboard-view";
 
 interface SalesDayTimelineProps {
@@ -26,21 +25,13 @@ const PERIOD_META = {
     accent: "text-[#FFD400]",
     dot: "bg-[#FFD400]",
   },
-  lunch: {
-    label: "Almoço",
-    icon: Coffee,
-    gradient: "from-blue-500/20 via-cyan-500/10 to-transparent",
-    border: "border-blue-500/25",
-    accent: "text-blue-400",
-    dot: "bg-blue-400",
-  },
   afternoon: {
     label: "Tarde",
     icon: Sunset,
-    gradient: "from-purple-500/20 via-violet-500/10 to-transparent",
-    border: "border-purple-500/25",
-    accent: "text-purple-400",
-    dot: "bg-purple-400",
+    gradient: "from-orange-500/20 via-amber-500/10 to-transparent",
+    border: "border-orange-500/25",
+    accent: "text-orange-300",
+    dot: "bg-orange-400",
   },
 } as const;
 
@@ -63,7 +54,7 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
   if (groups.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-surface-border bg-surface-elevated/50 px-6 py-10 text-center">
-        <Clock className="mx-auto mb-2 h-8 w-8 text-text-muted/50" />
+        <Sun className="mx-auto mb-2 h-8 w-8 text-text-muted/50" />
         <p className="text-sm text-text-muted">Nenhuma venda registrada neste dia.</p>
       </div>
     );
@@ -137,13 +128,11 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
                       )}
                     />
 
-                    {/* Valor sempre à direita: no celular economiza altura da linha do tempo. */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5 text-xs font-bold text-text-primary">
-                            <Clock className="h-3 w-3 text-text-muted" />
-                            {entry.time}
+                            {formatSaleShift(entry.time)}
                           </span>
                           <span
                             className={cn(

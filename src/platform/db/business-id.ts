@@ -40,13 +40,13 @@ export function postgresBusinessSeedRows(): Array<{
     {
       id: POSTGRES_BUSINESS_UUIDS[SALGADOS_BUSINESS_ID],
       slug: SALGADOS_BUSINESS_ID,
-      name: "Salgados",
+      name: "Salty",
       status: "active",
     },
     {
       id: POSTGRES_BUSINESS_UUIDS[BRIGADEIROS_BUSINESS_ID],
       slug: BRIGADEIROS_BUSINESS_ID,
-      name: "Brigadeiros",
+      name: "Candy",
       status: "active",
     },
   ];
@@ -58,9 +58,17 @@ export function mapBusinessRowToLegacy(row: {
   name: string;
   status: string;
 }): BusinessUnit {
+  const slug = isPostgres() ? row.slug : row.id;
+  // Nome canônico do catálogo (Salty/Candy) prevalece sobre o texto antigo no banco.
+  const catalogName =
+    slug === SALGADOS_BUSINESS_ID
+      ? "Salty"
+      : slug === BRIGADEIROS_BUSINESS_ID
+        ? "Candy"
+        : row.name;
   return {
-    id: isPostgres() ? row.slug : row.id,
-    name: row.name,
+    id: slug,
+    name: catalogName,
     slug: row.slug,
     status: row.status as "active" | "inactive",
   };

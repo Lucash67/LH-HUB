@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         paymentMethod: paymentMethod || "pix",
         paymentStatus: paymentStatus || undefined,
         date: date ?? format(new Date(), "yyyy-MM-dd"),
-        time: time ?? format(new Date(), "HH:mm"),
+        time: time ? time : undefined,
         department: department || null,
         notes: notes || null,
       });

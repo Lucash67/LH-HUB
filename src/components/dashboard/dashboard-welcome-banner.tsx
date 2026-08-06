@@ -20,11 +20,8 @@ import { cn } from "@/lib/utils";
 import { getFirstName, resolveUserTimeZone } from "@/lib/time-greeting";
 import { resolveDashboardGreeting } from "@/lib/dashboard-greeting";
 import { useSessionUser } from "@/hooks/use-session-user";
-import { WeekPulsePanel } from "@/components/dashboard/week-pulse-panel";
-import { DayPulsePanel, type DayPulse } from "@/components/dashboard/day-pulse-panel";
-import { ConservativeWeekPanel } from "@/components/dashboard/conservative-week-panel";
+import { WeekUnitsPanel } from "@/components/dashboard/week-units-panel";
 import type { WeekPulse } from "@/lib/week-pulse";
-import type { ConservativeWeekForecast } from "@/lib/conservative-week-forecast";
 
 interface QuickAction {
   href: string;
@@ -108,20 +105,14 @@ interface DashboardWelcomeBannerProps {
   className?: string;
   /** Dia em foco no filtro temporal (yyyy-MM-dd) — null na visão geral. */
   viewDate?: string | null;
-  /** Métricas do dia — sustenta a headline de dias úteis. */
-  dayPulse?: DayPulse | null;
-  /** Resumo da semana — sustenta a headline de sábado. */
+  /** Resumo da semana para o gráfico de unidades no lugar do card de KPI. */
   weekPulse?: WeekPulse | null;
-  /** Projeção conservadora seg–sex — sustenta a headline de domingo. */
-  conservativeWeek?: ConservativeWeekForecast | null;
 }
 
 export function DashboardWelcomeBanner({
   className,
   viewDate,
-  dayPulse,
   weekPulse,
-  conservativeWeek,
 }: DashboardWelcomeBannerProps) {
   const { data: user } = useSessionUser();
   const [copy, setCopy] = useState(() => resolveDashboardGreeting({ viewDate }));
@@ -137,24 +128,6 @@ export function DashboardWelcomeBanner({
 
   const firstName = getFirstName(user?.name ?? "Lucas");
   const quickActions = copy.isConsulting ? CONSULT_ACTIONS : OPERATE_ACTIONS;
-
-  let sidePanel: React.ReactNode = null;
-  if (copy.sideFocus === "conservative" && conservativeWeek) {
-    sidePanel = <ConservativeWeekPanel forecast={conservativeWeek} />;
-  } else if (copy.sideFocus === "week" && weekPulse) {
-    sidePanel = <WeekPulsePanel pulse={weekPulse} />;
-  } else if (copy.sideFocus === "day" && dayPulse) {
-    sidePanel = <DayPulsePanel pulse={dayPulse} />;
-  } else if (!copy.isConsulting) {
-    sidePanel = (
-      <div className="rounded-2xl border border-brand-yellow/15 bg-surface-base/60 px-4 py-3 text-right backdrop-blur-sm">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-          Status
-        </p>
-        <p className="mt-0.5 text-sm font-bold text-brand-yellow">Operação sob seu comando</p>
-      </div>
-    );
-  }
 
   return (
     <motion.section
@@ -187,29 +160,35 @@ export function DashboardWelcomeBanner({
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
       />
 
-      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-        <div className="min-w-0 flex-1 space-y-2.5">
+      <div
+        className={cn(
+          "relative grid gap-4",
+          weekPulse ? "lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)] lg:items-start" : "",
+        )}
+      >
+        <div className="space-y-3 sm:space-y-3.5">
           <div className="inline-flex items-center gap-2 rounded-full border border-brand-yellow/25 bg-brand-yellow/[0.07] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-yellow">
             <Crown className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
             <span>Central de comando</span>
             <Sparkles className="h-3 w-3 shrink-0 opacity-70" />
           </div>
 
-          <div className="space-y-1">
-            <h2 className="text-lg font-black leading-[1.2] tracking-tight text-text-primary sm:text-2xl sm:leading-[1.15] lg:text-[1.7rem]">
+          <div className="space-y-1.5 sm:space-y-2">
+            <h2 className="text-[1.65rem] font-black leading-[1.12] tracking-tight text-text-primary sm:text-3xl sm:leading-[1.1] lg:text-4xl">
               {copy.greeting},{" "}
               <span className="bg-gradient-to-r from-brand-yellow via-[#FFEA70] to-brand-secondary bg-clip-text text-transparent">
                 {firstName}
               </span>
               .
             </h2>
-            <p className="max-w-xl text-base font-semibold leading-snug text-text-primary sm:text-lg">
+            <p className="max-w-3xl text-xl font-bold leading-snug text-text-primary sm:text-2xl lg:text-[1.75rem]">
               {copy.headline}
             </p>
-            <p className="max-w-xl text-sm text-text-secondary sm:text-base">{copy.subtitle}</p>
+            <p className="max-w-3xl text-base text-text-secondary sm:text-lg lg:text-xl">
+              {copy.subtitle}
+            </p>
           </div>
 
-          {/* Celular: grade de dois, ação principal em linha cheia. Desktop: fileira rolável. */}
           <div className="grid grid-cols-2 gap-2 pt-0.5 sm:flex sm:overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {quickActions.map((action, index) => {
               const { href, label, hint, icon: Icon, primary } = action;
@@ -264,8 +243,8 @@ export function DashboardWelcomeBanner({
           </div>
         </div>
 
-        {sidePanel && (
-          <div className="w-full shrink-0 sm:w-[300px] lg:w-[320px]">{sidePanel}</div>
+        {weekPulse && (
+          <WeekUnitsPanel pulse={weekPulse} className="lg:sticky lg:top-0" />
         )}
       </div>
     </motion.section>

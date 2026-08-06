@@ -99,7 +99,7 @@ export function ClientProfilePanel({ profile }: ClientProfilePanelProps) {
       <SectionPanel theme="clients" title="Comportamento">
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
           <MetricCard
-            label="Horário preferido"
+            label="Turno preferido"
             value={behavior.preferredHour ?? "—"}
             icon={Clock}
           />

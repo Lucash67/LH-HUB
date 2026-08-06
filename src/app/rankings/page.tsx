@@ -134,7 +134,7 @@ export default function RankingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5 text-brand-orange" />Melhores Horários</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5 text-brand-orange" />Melhores Turnos</CardTitle>
           </CardHeader>
           <CardContent>
             <RankingList

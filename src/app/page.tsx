@@ -16,14 +16,12 @@ import { isViewingToday, useTemporalViewContext } from "@/stores/temporal-contex
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import type { OperationalDiaryEntry } from "@/lib/diary/types";
 import type { WeekPulse } from "@/lib/week-pulse";
-import type { ConservativeWeekForecast } from "@/lib/conservative-week-forecast";
 
 interface DashboardViewPayload {
   data: DashboardViewData;
   diaryEntry: OperationalDiaryEntry | null;
   autoInsights: DiaryAutoInsight[];
   weekPulse?: WeekPulse | null;
-  conservativeWeek?: ConservativeWeekForecast | null;
   context?: { mode: "day" | "general"; viewDate: string };
 }
 
@@ -130,20 +128,7 @@ export default function DashboardPage() {
   // Sábado/domingo: o dia é zerado por natureza, então a semana assume o topo
   // e o detalhe do dia desce para o fim da página.
   const weekPulse = payload.weekPulse ?? null;
-  const conservativeWeek = payload.conservativeWeek ?? null;
   const weekFirst = !isGeneralView && dayComparison.isNonOperationalDay && !!weekPulse;
-  const dayPulse = {
-    revenue: metrics.revenueToday,
-    profit: metrics.profitToday,
-    units: metrics.itemsSoldToday,
-    customers: metrics.customersToday,
-    // Painel lateral usa meta financeira (R$), não o % de unidades do anel.
-    goalProgress:
-      metrics.dailyGoal > 0
-        ? (metrics.revenueToday / metrics.dailyGoal) * 100
-        : metrics.goalProgress,
-    goalRevenue: metrics.dailyGoal > 0 ? metrics.dailyGoal : undefined,
-  };
 
   return (
     <ModuleShell
@@ -153,10 +138,7 @@ export default function DashboardPage() {
     >
       <DashboardWelcomeBanner
         viewDate={context.mode === "day" ? context.viewDate : null}
-        // Na visão geral os totais não são "do dia" — o painel do dia só entra no filtro Dia.
-        dayPulse={isGeneralView ? null : dayPulse}
         weekPulse={weekPulse}
-        conservativeWeek={conservativeWeek}
       />
 
       {weekFirst && weekPulse && <WeekFocusSection pulse={weekPulse} />}

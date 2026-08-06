@@ -69,7 +69,7 @@ export interface ProductGoalRow {
 }
 
 export interface HourGoalRow {
-  period: "morning" | "lunch" | "afternoon";
+  period: "morning" | "afternoon";
   label: string;
   target: number;
   achieved: number;
@@ -340,14 +340,11 @@ function parseHour(time: string): number {
 }
 
 function hourPeriod(hour: number): HourGoalRow["period"] {
-  if (hour < 11) return "morning";
-  if (hour < 14) return "lunch";
-  return "afternoon";
+  return hour < 13 ? "morning" : "afternoon";
 }
 
 const HOUR_LABELS: Record<HourGoalRow["period"], string> = {
   morning: "Manhã",
-  lunch: "Almoço",
   afternoon: "Tarde",
 };
 
@@ -394,8 +391,8 @@ export function buildHourGoals(
 ): HourGoalRow[] {
   const from = format(subDays(parseISO(referenceDate), 30), "yyyy-MM-dd");
   const monthSales = input.sales.filter((s) => s.date >= from);
-  const counts: Record<HourGoalRow["period"], number> = { morning: 0, lunch: 0, afternoon: 0 };
-  const todayCounts: Record<HourGoalRow["period"], number> = { morning: 0, lunch: 0, afternoon: 0 };
+  const counts: Record<HourGoalRow["period"], number> = { morning: 0, afternoon: 0 };
+  const todayCounts: Record<HourGoalRow["period"], number> = { morning: 0, afternoon: 0 };
 
   const itemsBySale = new Map<string, number>();
   for (const item of input.items) {
@@ -410,9 +407,9 @@ export function buildHourGoals(
     todayCounts[hourPeriod(parseHour(sale.time))] += itemsBySale.get(sale.id ?? "") ?? 0;
   }
 
-  const total = counts.morning + counts.lunch + counts.afternoon || 1;
+  const total = counts.morning + counts.afternoon || 1;
 
-  return (["morning", "lunch", "afternoon"] as const).map((period) => {
+  return (["morning", "afternoon"] as const).map((period) => {
     const target = Math.max(1, roundChallenge(dailyTarget * (counts[period] / total)));
     const achieved = todayCounts[period];
     return {

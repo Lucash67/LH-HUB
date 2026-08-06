@@ -2,6 +2,7 @@
 
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/components/ui/utils";
+import { formatSaleShift } from "@/lib/sale-shift";
 import type { DayTimelineGroup } from "@/lib/dashboard-view";
 import { Clock } from "lucide-react";
 
@@ -41,7 +42,7 @@ export function DayTimeline({ groups }: DayTimelineProps) {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-text-primary">
-                      {entry.time} · {entry.clientName}
+                      {formatSaleShift(entry.time)} · {entry.clientName}
                     </p>
                     <p className="text-xs text-text-secondary truncate">{entry.products}</p>
                     <p className="text-xs text-text-muted mt-0.5">{entry.paymentLabel}</p>

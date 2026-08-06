@@ -81,7 +81,7 @@ export interface DayTimelineEntry {
 }
 
 export interface DayTimelineGroup {
-  period: "morning" | "lunch" | "afternoon";
+  period: "morning" | "afternoon";
   label: string;
   entries: DayTimelineEntry[];
 }
@@ -305,14 +305,11 @@ function parseHour(time: string): number {
 }
 
 function timelinePeriod(hour: number): DayTimelineGroup["period"] {
-  if (hour < 11) return "morning";
-  if (hour < 14) return "lunch";
-  return "afternoon";
+  return hour < 13 ? "morning" : "afternoon";
 }
 
 const PERIOD_LABELS: Record<DayTimelineGroup["period"], string> = {
   morning: "Manhã",
-  lunch: "Almoço",
   afternoon: "Tarde",
 };
 
@@ -367,7 +364,7 @@ function buildDayTimeline(daySales: DashboardSale[]): DayTimelineGroup[] {
     grouped.set(period, list);
   }
 
-  return (["morning", "lunch", "afternoon"] as const)
+  return (["morning", "afternoon"] as const)
     .filter((p) => (grouped.get(p)?.length ?? 0) > 0)
     .map((period) => ({
       period,

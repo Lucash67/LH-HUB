@@ -108,8 +108,8 @@ function seedBusinessUnits(sqlite: Database.Database) {
     INSERT OR IGNORE INTO business_units (id, name, slug, status, created_at, updated_at)
     VALUES (?, ?, ?, 'active', ?, ?)
   `);
-  insert.run(SALGADOS_BUSINESS_ID, "Salgados", "salgados", now, now);
-  insert.run(BRIGADEIROS_BUSINESS_ID, "Brigadeiros", "brigadeiros", now, now);
+  insert.run(SALGADOS_BUSINESS_ID, "Salty", "salgados", now, now);
+  insert.run(BRIGADEIROS_BUSINESS_ID, "Candy", "brigadeiros", now, now);
 }
 
 function seedBrigadeirosGoalsIfMissing(sqlite: Database.Database) {

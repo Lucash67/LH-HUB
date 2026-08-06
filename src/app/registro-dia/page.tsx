@@ -12,6 +12,7 @@ import { useBusinessScope } from "@/hooks/use-business-scope";
 import { isAllBusinesses, SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 import { useBusinessContextStore } from "@/stores/business-context-store";
 import { formatCurrency } from "@/lib/utils";
+import { formatSaleShift } from "@/lib/sale-shift";
 import { DRAFT_TEMPLATE, type DayRegistrationPreview } from "@/lib/day-registration/types";
 import {
   ClipboardPaste,
@@ -269,7 +270,8 @@ export default function RegistroDiaPage() {
                 <ul className="space-y-2 text-sm xl:max-h-48 xl:overflow-y-auto">
                   {preview.sales.map((sale, i) => (
                     <li key={`${sale.time}-${sale.clientName}-${i}`} className="border-b border-surface-border pb-2 last:border-0">
-                      <span className="text-text-muted">{sale.time}</span> · {sale.clientName} ·{" "}
+                      <span className="text-text-muted">{formatSaleShift(sale.time)}</span> ·{" "}
+                      {sale.clientName} ·{" "}
                       {sale.productName}
                       {sale.quantity > 1 ? ` x${sale.quantity}` : ""} · {sale.paymentMethod}
                       {sale.paymentStatus === "pending" && (

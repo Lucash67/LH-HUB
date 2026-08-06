@@ -41,14 +41,14 @@ export const HUB_ENTERPRISES: HubEnterprise[] = [
   {
     id: SALGADOS_BUSINESS_ID,
     index: "01",
-    name: "LH Salgados",
-    description: "Operação de alimentos",
+    name: "LH Salty",
+    description: "Operação de salgados",
     status: "active",
   },
   {
     id: BRIGADEIROS_BUSINESS_ID,
     index: "02",
-    name: "LH Brigadeiros",
+    name: "LH Candy",
     description: "Doces e confeitaria",
     status: "active",
   },

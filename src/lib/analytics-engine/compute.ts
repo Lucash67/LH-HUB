@@ -3,6 +3,7 @@
  */
 import { format, subDays, parseISO, getDay } from "date-fns";
 import { isUnidentifiedFlavorProduct } from "@/lib/salgados-flavors";
+import { SHIFT_LABEL, shiftFromHour } from "@/lib/sale-shift";
 import { getWeekRange, getMonthRange, goalProgress } from "@/lib/utils";
 import { getDailyGoalTarget } from "@/lib/goals-service";
 import { ALL_BUSINESSES_ID } from "@/lib/business-units";
@@ -190,6 +191,10 @@ export async function computeRankings(
 
   const dayRevenue = revenueByDate(allSales);
   const hourSales = salesCountByHour(allSales);
+  const shiftSales: Record<"morning" | "afternoon", number> = { morning: 0, afternoon: 0 };
+  for (const [hour, count] of Object.entries(hourSales)) {
+    shiftSales[shiftFromHour(parseInt(hour, 10))] += count;
+  }
   const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const dayOfWeekSales = revenueByDayOfWeek(allSales, (date) => getDay(parseISO(date)));
 
@@ -200,10 +205,10 @@ export async function computeRankings(
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([d, revenue]) => ({ date: d, revenue })),
-    bestHours: Object.entries(hourSales)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([hour, count]) => ({ hour: `${hour}:00`, count })),
+    bestHours: (["morning", "afternoon"] as const)
+      .map((shift) => ({ hour: SHIFT_LABEL[shift], count: shiftSales[shift] }))
+      .filter((row) => row.count > 0)
+      .sort((a, b) => b.count - a.count),
     bestDaysOfWeek: Object.entries(dayOfWeekSales)
       .sort((a, b) => b[1] - a[1])
       .map(([dow, revenue]) => ({ day: dayNames[parseInt(dow, 10)], revenue })),

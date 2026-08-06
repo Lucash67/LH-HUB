@@ -5,6 +5,7 @@ import {
   subDays,
 } from "date-fns";
 import { averageTicket, saleReceivedAmount } from "@/lib/analytics-engine/client";
+import { formatSaleShift } from "@/lib/sale-shift";
 import { paymentMethodLabel } from "@/lib/utils";
 
 export type ClientBadgeType = "vip" | "recorrente" | "novo" | "frequente" | "inativo";
@@ -218,7 +219,10 @@ export function computeBehaviorMetrics(stats: ClientStatsInput, reference = new 
   const trend = computePurchaseTrend(stats.sales, reference);
 
   return {
-    preferredHour: topHour != null ? `${String(topHour).padStart(2, "0")}:00` : null,
+    preferredHour:
+      topHour != null
+        ? formatSaleShift(`${String(topHour).padStart(2, "0")}:00`)
+        : null,
     preferredWeekday: preferredWeekday,
     averageQuantityPerPurchase:
       stats.purchaseCount > 0 ? Math.round((totalUnits / stats.purchaseCount) * 10) / 10 : 0,
@@ -278,11 +282,9 @@ export function buildClientInsights(
   }
 
   if (behavior.preferredHour) {
-    const hour = parseInt(behavior.preferredHour, 10);
-    const period = hour < 11 ? "manhã" : hour < 14 ? "almoço" : "tarde";
     insights.push({
       id: "preferred-time",
-      text: `Costuma comprar pela ${period}.`,
+      text: `Costuma comprar de ${behavior.preferredHour.toLowerCase()}.`,
     });
   }
 

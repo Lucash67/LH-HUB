@@ -229,7 +229,7 @@ export function resolveMomentSuggestion(
       eyebrow: "Fim de semana",
       title: "Revise a semana que passou",
       description:
-        "Salgados não opera agora — use o tempo para olhar desempenho, fechamento e tendência do mês.",
+        "Salty não opera agora — use o tempo para olhar desempenho, fechamento e tendência do mês.",
       href: "/desempenho",
       cta: "Abrir desempenho",
       icon: TrendingUp,

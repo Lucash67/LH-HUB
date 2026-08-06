@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
+import { formatSaleShift, normalizeSaleShiftTime } from "@/lib/sale-shift";
 import { UNIDENTIFIED_FLAVOR_PRODUCT_NAME } from "@/lib/salgados-flavors";
 import type { DayRegistrationPlan, DraftSale } from "./types";
 
@@ -87,13 +88,22 @@ function parseProductLine(line: string): { name: string; quantity: number } | nu
 }
 
 function extractTimes(text: string): { primary?: string; pickup?: string; paid?: string } {
+  // Turno explícito tem prioridade sobre HH:mm legado.
+  const pipeShift = text.match(/\|\s*(manh[ãa]|tarde)\b/i);
+  const standaloneShift = text.match(/(?:^|\s)(manh[ãa]|tarde)(?:\s|$)/i);
   const pipeTime = text.match(/\|\s*(\d{2}:\d{2})/);
   const pickup = text.match(/pegou as (\d{2}:\d{2})/i);
   const paid = text.match(/pagou as (\d{2}:\d{2})/i);
   const standalone = text.match(/(?:^|\s)(\d{2}:\d{2})(?:\s|$)/);
 
   return {
-    primary: pipeTime?.[1] ?? paid?.[1] ?? pickup?.[1] ?? standalone?.[1],
+    primary:
+      pipeShift?.[1] ??
+      standaloneShift?.[1] ??
+      pipeTime?.[1] ??
+      paid?.[1] ??
+      pickup?.[1] ??
+      standalone?.[1],
     pickup: pickup?.[1],
     paid: paid?.[1],
   };
@@ -158,7 +168,7 @@ function parseLucasSaleLine(line: string, date: string): DraftSale[] | null {
   ) {
     return [
       {
-        time: "12:00",
+        time: normalizeSaleShiftTime("manhã"),
         clientName: `Cliente Não Identificado (${date})`,
         productName: UNKNOWN_PRODUCT,
         quantity: 1,
@@ -201,13 +211,19 @@ function parseLucasSaleLine(line: string, date: string): DraftSale[] | null {
   }
 
   const times = extractTimes(`${productPart} | ${metaPart} ${body}`);
-  const time = times.primary ?? "12:00";
+  const time = normalizeSaleShiftTime(times.primary ?? "manhã");
 
   const notes: string[] = [];
   if (times.pickup && times.paid && times.pickup !== times.paid) {
-    notes.push(`Pegou às ${times.pickup}, pagou às ${times.paid}`);
+    notes.push(
+      `Pegou de ${formatSaleShift(times.pickup)}, pagou de ${formatSaleShift(times.paid)}`,
+    );
   }
-  if (metaPart && !/^\d{2}:\d{2}$/.test(metaPart)) {
+  if (
+    metaPart &&
+    !/^\d{2}:\d{2}$/.test(metaPart) &&
+    !/^(manh[ãa]|tarde)$/i.test(metaPart.trim())
+  ) {
     notes.push(metaPart.replace(/✅.*$/i, "").trim());
   }
 
@@ -312,7 +328,7 @@ function parseLegacyDraft(raw: string): ParseDraftResult {
       const parts = t.split("|").map((p) => p.trim());
       if (parts.length >= 5) {
         sales.push({
-          time: parts[0],
+          time: normalizeSaleShiftTime(parts[0]),
           clientName: parts[1],
           productName: normalizeProductName(parts[2].replace(/\s+x\s*\d+$/i, "")),
           quantity: 1,

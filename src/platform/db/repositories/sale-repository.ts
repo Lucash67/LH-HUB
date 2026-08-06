@@ -25,6 +25,7 @@ import {
   resolveAmountReceived,
   type PaymentStatus,
 } from "@/lib/operational-data-service";
+import { normalizeSaleShiftTime } from "@/lib/sale-shift";
 import { generateId } from "@/shared/ids/generate-id";
 import type { LegacyProduct, LegacySale } from "@/lib/db/types";
 import { mapProductRow, mapClientRow } from "@/platform/db/mappers";
@@ -227,7 +228,7 @@ export async function executeSaleRecord(input: ExecuteSaleInput): Promise<string
   const saleId = generateId();
   const saleItemId = generateId();
   const saleDate = input.date ?? format(now, "yyyy-MM-dd");
-  const saleTime = input.time ?? format(now, "HH:mm");
+  const saleTime = normalizeSaleShiftTime(input.time ?? format(now, "HH:mm"));
   const paymentStatus = input.paymentStatus ?? inferPaymentStatusFromNotes(input.notes);
   const amountReceived = resolveAmountReceived(subtotal, paymentStatus);
   const stockBefore = product.stockQuantity;

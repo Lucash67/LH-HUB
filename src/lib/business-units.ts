@@ -15,8 +15,8 @@ export interface BusinessUnit {
 }
 
 export const BUSINESS_UNITS: BusinessUnit[] = [
-  { id: SALGADOS_BUSINESS_ID, name: "Salgados", slug: "salgados", status: "active" },
-  { id: BRIGADEIROS_BUSINESS_ID, name: "Brigadeiros", slug: "brigadeiros", status: "active" },
+  { id: SALGADOS_BUSINESS_ID, name: "Salty", slug: "salgados", status: "active" },
+  { id: BRIGADEIROS_BUSINESS_ID, name: "Candy", slug: "brigadeiros", status: "active" },
 ];
 
 export function getBusinessUnitName(businessId: string): string {

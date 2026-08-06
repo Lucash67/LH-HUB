@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeSaleShiftTime } from "@/lib/sale-shift";
 import {
   dayRegistrationPlanSchema,
   type DayRegistrationPlan,
@@ -6,12 +7,6 @@ import {
 } from "./types";
 
 const DEPT_ACAL = "ACAL";
-
-function normalizeTime(time: string): string {
-  const match = time.trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return "12:00";
-  return `${match[1].padStart(2, "0")}:${match[2]}`;
-}
 
 /** Remove campos de preview e normaliza plano antes do commit. */
 export function sanitizeRegistrationPlan(input: DayRegistrationPreview | DayRegistrationPlan): DayRegistrationPlan {
@@ -63,7 +58,7 @@ export function sanitizeRegistrationPlan(input: DayRegistrationPreview | DayRegi
 
   const sales = raw.sales.map((sale) => ({
     ...sale,
-    time: normalizeTime(sale.time),
+    time: normalizeSaleShiftTime(sale.time),
     department: sale.department?.trim() || DEPT_ACAL,
     clientName: sale.clientName.trim(),
     productName: sale.productName.trim(),

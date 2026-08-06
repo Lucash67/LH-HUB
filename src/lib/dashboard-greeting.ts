@@ -3,14 +3,13 @@
  *
  * Layout em 3 linhas:
  *   1. Bom dia/Boa tarde/Boa noite, {Nome}.
- *   2. Headline conforme o dia em foco (útil / sábado / domingo).
+ *   2. Headline conforme o tipo do dia em foco (útil / sábado / domingo).
  *   3. Deseja consultar algo mais, chefe?
  *
  * A saudação usa o horário local; a headline segue o dia em foco no filtro
- * temporal (não o relógio).
+ * temporal (não o relógio). Sem nome do dia nem data na copy.
  */
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { parseISO } from "date-fns";
 import {
   getLocalDateKey,
   getTimeGreeting,
@@ -51,10 +50,6 @@ function weekdayOf(dateKey: string): number {
   return parseISO(dateKey).getDay();
 }
 
-function describeDate(dateKey: string): string {
-  return format(parseISO(dateKey), "EEEE, dd 'de' MMMM", { locale: ptBR });
-}
-
 export function resolveDashboardGreeting({
   viewDate,
   timeZone,
@@ -92,19 +87,11 @@ export function resolveDashboardGreeting({
   }
 
   if (focus > today) {
-    return build(
-      "future",
-      `${describeDate(focus)} ainda não chegou.`,
-      "none",
-    );
+    return build("future", "Esse dia ainda não chegou.", "none");
   }
 
   if (focus < today) {
-    return build(
-      "review",
-      `Aqui está seu desempenho de ${describeDate(focus)}.`,
-      "day",
-    );
+    return build("review", "Aqui está seu desempenho de hoje.", "day");
   }
 
   return build("operate", "Aqui está seu desempenho de hoje.", "day");

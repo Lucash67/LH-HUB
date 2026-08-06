@@ -119,7 +119,7 @@ Separados para o trabalho do meu pai:
 - 0 Mistao
 - 0 Pastel
 
-Obs: Importante ressaltar que esses vendidos no trabalho do meu pai eu ainda não possuo dados mais completos (horário, nome, forma de pagamento e sabor pego). Eu apenas dou pro meu pai levar e vender e depois me passar o valor do faturamento
+Obs: Importante ressaltar que esses vendidos no trabalho do meu pai eu ainda não possuo dados mais completos (turno, nome, forma de pagamento e sabor pego). Eu apenas dou pro meu pai levar e vender e depois me passar o valor do faturamento
 
 Separados para acal:
 
@@ -129,18 +129,18 @@ Separados para acal:
 
 Histórico de vendas:
 
-1 - Nome Completo da Cliente: 1 Croissant | 09:00 ✅Pix
-2 - Nome Completo do Cliente: 1 Mistao | 09:09 ✅Pix
-3 - Nome: 1 Croissant | pegou as 09:16 mas pagou as 09:40 ✅Pix
-4 - Cliente não identificado que deu em moeda: 1 Mistao | 08:54 ✅Moeda (Já foi revertido em pix)
-5 - Cliente não identificado que deu em espécie: 1 Croissant | 10:25 ✅Espécie
-6 - Mikely: 1 Mistao | 10:34 (devendo) ⚠️
-7 - Nome: 1 croisant e 1 mistao | 10:11 ✅Pix
-8 - Leonardo de Souza Sena: 1 | 15:08 ✅Pix
-9 - Não pagou (Pegou quando eu não estava na hora)
-10 - Não pagou (Pegou quando eu não estava na hora)
+1 - Nome Completo da Cliente: 1 Croissant | Manhã ✅Pix
+2 - Nome Completo do Cliente: 1 Mistao | Manhã ✅Pix
+3 - Nome: 1 Croissant | Manhã ✅Pix
+4 - Cliente não identificado que deu em moeda: 1 Mistao | Manhã ✅Moeda (Já foi revertido em pix)
+5 - Cliente não identificado que deu em espécie: 1 Croissant | Manhã ✅Espécie
+6 - Mikely: 1 Mistao | Manhã (devendo) ⚠️
+7 - Nome: 1 croisant e 1 mistao | Manhã ✅Pix
+8 - Leonardo de Souza Sena: 1 | Tarde ✅Pix
+9 - Não pagou (Pegou quando eu não estava)
+10 - Não pagou (Pegou quando eu não estava)
 
-Devendo ainda de ontem: Nome (R$5) | Pagou dia DD/MM - 10:28 ✅Pix
+Devendo ainda de ontem: Nome (R$5) | Pagou dia DD/MM - Manhã ✅Pix
 
 Observações do dia:
 

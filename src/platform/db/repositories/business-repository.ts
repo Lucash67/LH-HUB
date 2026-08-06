@@ -30,10 +30,12 @@ export async function listBusinesses(userId: string): Promise<OwnedBusiness[]> {
     db.select().from(businessUnits).where(eq(businessUnits.ownerId, userId)),
   );
   return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    status: row.status as "active" | "inactive",
+    ...mapBusinessRowToLegacy({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      status: row.status,
+    }),
     dbId: row.id,
   }));
 }

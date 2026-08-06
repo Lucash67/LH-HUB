@@ -59,7 +59,7 @@ export function GoalBreakdownGrid({ productGoals, hourGoals }: GoalBreakdownGrid
         )}
       </SectionPanel>
 
-      <SectionPanel theme="goals" title="Metas por Horário" subtitle="Manhã, almoço e tarde">
+      <SectionPanel theme="goals" title="Metas por Turno" subtitle="Manhã e tarde">
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-1">
             <Clock className="h-4 w-4 text-purple-400" />

@@ -266,13 +266,20 @@ export async function generateInsights(
   }
 
   const hourCounts = salesCountByHour(allSales);
-  const topHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
-  if (topHour) {
+  const shiftCounts = { morning: 0, afternoon: 0 };
+  for (const [hour, count] of Object.entries(hourCounts)) {
+    const h = parseInt(hour, 10);
+    if (h < 13) shiftCounts.morning += count;
+    else shiftCounts.afternoon += count;
+  }
+  const topHour = Object.entries(shiftCounts).sort((a, b) => b[1] - a[1])[0];
+  if (topHour && topHour[1] > 0) {
+    const shiftLabel = topHour[0] === "morning" ? "Manhã" : "Tarde";
     insights.push({
       id: "peak-hour",
       type: "positive",
-      title: `Pico de vendas às ${topHour[0]}:00`,
-      description: `${topHour[1]} vendas concentradas neste horário — prepare produção e equipe antes.`,
+      title: `Pico de vendas de ${shiftLabel.toLowerCase()}`,
+      description: `${topHour[1]} vendas concentradas neste turno — prepare produção e equipe antes.`,
       metric: `${topHour[1]} vendas`,
     });
   }
