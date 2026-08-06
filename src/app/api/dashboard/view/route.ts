@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 import { buildDashboardView, enrichDiaryContext } from "@/lib/dashboard-view";
 import { generateDiaryAutoInsights } from "@/lib/diary-auto-insights";
@@ -6,6 +6,7 @@ import { getDiaryEntry } from "@/lib/diary-service";
 import { getSmartGoalsView } from "@/lib/smart-goals-service";
 import { buildOperationalDayMetrics, sortOperationalDays } from "@/lib/operational-day-metrics";
 import { buildWeekPulse } from "@/lib/week-pulse";
+import { buildConservativeWeekForecast } from "@/lib/conservative-week-forecast";
 import { isAllBusinesses } from "@/lib/business-units";
 import { fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import { listSalesEnriched } from "@/platform/db/repositories/sale-repository";
@@ -13,6 +14,10 @@ import type { TemporalViewContext } from "@/stores/temporal-context-store";
 import { MSG, apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { withTenantScope } from "@/lib/auth/with-tenant-api";
+
+function isSunday(dateKey: string): boolean {
+  return parseISO(dateKey).getDay() === 0;
+}
 
 function normalizeDashboardSales(
   sales: Awaited<ReturnType<typeof listSalesEnriched>>,
@@ -85,6 +90,10 @@ export async function GET(request: NextRequest) {
                 sales,
               })
             : null,
+          conservativeWeek:
+            isSunday(viewDate) && dayMetrics
+              ? buildConservativeWeekForecast(dayMetrics, viewDate, businessId)
+              : null,
           context: { mode: viewMode, viewDate },
         });
       }
@@ -105,17 +114,26 @@ export async function GET(request: NextRequest) {
         businessId,
         dayMetrics,
       );
+      const pulseDate = viewMode === "day" ? viewDate : format(new Date(), "yyyy-MM-dd");
       return NextResponse.json({
         data,
         diaryEntry: null,
         autoInsights: [],
         weekPulse: dayMetrics
-          ? buildWeekPulse(dayMetrics, format(new Date(), "yyyy-MM-dd"), {
+          ? buildWeekPulse(dayMetrics, pulseDate, {
               goalRevenue: weeklyGoal,
               allowFallback: true,
               sales,
             })
           : null,
+        conservativeWeek:
+          isSunday(pulseDate) && dayMetrics
+            ? buildConservativeWeekForecast(
+                dayMetrics,
+                pulseDate,
+                isAllBusinesses(businessId) ? "salgados" : businessId,
+              )
+            : null,
         context: { mode: viewMode, viewDate },
       });
     });

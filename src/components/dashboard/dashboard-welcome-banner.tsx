@@ -21,7 +21,10 @@ import { getFirstName, resolveUserTimeZone } from "@/lib/time-greeting";
 import { resolveDashboardGreeting } from "@/lib/dashboard-greeting";
 import { useSessionUser } from "@/hooks/use-session-user";
 import { WeekPulsePanel } from "@/components/dashboard/week-pulse-panel";
+import { DayPulsePanel, type DayPulse } from "@/components/dashboard/day-pulse-panel";
+import { ConservativeWeekPanel } from "@/components/dashboard/conservative-week-panel";
 import type { WeekPulse } from "@/lib/week-pulse";
+import type { ConservativeWeekForecast } from "@/lib/conservative-week-forecast";
 
 interface QuickAction {
   href: string;
@@ -105,14 +108,20 @@ interface DashboardWelcomeBannerProps {
   className?: string;
   /** Dia em foco no filtro temporal (yyyy-MM-dd) — null na visão geral. */
   viewDate?: string | null;
-  /** Resumo da semana em foco — sustenta a frase com números. */
+  /** Métricas do dia — sustenta a headline de dias úteis. */
+  dayPulse?: DayPulse | null;
+  /** Resumo da semana — sustenta a headline de sábado. */
   weekPulse?: WeekPulse | null;
+  /** Projeção conservadora seg–sex — sustenta a headline de domingo. */
+  conservativeWeek?: ConservativeWeekForecast | null;
 }
 
 export function DashboardWelcomeBanner({
   className,
   viewDate,
+  dayPulse,
   weekPulse,
+  conservativeWeek,
 }: DashboardWelcomeBannerProps) {
   const { data: user } = useSessionUser();
   const [copy, setCopy] = useState(() => resolveDashboardGreeting({ viewDate }));
@@ -129,18 +138,23 @@ export function DashboardWelcomeBanner({
   const firstName = getFirstName(user?.name ?? "Lucas");
   const quickActions = copy.isConsulting ? CONSULT_ACTIONS : OPERATE_ACTIONS;
 
-  // Sem resumo da semana, o card decorativo só aparece em dia de operação —
-  // no fim de semana a semana já ganha um bloco inteiro logo abaixo.
-  const sidePanel = weekPulse ? (
-    <WeekPulsePanel pulse={weekPulse} />
-  ) : copy.isConsulting ? null : (
-    <div className="rounded-2xl border border-brand-yellow/15 bg-surface-base/60 px-4 py-3 text-right backdrop-blur-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-        Status
-      </p>
-      <p className="mt-0.5 text-sm font-bold text-brand-yellow">Operação sob seu comando</p>
-    </div>
-  );
+  let sidePanel: React.ReactNode = null;
+  if (copy.sideFocus === "conservative" && conservativeWeek) {
+    sidePanel = <ConservativeWeekPanel forecast={conservativeWeek} />;
+  } else if (copy.sideFocus === "week" && weekPulse) {
+    sidePanel = <WeekPulsePanel pulse={weekPulse} />;
+  } else if (copy.sideFocus === "day" && dayPulse) {
+    sidePanel = <DayPulsePanel pulse={dayPulse} />;
+  } else if (!copy.isConsulting) {
+    sidePanel = (
+      <div className="rounded-2xl border border-brand-yellow/15 bg-surface-base/60 px-4 py-3 text-right backdrop-blur-sm">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          Status
+        </p>
+        <p className="mt-0.5 text-sm font-bold text-brand-yellow">Operação sob seu comando</p>
+      </div>
+    );
+  }
 
   return (
     <motion.section
@@ -187,8 +201,11 @@ export function DashboardWelcomeBanner({
               <span className="bg-gradient-to-r from-brand-yellow via-[#FFEA70] to-brand-secondary bg-clip-text text-transparent">
                 {firstName}
               </span>
-              {copy.suffix}
+              .
             </h2>
+            <p className="max-w-xl text-base font-semibold leading-snug text-text-primary sm:text-lg">
+              {copy.headline}
+            </p>
             <p className="max-w-xl text-sm text-text-secondary sm:text-base">{copy.subtitle}</p>
           </div>
 
@@ -197,44 +214,51 @@ export function DashboardWelcomeBanner({
             {quickActions.map((action, index) => {
               const { href, label, hint, icon: Icon, primary } = action;
               return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "group flex flex-col gap-0.5 rounded-2xl border px-3 py-2.5 transition-all duration-200",
-                  "sm:min-w-[128px] sm:shrink-0",
-                  primary && "col-span-2 sm:col-span-1",
-                  primary
-                    ? "border-brand-yellow/40 bg-brand-yellow/15 hover:border-brand-yellow/60 hover:bg-brand-yellow/20"
-                    : "border-surface-border bg-surface-base/50 hover:border-brand-yellow/30 hover:bg-brand-yellow/[0.06]",
-                )}
-              >
-                <motion.span
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08 + index * 0.04, duration: 0.35 }}
-                  className="flex items-center justify-between gap-2"
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "group flex flex-col gap-0.5 rounded-2xl border px-3 py-2.5 transition-all duration-200",
+                    "sm:min-w-[128px] sm:shrink-0",
+                    primary && "col-span-2 sm:col-span-1",
+                    primary
+                      ? "border-brand-yellow/40 bg-brand-yellow/15 hover:border-brand-yellow/60 hover:bg-brand-yellow/20"
+                      : "border-surface-border bg-surface-base/50 hover:border-brand-yellow/30 hover:bg-brand-yellow/[0.06]",
+                  )}
                 >
+                  <motion.span
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.08 + index * 0.04, duration: 0.35 }}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-lg",
+                        primary
+                          ? "bg-brand-yellow/25 text-brand-yellow"
+                          : "bg-surface-hover text-text-secondary",
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                    </span>
+                    <ArrowRight
+                      className={cn(
+                        "h-3.5 w-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-70",
+                        primary ? "text-brand-yellow" : "text-text-muted",
+                      )}
+                    />
+                  </motion.span>
                   <span
                     className={cn(
-                      "flex h-7 w-7 items-center justify-center rounded-lg",
-                      primary ? "bg-brand-yellow/25 text-brand-yellow" : "bg-surface-hover text-text-secondary",
+                      "text-[13px] font-bold leading-tight",
+                      primary ? "text-brand-yellow" : "text-text-primary",
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                    {label}
                   </span>
-                  <ArrowRight
-                    className={cn(
-                      "h-3.5 w-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-70",
-                      primary ? "text-brand-yellow" : "text-text-muted",
-                    )}
-                  />
-                </motion.span>
-                <span className={cn("text-[13px] font-bold leading-tight", primary ? "text-brand-yellow" : "text-text-primary")}>
-                  {label}
-                </span>
-                <span className="text-[10px] leading-tight text-text-muted">{hint}</span>
-              </Link>
+                  <span className="text-[10px] leading-tight text-text-muted">{hint}</span>
+                </Link>
               );
             })}
           </div>
