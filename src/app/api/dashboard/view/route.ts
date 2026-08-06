@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
           0,
           diaryContext,
           businessId,
+          dayMetrics,
         );
         return NextResponse.json({
           data,

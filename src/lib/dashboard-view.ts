@@ -786,23 +786,40 @@ export function buildDashboardView(
 
   const daySales = salesOnDate(sales, viewDate);
   const compareSales = salesOnDate(sales, compareDate);
-  const weekSales = sales.filter((s) => s.date >= weekStart && s.date <= weekEnd);
-  const monthSales = sales.filter((s) => s.date >= monthStart && s.date <= monthEnd);
+  const metricsByDate = new Map((dayMetrics ?? []).map((d) => [d.date, d]));
+  const focusMetrics = metricsByDate.get(viewDate);
+  const compareMetrics = metricsByDate.get(compareDate);
 
-  const revenueToday = diary?.revenue?.received ?? sumReceivedRevenue(daySales);
-  const profitToday =
+  // Prioridade: diário do dia → métricas diário-primeiro → soma de vendas (último recurso).
+  const diaryTotalProfit =
     diary?.profit !== undefined || diary?.bonusIncome !== undefined
       ? deriveDiaryTotalProfit({
-          profit: diary?.profit ?? sumProfit(daySales),
+          profit: diary?.profit ?? 0,
           bonusIncome: diary?.bonusIncome,
         })
-      : sumProfit(daySales);
-  const revenueWeek = sumReceivedRevenue(weekSales);
-  const revenueMonth = sumReceivedRevenue(monthSales);
-  const revenueCompare = sumReceivedRevenue(compareSales);
-  const profitCompare = sumProfit(compareSales);
+      : null;
 
-  const itemsSoldToday = itemsSoldFromEmbedded(daySales);
+  const revenueToday =
+    diary?.revenue?.received ?? focusMetrics?.revenue ?? sumReceivedRevenue(daySales);
+  const profitToday =
+    diaryTotalProfit ?? focusMetrics?.profit ?? sumProfit(daySales);
+  const itemsSoldToday =
+    diary?.quantitySold ?? focusMetrics?.units ?? itemsSoldFromEmbedded(daySales);
+
+  const revenueWeek = dayMetrics?.length
+    ? dayMetrics
+        .filter((d) => d.date >= weekStart && d.date <= weekEnd)
+        .reduce((sum, d) => sum + d.revenue, 0)
+    : sumReceivedRevenue(sales.filter((s) => s.date >= weekStart && s.date <= weekEnd));
+  const revenueMonth = dayMetrics?.length
+    ? dayMetrics
+        .filter((d) => d.date >= monthStart && d.date <= monthEnd)
+        .reduce((sum, d) => sum + d.revenue, 0)
+    : sumReceivedRevenue(sales.filter((s) => s.date >= monthStart && s.date <= monthEnd));
+  const revenueCompare =
+    compareMetrics?.revenue ?? sumReceivedRevenue(compareSales);
+  const profitCompare = compareMetrics?.profit ?? sumProfit(compareSales);
+
   const customersToday = uniqueCustomerCount(daySales);
   const payments = paymentBreakdown(daySales);
 
@@ -811,11 +828,15 @@ export function buildDashboardView(
   for (let i = 13; i >= 0; i--) {
     const date = format(subDays(anchor, i), "yyyy-MM-dd");
     const dSales = salesOnDate(sales, date);
-    const revenue = sumReceivedRevenue(dSales);
-    const profit = sumProfit(dSales);
+    const diaryDay = metricsByDate.get(date);
+    const revenue = diaryDay?.revenue ?? sumReceivedRevenue(dSales);
+    const profit = diaryDay?.profit ?? sumProfit(dSales);
     const label = format(parseISO(date), "dd/MM");
     revenueChart.push({ label, value: revenue, revenue, profit });
-    salesChart.push({ label, value: itemsSoldFromEmbedded(dSales) });
+    salesChart.push({
+      label,
+      value: diaryDay?.units ?? itemsSoldFromEmbedded(dSales),
+    });
   }
 
   const metrics: DashboardViewMetrics = {
@@ -836,7 +857,11 @@ export function buildDashboardView(
     growthVsYesterday: dayComparison.enabled
       ? computeGrowth(revenueToday, revenueCompare)
       : 0,
-    hasOperations: daySales.length > 0,
+    hasOperations:
+      daySales.length > 0 ||
+      !!focusMetrics ||
+      (diary?.quantitySold ?? 0) > 0 ||
+      revenueToday > 0,
   };
 
   const unitGoal = diary?.dailyGoalUnits;

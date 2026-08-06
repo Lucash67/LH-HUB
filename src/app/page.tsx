@@ -137,8 +137,12 @@ export default function DashboardPage() {
     profit: metrics.profitToday,
     units: metrics.itemsSoldToday,
     customers: metrics.customersToday,
-    goalProgress: metrics.goalProgress,
-    goalRevenue: metrics.dailyGoal > 0 ? metrics.dailyGoal : metrics.goalRevenue,
+    // Painel lateral usa meta financeira (R$), não o % de unidades do anel.
+    goalProgress:
+      metrics.dailyGoal > 0
+        ? (metrics.revenueToday / metrics.dailyGoal) * 100
+        : metrics.goalProgress,
+    goalRevenue: metrics.dailyGoal > 0 ? metrics.dailyGoal : undefined,
   };
 
   return (

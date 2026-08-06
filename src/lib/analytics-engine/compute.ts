@@ -39,29 +39,44 @@ import type {
   ProjectionScenario,
   RankingsResult,
 } from "./types";
+import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
 
 export async function computeDashboardMetrics(
   businessId: string = ALL_BUSINESSES_ID,
 ): Promise<DashboardMetricsResult> {
   const today = format(new Date(), "yyyy-MM-dd");
   const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
-  const { start: weekStart } = getWeekRange();
-  const { start: monthStart } = getMonthRange();
+  const { start: weekStart, end: weekEnd } = getWeekRange();
+  const { start: monthStart, end: monthEnd } = getMonthRange();
 
-  const todaySales = await fetchScopedSales({ businessId, dateEq: today });
-  const yesterdaySales = await fetchScopedSales({ businessId, dateEq: yesterday });
-  const weekSales = await fetchScopedSales({ businessId, dateGte: weekStart });
-  const monthSales = await fetchScopedSales({ businessId, dateGte: monthStart });
+  const [todaySales, yesterdaySales, weekSales, monthSales, metricsMap] = await Promise.all([
+    fetchScopedSales({ businessId, dateEq: today }),
+    fetchScopedSales({ businessId, dateEq: yesterday }),
+    fetchScopedSales({ businessId, dateGte: weekStart }),
+    fetchScopedSales({ businessId, dateGte: monthStart }),
+    buildOperationalDayMetrics(businessId).catch(() => null),
+  ]);
 
-  const revenueToday = sumReceivedRevenue(todaySales);
-  const profitToday = sumProfit(todaySales);
-  const revenueWeek = sumReceivedRevenue(weekSales);
-  const revenueMonth = sumReceivedRevenue(monthSales);
-  const revenueYesterday = sumReceivedRevenue(yesterdaySales);
+  const days = metricsMap ? Array.from(metricsMap.values()) : [];
+  const dayOf = (date: string) => days.find((d) => d.date === date);
+
+  const revenueToday = dayOf(today)?.revenue ?? sumReceivedRevenue(todaySales);
+  const profitToday = dayOf(today)?.profit ?? sumProfit(todaySales);
+  const revenueWeek = days.length
+    ? days
+        .filter((d) => d.date >= weekStart && d.date <= weekEnd)
+        .reduce((sum, d) => sum + d.revenue, 0)
+    : sumReceivedRevenue(weekSales);
+  const revenueMonth = days.length
+    ? days
+        .filter((d) => d.date >= monthStart && d.date <= monthEnd)
+        .reduce((sum, d) => sum + d.revenue, 0)
+    : sumReceivedRevenue(monthSales);
+  const revenueYesterday = dayOf(yesterday)?.revenue ?? sumReceivedRevenue(yesterdaySales);
 
   const todaySaleIds = todaySales.map((s) => s.id).filter(Boolean) as string[];
   const todayItems = await fetchItemsForSales(todaySaleIds);
-  const itemsSoldToday = itemsSoldFromItems(todayItems);
+  const itemsSoldToday = dayOf(today)?.units ?? itemsSoldFromItems(todayItems);
 
   const productRows = await fetchScopedProducts(businessId);
   const currentStock = totalStock(productRows);
@@ -92,15 +107,19 @@ export async function computeDayReport(
   date: string,
   businessId: string = ALL_BUSINESSES_ID,
 ): Promise<DayReportResult> {
-  const daySales = await fetchScopedSales({ businessId, dateEq: date });
+  const [daySales, metricsMap] = await Promise.all([
+    fetchScopedSales({ businessId, dateEq: date }),
+    buildOperationalDayMetrics(businessId).catch(() => null),
+  ]);
   const saleIds = daySales.map((s) => s.id).filter(Boolean) as string[];
   const allItems = await fetchItemsForSales(saleIds);
   const allProducts = await fetchScopedProducts(ALL_BUSINESSES_ID);
   const productMap = new Map(allProducts.map((p) => [p.id, p.name]));
+  const dayMetrics = metricsMap?.get(date);
 
-  const revenue = sumRevenue(daySales);
-  const profit = sumProfit(daySales);
-  const itemsSold = itemsSoldFromItems(allItems);
+  const revenue = dayMetrics?.revenue ?? sumRevenue(daySales);
+  const profit = dayMetrics?.profit ?? sumProfit(daySales);
+  const itemsSold = dayMetrics?.units ?? itemsSoldFromItems(allItems);
   const payments = paymentBreakdown(daySales);
   const productBreakdown = flavorQuantityBreakdown(allItems, (id) => productMap.get(id) ?? "Desconhecido");
 
