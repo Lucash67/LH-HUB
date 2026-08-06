@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpen,
+  Eye,
+  EyeOff,
   Package,
   Sparkles,
   Target,
@@ -28,6 +31,9 @@ import type {
   DayTimelineGroup,
   OperationResult,
 } from "@/lib/dashboard-view";
+
+const HIDE_MONEY_KEY = "lbo-hide-money";
+const MONEY_MASK = "R$ ••••";
 
 interface FlavorRow {
   label: string;
@@ -115,6 +121,29 @@ export function DashboardDayView({
   hasOperations,
   nonOperational = false,
 }: DashboardDayViewProps) {
+  const [hideMoney, setHideMoney] = useState(false);
+
+  useEffect(() => {
+    try {
+      setHideMoney(localStorage.getItem(HIDE_MONEY_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const toggleHideMoney = () => {
+    setHideMoney((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(HIDE_MONEY_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
+  const money = (value: number) => (hideMoney ? MONEY_MASK : formatCurrency(value));
   const idleDay = nonOperational && revenue === 0 && profit === 0;
   const profitPositive = profit >= 0;
   const maxFlavor = Math.max(...flavors.map((f) => f.value), 1);
@@ -139,8 +168,19 @@ export function DashboardDayView({
         <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-blue-500/10 blur-3xl" />
 
+        <button
+          type="button"
+          onClick={toggleHideMoney}
+          aria-pressed={hideMoney}
+          aria-label={hideMoney ? "Mostrar faturamento e lucro" : "Ocultar faturamento e lucro"}
+          title={hideMoney ? "Mostrar valores" : "Ocultar valores"}
+          className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-surface-border/80 bg-surface-base/80 text-text-secondary backdrop-blur-sm transition-colors hover:border-brand-yellow/40 hover:text-brand-yellow sm:right-4 sm:top-4"
+        >
+          {hideMoney ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex-1 space-y-2.5">
+          <div className="flex-1 space-y-2.5 pr-12">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="info" className="capitalize">{dateLabel}</Badge>
               {idleDay ? (
@@ -169,35 +209,47 @@ export function DashboardDayView({
                       : "text-red-400",
                 )}
               >
-                {formatCurrency(profit)}
+                {money(profit)}
               </motion.p>
               {bonusIncome != null && bonusIncome > 0 && (
                 <p className="mt-1 text-sm text-purple-300 font-medium">
-                  incl. {formatCurrency(bonusIncome)} bonificação
+                  incl. {money(bonusIncome)} bonificação
                 </p>
               )}
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm">
               <span className="text-blue-400 font-semibold">
-                Faturamento {formatCurrency(revenue)}
+                Faturamento {money(revenue)}
               </span>
               <span className="text-text-muted">·</span>
               <span className="text-purple-400 font-semibold">{soldUnits} un. vendidas</span>
               <span className="text-text-muted">·</span>
-              <span className="text-text-secondary">{formatPercent(profitMargin)} margem</span>
+              <span className="text-text-secondary">
+                {hideMoney ? "•••• margem" : `${formatPercent(profitMargin)} margem`}
+              </span>
             </div>
 
             {profitTrend !== undefined && (
               <p
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
-                  profitTrend >= 0 ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300",
+                  hideMoney
+                    ? "bg-surface-elevated text-text-muted"
+                    : profitTrend >= 0
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "bg-red-500/20 text-red-300",
                 )}
               >
-                {profitTrend >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                Lucro {profitTrend >= 0 ? "+" : ""}
-                {formatPercent(profitTrend)} {trendLabel}
+                {!hideMoney &&
+                  (profitTrend >= 0 ? (
+                    <TrendingUp className="h-3.5 w-3.5" />
+                  ) : (
+                    <TrendingDown className="h-3.5 w-3.5" />
+                  ))}
+                {hideMoney
+                  ? `Lucro •••• ${trendLabel}`
+                  : `Lucro ${profitTrend >= 0 ? "+" : ""}${formatPercent(profitTrend)} ${trendLabel}`}
               </p>
             )}
           </div>
@@ -231,10 +283,11 @@ export function DashboardDayView({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <PulseMetric
           label="Faturamento"
-          value={revenue}
+          value={hideMoney ? MONEY_MASK : revenue}
+          format={hideMoney ? "raw" : "currency"}
           icon={TrendingUp}
           variant="revenue"
-          trend={revenueTrend}
+          trend={hideMoney ? undefined : revenueTrend}
           trendLabel={trendLabel}
           delay={0}
         />
