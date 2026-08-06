@@ -5,6 +5,8 @@ import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { WeekPulse, WeekPulseDay } from "@/lib/week-pulse";
 
+const BAR_TRACK_PX = 56;
+
 /** Dias úteis da semana até o dia em foco (inclusive). Ex.: na quinta → seg–qui. */
 function daysThroughFocus(days: WeekPulseDay[]): WeekPulseDay[] {
   const focus = days.find((day) => day.isFocus);
@@ -55,8 +57,10 @@ export function WeekUnitsPanel({
 
       <div className="mt-3 flex items-end gap-1.5">
         {days.map((day, index) => {
-          const heightPct =
-            day.units > 0 ? Math.max((day.units / maxUnits) * 100, 14) : 0;
+          const barPx =
+            day.units > 0
+              ? Math.max(Math.round((day.units / maxUnits) * BAR_TRACK_PX), 8)
+              : 0;
           return (
             <div
               key={day.date}
@@ -66,16 +70,19 @@ export function WeekUnitsPanel({
               <span className="text-[9px] font-bold tabular-nums text-text-secondary">
                 {day.units > 0 ? day.units : "—"}
               </span>
-              <div className="relative h-14 w-full overflow-hidden rounded-[4px] bg-surface-hover/60 sm:h-16">
+              <div
+                className="flex w-full items-end overflow-hidden rounded-[4px] bg-surface-hover/60"
+                style={{ height: BAR_TRACK_PX }}
+              >
                 <motion.div
                   initial={{ height: 0 }}
-                  animate={{ height: `${heightPct}%` }}
+                  animate={{ height: barPx }}
                   transition={{ delay: 0.12 + index * 0.05, duration: 0.5, ease: "easeOut" }}
                   className={cn(
-                    "absolute inset-x-0 bottom-0 rounded-[4px]",
+                    "w-full rounded-[4px]",
                     day.isFocus
                       ? "bg-gradient-to-t from-brand-yellow to-[#FFEA70]"
-                      : "bg-brand-yellow/55",
+                      : "bg-brand-yellow/70",
                   )}
                 />
               </div>
