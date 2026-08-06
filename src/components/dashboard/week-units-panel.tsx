@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { WeekPulse, WeekPulseDay } from "@/lib/week-pulse";
@@ -56,10 +55,10 @@ export function WeekUnitsPanel({
       </div>
 
       <div className="mt-3 flex items-end gap-1.5">
-        {days.map((day, index) => {
+        {days.map((day) => {
           const barPx =
             day.units > 0
-              ? Math.max(Math.round((day.units / maxUnits) * BAR_TRACK_PX), 8)
+              ? Math.max(Math.round((day.units / maxUnits) * BAR_TRACK_PX), 10)
               : 0;
           return (
             <div
@@ -71,19 +70,15 @@ export function WeekUnitsPanel({
                 {day.units > 0 ? day.units : "—"}
               </span>
               <div
-                className="flex w-full items-end overflow-hidden rounded-[4px] bg-surface-hover/60"
+                className="flex w-full items-end rounded-[4px] bg-[#2a2a2a]"
                 style={{ height: BAR_TRACK_PX }}
               >
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: barPx }}
-                  transition={{ delay: 0.12 + index * 0.05, duration: 0.5, ease: "easeOut" }}
+                <div
                   className={cn(
                     "w-full rounded-[4px]",
-                    day.isFocus
-                      ? "bg-gradient-to-t from-brand-yellow to-[#FFEA70]"
-                      : "bg-brand-yellow/70",
+                    day.isFocus ? "bg-[#FFD400]" : "bg-[#C9A800]",
                   )}
+                  style={{ height: barPx, minHeight: barPx > 0 ? 10 : 0 }}
                 />
               </div>
               <span
