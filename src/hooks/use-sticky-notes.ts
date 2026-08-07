@@ -80,10 +80,20 @@ export function useStickyNotes() {
         return;
       }
       const saved = await putNoteToServer(note);
-      await localPutNote(saved);
       await localClearPending(id);
       pendingRef.current.delete(id);
-      setNotes((prev) => prev.map((n) => (n.id === id ? saved : n)));
+      // Não sobrescreve se o usuário digitou mais enquanto salvava (ex.: espaços).
+      setNotes((prev) =>
+        prev.map((n) => {
+          if (n.id !== id) return n;
+          if (n.clientUpdatedAt > saved.clientUpdatedAt) {
+            void localPutNote(n);
+            return n;
+          }
+          void localPutNote(saved);
+          return saved;
+        }),
+      );
       setStatus("saved");
     } catch {
       setStatus(navigator.onLine ? "error" : "offline");

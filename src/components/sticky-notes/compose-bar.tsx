@@ -51,12 +51,14 @@ export function ComposeBar({ onCreate }: ComposeBarProps) {
         autoFocus
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => e.stopPropagation()}
         placeholder="Título"
         className="w-full bg-transparent px-4 pt-4 text-[16px] font-medium text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:outline-none"
       />
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        onKeyDown={(e) => e.stopPropagation()}
         placeholder="Anotar..."
         rows={3}
         className="w-full resize-none bg-transparent px-4 py-3 text-[14px] leading-relaxed text-[#e8eaed]/90 placeholder:text-[#e8eaed]/35 focus:outline-none"
@@ -65,6 +67,7 @@ export function ComposeBar({ onCreate }: ComposeBarProps) {
         <button
           type="button"
           disabled={busy}
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => void submit()}
           className="rounded-md px-3 py-1.5 text-sm font-medium text-[#e8eaed]/85 hover:bg-white/10 disabled:opacity-50"
         >

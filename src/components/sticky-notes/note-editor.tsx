@@ -57,6 +57,8 @@ function ToolbarButton({
       type="button"
       title={title}
       disabled={disabled}
+      // Evita roubar o foco do input/textarea (Espaço/Enter ativariam o botão).
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={cn(
         "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#e8eaed]/75 transition-colors",
@@ -70,6 +72,16 @@ function ToolbarButton({
   );
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    target.isContentEditable
+  );
+}
+
 export function NoteEditor({
   note,
   onChange,
@@ -80,6 +92,7 @@ export function NoteEditor({
   onSetColor,
 }: NoteEditorProps) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [showPalette, setShowPalette] = useState(false);
   const [showDate, setShowDate] = useState(false);
@@ -87,7 +100,31 @@ export function NoteEditor({
   const [past, setPast] = useState<Snapshot[]>([]);
   const [future, setFuture] = useState<Snapshot[]>([]);
   const skipHistory = useRef(false);
+
+  // Rascunho local: evita que o autosave/re-render do board apague teclas (ex.: espaço).
+  const [draftTitle, setDraftTitle] = useState(note.title);
+  const [draftBody, setDraftBody] = useState(note.body);
+  const draftRef = useRef({ title: note.title, body: note.body });
+  const noteIdRef = useRef(note.id);
+
   const colors = STICKY_NOTE_COLOR_STYLES[note.color] ?? STICKY_NOTE_COLOR_STYLES.default;
+
+  useEffect(() => {
+    if (noteIdRef.current !== note.id) {
+      noteIdRef.current = note.id;
+      setDraftTitle(note.title);
+      setDraftBody(note.body);
+      draftRef.current = { title: note.title, body: note.body };
+      setPast([]);
+      setFuture([]);
+      skipHistory.current = false;
+      // Foco inicial só ao abrir outra nota.
+      requestAnimationFrame(() => {
+        if (note.title.trim()) bodyRef.current?.focus();
+        else titleRef.current?.focus();
+      });
+    }
+  }, [note.id, note.title, note.body]);
 
   const pushHistory = useCallback((next: Snapshot, prev: Snapshot) => {
     if (skipHistory.current) {
@@ -99,32 +136,59 @@ export function NoteEditor({
     setFuture([]);
   }, []);
 
-  useEffect(() => {
-    // Foca o corpo se já houver título; senão o título.
-    if (note.title.trim()) bodyRef.current?.focus();
-  }, [note.id]);
+  const commitTitle = useCallback(
+    (title: string) => {
+      const prev = draftRef.current;
+      const next = { title, body: prev.body };
+      pushHistory(next, prev);
+      draftRef.current = next;
+      setDraftTitle(title);
+      onChange(note.id, { title });
+    },
+    [note.id, onChange, pushHistory],
+  );
+
+  const commitBody = useCallback(
+    (body: string) => {
+      const prev = draftRef.current;
+      const next = { title: prev.title, body };
+      pushHistory(next, prev);
+      draftRef.current = next;
+      setDraftBody(body);
+      onChange(note.id, { body });
+    },
+    [note.id, onChange, pushHistory],
+  );
 
   const undo = useCallback(() => {
     setPast((stack) => {
       if (stack.length === 0) return stack;
       const prev = stack[stack.length - 1]!;
-      setFuture((f) => [{ title: note.title, body: note.body }, ...f]);
+      const current = draftRef.current;
+      setFuture((f) => [current, ...f]);
       skipHistory.current = true;
+      draftRef.current = prev;
+      setDraftTitle(prev.title);
+      setDraftBody(prev.body);
       onChange(note.id, prev);
       return stack.slice(0, -1);
     });
-  }, [note.body, note.id, note.title, onChange]);
+  }, [note.id, onChange]);
 
   const redo = useCallback(() => {
     setFuture((stack) => {
       if (stack.length === 0) return stack;
       const next = stack[0]!;
-      setPast((p) => [...p, { title: note.title, body: note.body }]);
+      const current = draftRef.current;
+      setPast((p) => [...p, current]);
       skipHistory.current = true;
+      draftRef.current = next;
+      setDraftTitle(next.title);
+      setDraftBody(next.body);
       onChange(note.id, next);
       return stack.slice(1);
     });
-  }, [note.body, note.id, note.title, onChange]);
+  }, [note.id, onChange]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,15 +200,21 @@ export function NoteEditor({
           return;
         }
         onClose();
+        return;
       }
+
+      // Atalhos só com modificador — nunca interferir em digitação normal (espaço, letras…).
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        if (!isTypingTarget(e.target) && !isTypingTarget(document.activeElement)) return;
         e.preventDefault();
         undo();
+        return;
       }
       if (
         (e.ctrlKey || e.metaKey) &&
         (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))
       ) {
+        if (!isTypingTarget(e.target) && !isTypingTarget(document.activeElement)) return;
         e.preventDefault();
         redo();
       }
@@ -155,21 +225,34 @@ export function NoteEditor({
 
   const autoResize = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
-    el.style.height = "auto";
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    el.style.height = "0px";
     el.style.height = `${Math.max(el.scrollHeight, 420)}px`;
+    // Restaura caret — alguns browsers perdem a posição no resize.
+    if (document.activeElement === el) {
+      try {
+        el.setSelectionRange(start, end);
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   useEffect(() => {
     autoResize(bodyRef.current);
-  }, [note.body, note.id]);
+  }, [draftBody, note.id]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 sm:p-8">
-      <button
-        type="button"
-        aria-label="Fechar editor"
+      {/* div (não button): Espaço não “clica” no overlay e fecha o editor */}
+      <div
+        aria-hidden
         className="absolute inset-0 cursor-default"
-        onClick={onClose}
+        onMouseDown={(e) => {
+          // Só fecha no clique no backdrop; não rouba foco no mousedown do editor.
+          if (e.target === e.currentTarget) onClose();
+        }}
       />
 
       <div
@@ -180,18 +263,14 @@ export function NoteEditor({
           colors.card,
           colors.border,
         )}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Cabeçalho Keep: título + pin à direita */}
         <div className="flex items-start gap-2 px-4 pb-1 pt-4 sm:px-5 sm:pt-5">
           <input
-            value={note.title}
-            onChange={(e) => {
-              pushHistory(
-                { title: e.target.value, body: note.body },
-                { title: note.title, body: note.body },
-              );
-              onChange(note.id, { title: e.target.value });
-            }}
+            ref={titleRef}
+            value={draftTitle}
+            onChange={(e) => commitTitle(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
             placeholder="Título"
             className="min-w-0 flex-1 bg-transparent text-[22px] font-normal leading-tight tracking-tight text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:outline-none"
           />
@@ -203,18 +282,17 @@ export function NoteEditor({
           </ToolbarButton>
         </div>
 
-        {/* Corpo amplo — ocupa o espaço restante do modal */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 pt-2 sm:px-7 [scrollbar-width:thin] [scrollbar-color:#5f6368_transparent]">
           <textarea
             ref={bodyRef}
-            value={note.body}
+            value={draftBody}
             onChange={(e) => {
-              pushHistory(
-                { title: note.title, body: e.target.value },
-                { title: note.title, body: note.body },
-              );
-              onChange(note.id, { body: e.target.value });
+              commitBody(e.target.value);
               autoResize(e.target);
+            }}
+            onKeyDown={(e) => {
+              // Garante que Espaço/Enter nunca subam para botões do dialog.
+              e.stopPropagation();
             }}
             placeholder="Anotar..."
             rows={16}
@@ -222,7 +300,6 @@ export function NoteEditor({
           />
         </div>
 
-        {/* Barra inferior Keep */}
         <div className="relative flex items-center gap-0.5 px-2 pb-2 pt-1 sm:px-3">
           {showPalette && (
             <div className="absolute bottom-12 left-2 z-20 flex flex-wrap gap-2 rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-2.5 shadow-xl">
@@ -233,6 +310,7 @@ export function NoteEditor({
                     key={color}
                     type="button"
                     title={color}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       onSetColor(note.id, color);
                       setShowPalette(false);
@@ -268,6 +346,7 @@ export function NoteEditor({
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onChange(note.id, { noteDate: format(new Date(), "yyyy-MM-dd") });
                   }}
@@ -277,6 +356,7 @@ export function NoteEditor({
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onChange(note.id, { noteDate: null });
                   }}
@@ -286,6 +366,7 @@ export function NoteEditor({
                 </button>
                 <button
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setShowDate(false)}
                   className="ml-auto rounded-md px-2 py-1 text-xs font-medium text-brand-yellow hover:bg-brand-yellow/10"
                 >
@@ -302,6 +383,7 @@ export function NoteEditor({
             <div className="absolute bottom-12 left-36 z-20 min-w-[160px] overflow-hidden rounded-lg border border-[#5f6368]/50 bg-[#2d2e30] py-1 shadow-xl">
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#e8eaed]/90 hover:bg-white/10"
                 onClick={() => {
                   onDelete(note.id);
@@ -373,6 +455,7 @@ export function NoteEditor({
 
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={onClose}
             className="rounded-md px-3 py-1.5 text-sm font-medium text-[#e8eaed]/85 hover:bg-white/10"
           >

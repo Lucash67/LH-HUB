@@ -65,9 +65,17 @@ function SortableNoteCard({
       <div className="flex items-start gap-1 p-2.5">
         <button
           type="button"
+          aria-label="Arrastar nota"
           className="mt-0.5 cursor-grab touch-none rounded p-0.5 text-[#e8eaed]/35 hover:bg-white/10 hover:text-[#e8eaed]/70 active:cursor-grabbing"
           {...attributes}
           {...listeners}
+          // Espaço/Enter no handle não devem ativar botão nem subir para o card.
+          onKeyDown={(e) => {
+            if (e.key === " " || e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
         >
           <GripVertical className="h-4 w-4" />
         </button>
