@@ -150,6 +150,7 @@ export const stickyNotes = sqliteTable("sticky_notes", {
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
   color: text("color").notNull().default("default"),
+  noteDate: text("note_date"),
   pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
   archived: integer("archived", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),

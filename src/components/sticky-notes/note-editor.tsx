@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Archive,
-  BellPlus,
+  CalendarDays,
   Check,
   ImagePlus,
   MoreVertical,
@@ -14,6 +14,7 @@ import {
   Undo2,
   UserPlus,
 } from "lucide-react";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   STICKY_NOTE_COLORS,
@@ -21,12 +22,15 @@ import {
   type StickyNote,
   type StickyNoteColor,
 } from "@/lib/sticky-notes/types";
+import { formatNoteDateLabel } from "@/lib/sticky-notes/week-board";
 
 interface NoteEditorProps {
   note: StickyNote;
   onChange: (
     id: string,
-    patch: Partial<Pick<StickyNote, "title" | "body" | "color" | "pinned" | "archived">>,
+    patch: Partial<
+      Pick<StickyNote, "title" | "body" | "color" | "noteDate" | "pinned" | "archived">
+    >,
   ) => void;
   onClose: () => void;
   onTogglePin: (id: string) => void;
@@ -76,7 +80,9 @@ export function NoteEditor({
   onSetColor,
 }: NoteEditorProps) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [showPalette, setShowPalette] = useState(false);
+  const [showDate, setShowDate] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [past, setPast] = useState<Snapshot[]>([]);
   const [future, setFuture] = useState<Snapshot[]>([]);
@@ -123,9 +129,10 @@ export function NoteEditor({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showPalette || showMore) {
+        if (showPalette || showMore || showDate) {
           setShowPalette(false);
           setShowMore(false);
+          setShowDate(false);
           return;
         }
         onClose();
@@ -144,7 +151,7 @@ export function NoteEditor({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, redo, showMore, showPalette, undo]);
+  }, [onClose, redo, showDate, showMore, showPalette, undo]);
 
   const autoResize = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
@@ -245,8 +252,54 @@ export function NoteEditor({
             </div>
           )}
 
+          {showDate && (
+            <div className="absolute bottom-12 left-12 z-20 w-[240px] rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-3 shadow-xl">
+              <p className="mb-2 text-xs font-semibold text-[#e8eaed]/55">Data da nota</p>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={note.noteDate ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value || null;
+                  onChange(note.id, { noteDate: value });
+                }}
+                className="w-full rounded-lg border border-[#5f6368]/50 bg-[#202124] px-2 py-2 text-sm text-[#e8eaed] focus:outline-none"
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(note.id, { noteDate: format(new Date(), "yyyy-MM-dd") });
+                  }}
+                  className="rounded-md px-2 py-1 text-xs text-[#e8eaed]/80 hover:bg-white/10"
+                >
+                  Hoje
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(note.id, { noteDate: null });
+                  }}
+                  className="rounded-md px-2 py-1 text-xs text-[#e8eaed]/80 hover:bg-white/10"
+                >
+                  Sem data
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDate(false)}
+                  className="ml-auto rounded-md px-2 py-1 text-xs font-medium text-brand-yellow hover:bg-brand-yellow/10"
+                >
+                  Salvar
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-[#e8eaed]/40">
+                Atual: {formatNoteDateLabel(note.noteDate)}
+              </p>
+            </div>
+          )}
+
           {showMore && (
-            <div className="absolute bottom-12 left-28 z-20 min-w-[160px] overflow-hidden rounded-lg border border-[#5f6368]/50 bg-[#2d2e30] py-1 shadow-xl">
+            <div className="absolute bottom-12 left-36 z-20 min-w-[160px] overflow-hidden rounded-lg border border-[#5f6368]/50 bg-[#2d2e30] py-1 shadow-xl">
               <button
                 type="button"
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#e8eaed]/90 hover:bg-white/10"
@@ -265,13 +318,21 @@ export function NoteEditor({
             title="Cor de fundo"
             onClick={() => {
               setShowMore(false);
+              setShowDate(false);
               setShowPalette((v) => !v);
             }}
           >
             <Palette className="h-[18px] w-[18px]" />
           </ToolbarButton>
-          <ToolbarButton title="Lembrete (em breve)" disabled>
-            <BellPlus className="h-[18px] w-[18px]" />
+          <ToolbarButton
+            title="Data da nota"
+            onClick={() => {
+              setShowMore(false);
+              setShowPalette(false);
+              setShowDate((v) => !v);
+            }}
+          >
+            <CalendarDays className="h-[18px] w-[18px]" />
           </ToolbarButton>
           <ToolbarButton title="Colaboradores (em breve)" disabled>
             <UserPlus className="h-[18px] w-[18px]" />
@@ -292,6 +353,7 @@ export function NoteEditor({
             title="Mais"
             onClick={() => {
               setShowPalette(false);
+              setShowDate(false);
               setShowMore((v) => !v);
             }}
           >

@@ -1,15 +1,54 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { format, subWeeks } from "date-fns";
 import { NotebookPen, Search } from "lucide-react";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { PageLoader } from "@/components/ui/loading";
 import { ComposeBar } from "@/components/sticky-notes/compose-bar";
-import { NoteCard } from "@/components/sticky-notes/note-card";
 import { NoteEditor } from "@/components/sticky-notes/note-editor";
+import { NotesBoard } from "@/components/sticky-notes/notes-board";
+import {
+  DEFAULT_NOTES_FILTERS,
+  NotesFilters,
+  type NotesFilterState,
+} from "@/components/sticky-notes/notes-filters";
 import { StickySaveStatus } from "@/components/sticky-notes/save-status";
 import { useStickyNotes } from "@/hooks/use-sticky-notes";
 import type { StickyNote } from "@/lib/sticky-notes/types";
+import { weekKeyFromDate } from "@/lib/sticky-notes/week-board";
+
+function applyFilters(notes: StickyNote[], filters: NotesFilterState, query: string): StickyNote[] {
+  const q = query.trim().toLowerCase();
+  const thisWeek = weekKeyFromDate(format(new Date(), "yyyy-MM-dd"));
+  const lastWeek = weekKeyFromDate(format(subWeeks(new Date(), 1), "yyyy-MM-dd"));
+
+  return notes.filter((n) => {
+    if (q && !n.title.toLowerCase().includes(q) && !n.body.toLowerCase().includes(q)) {
+      return false;
+    }
+    if (filters.pinnedOnly && !n.pinned) return false;
+    if (filters.color !== "all" && n.color !== filters.color) return false;
+
+    switch (filters.date) {
+      case "with_date":
+        if (!n.noteDate) return false;
+        break;
+      case "no_date":
+        if (n.noteDate) return false;
+        break;
+      case "this_week":
+        if (!n.noteDate || weekKeyFromDate(n.noteDate) !== thisWeek) return false;
+        break;
+      case "last_week":
+        if (!n.noteDate || weekKeyFromDate(n.noteDate) !== lastWeek) return false;
+        break;
+      default:
+        break;
+    }
+    return true;
+  });
+}
 
 export default function NotasPage() {
   const {
@@ -18,25 +57,21 @@ export default function NotasPage() {
     status,
     createNote,
     updateNote,
+    applyBoardMove,
     setColor,
     togglePin,
     archiveNote,
     deleteNote,
   } = useStickyNotes();
   const [query, setQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<NotesFilterState>(DEFAULT_NOTES_FILTERS);
   const [active, setActive] = useState<StickyNote | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return notes;
-    return notes.filter(
-      (n) =>
-        n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q),
-    );
-  }, [notes, query]);
-
-  const pinned = filtered.filter((n) => n.pinned);
-  const others = filtered.filter((n) => !n.pinned);
+  const filtered = useMemo(
+    () => applyFilters(notes, filters, query),
+    [notes, filters, query],
+  );
 
   const openNote = (note: StickyNote) => {
     setActive(notes.find((n) => n.id === note.id) ?? note);
@@ -47,27 +82,32 @@ export default function NotasPage() {
   return (
     <ModuleShell
       title="Notas"
-      subtitle="Bloco de notas com autosave"
+      subtitle="Board por semana · arraste, filtre e autosave"
       temporalFilter={false}
       actions={<StickySaveStatus status={status} />}
     >
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="mx-auto w-full max-w-[600px]">
-          <div className="relative">
+      <div className="space-y-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e8eaed]/40" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Pesquisar"
+              placeholder="Pesquisar notas"
               className="h-11 w-full rounded-lg border border-[#5f6368]/40 bg-[#202124] pl-10 pr-3 text-sm text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:border-[#5f6368] focus:outline-none"
             />
           </div>
+          <NotesFilters
+            open={filtersOpen}
+            onOpenChange={setFiltersOpen}
+            filters={filters}
+            onChange={setFilters}
+          />
         </div>
 
         <ComposeBar
           onCreate={async (seed) => {
             const note = await createNote(seed);
-            // Composer Keep: “Fechar” já salva; abre só se veio vazia e expandida via clique.
             if (!seed?.title && !seed?.body) setActive(note);
           }}
         />
@@ -75,57 +115,19 @@ export default function NotasPage() {
         {loading && notes.length === 0 ? (
           <PageLoader />
         ) : filtered.length === 0 ? (
-          <div className="px-6 py-20 text-center">
+          <div className="px-6 py-16 text-center">
             <NotebookPen className="mx-auto mb-3 h-10 w-10 text-[#e8eaed]/25" />
-            <p className="text-base text-[#e8eaed]/70">As suas notas aparecem aqui</p>
+            <p className="text-base text-[#e8eaed]/70">Nenhuma nota neste filtro</p>
             <p className="mt-1 text-sm text-[#e8eaed]/40">
-              Tudo salva sozinho — pode fechar a aba sem medo.
+              Crie uma nota ou limpe os filtros para ver o board.
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {pinned.length > 0 && (
-              <section>
-                <p className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#e8eaed]/45">
-                  Fixadas
-                </p>
-                <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
-                  {pinned.map((note) => (
-                    <div key={note.id} className="mb-4 break-inside-avoid">
-                      <NoteCard
-                        note={note}
-                        onOpen={openNote}
-                        onTogglePin={togglePin}
-                        onArchive={archiveNote}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {others.length > 0 && (
-              <section>
-                {pinned.length > 0 && (
-                  <p className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#e8eaed]/45">
-                    Outras
-                  </p>
-                )}
-                <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
-                  {others.map((note) => (
-                    <div key={note.id} className="mb-4 break-inside-avoid">
-                      <NoteCard
-                        note={note}
-                        onOpen={openNote}
-                        onTogglePin={togglePin}
-                        onArchive={archiveNote}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
+          <NotesBoard
+            notes={filtered}
+            onOpen={openNote}
+            onBoardChange={applyBoardMove}
+          />
         )}
       </div>
 

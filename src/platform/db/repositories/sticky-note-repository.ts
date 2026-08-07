@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getPostgresDb, getSqliteDb, isPostgres } from "@/platform/db";
 import { stickyNotes as pgStickyNotes } from "@/lib/db/postgres/schema";
 import { stickyNotes as sqliteStickyNotes } from "@/lib/db/schema";
-import { queryAll, queryOne, queryRun, toIsoTimestamp } from "@/platform/db/query";
+import { queryAll, queryOne, queryRun, toDateString, toIsoTimestamp } from "@/platform/db/query";
 import { generateId } from "@/shared/ids/generate-id";
 import type { StickyNote, StickyNoteColor } from "@/lib/sticky-notes/types";
 
@@ -11,6 +11,7 @@ export interface StickyNoteWriteInput {
   title?: string;
   body?: string;
   color?: StickyNoteColor;
+  noteDate?: string | null;
   pinned?: boolean;
   archived?: boolean;
   sortOrder?: number;
@@ -26,6 +27,7 @@ function mapPgRow(row: typeof pgStickyNotes.$inferSelect): StickyNote {
     title: row.title ?? "",
     body: row.body ?? "",
     color: (row.color as StickyNoteColor) || "default",
+    noteDate: row.noteDate ? toDateString(row.noteDate) : null,
     pinned: Boolean(row.pinned),
     archived: Boolean(row.archived),
     sortOrder: row.sortOrder ?? 0,
@@ -43,6 +45,7 @@ function mapSqliteRow(row: typeof sqliteStickyNotes.$inferSelect): StickyNote {
     title: row.title ?? "",
     body: row.body ?? "",
     color: (row.color as StickyNoteColor) || "default",
+    noteDate: row.noteDate ?? null,
     pinned: Boolean(row.pinned),
     archived: Boolean(row.archived),
     sortOrder: row.sortOrder ?? 0,
@@ -124,7 +127,6 @@ export async function upsertStickyNote(
   const id = input.id ?? generateId();
   const existing = input.id ? await getStickyNoteById(ownerId, input.id) : null;
 
-  // Last-write-wins pelo relógio do cliente: se o servidor é mais novo, mantém o servidor.
   if (
     existing &&
     input.clientUpdatedAt &&
@@ -136,6 +138,8 @@ export async function upsertStickyNote(
   const title = input.title ?? existing?.title ?? "";
   const body = input.body ?? existing?.body ?? "";
   const color = input.color ?? existing?.color ?? "default";
+  const noteDate =
+    input.noteDate !== undefined ? input.noteDate : (existing?.noteDate ?? null);
   const pinned = input.pinned ?? existing?.pinned ?? false;
   const archived = input.archived ?? existing?.archived ?? false;
   const sortOrder = input.sortOrder ?? existing?.sortOrder ?? 0;
@@ -151,6 +155,7 @@ export async function upsertStickyNote(
             title,
             body,
             color,
+            noteDate,
             pinned,
             archived,
             sortOrder,
@@ -167,6 +172,7 @@ export async function upsertStickyNote(
           title,
           body,
           color,
+          noteDate,
           pinned,
           archived,
           sortOrder,
@@ -188,6 +194,7 @@ export async function upsertStickyNote(
         title,
         body,
         color,
+        noteDate,
         pinned,
         archived,
         sortOrder,
@@ -205,6 +212,7 @@ export async function upsertStickyNote(
         title,
         body,
         color,
+        noteDate,
         pinned,
         archived,
         sortOrder,
@@ -239,16 +247,4 @@ export async function deleteStickyNote(ownerId: string, id: string): Promise<boo
     .where(and(eq(sqliteStickyNotes.id, id), eq(sqliteStickyNotes.ownerId, ownerId)))
     .run();
   return true;
-}
-
-export async function archiveStickyNote(
-  ownerId: string,
-  id: string,
-  archived = true,
-): Promise<StickyNote | null> {
-  return upsertStickyNote(ownerId, {
-    id,
-    archived,
-    clientUpdatedAt: new Date().toISOString(),
-  });
 }

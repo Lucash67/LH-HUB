@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { format } from "date-fns";
 import { generateId } from "@/shared/ids/generate-id";
 import type { StickyNote, StickyNoteColor } from "@/lib/sticky-notes/types";
 import {
@@ -15,6 +16,10 @@ import {
 } from "@/lib/sticky-notes/local-store";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "offline" | "error";
+
+export type StickyNotePatch = Partial<
+  Pick<StickyNote, "title" | "body" | "color" | "noteDate" | "pinned" | "archived" | "sortOrder">
+>;
 
 const SAVE_DEBOUNCE_MS = 450;
 
@@ -191,13 +196,16 @@ export function useStickyNotes() {
   }, [flushAllPending]);
 
   const createNote = useCallback(
-    async (partial?: Partial<Pick<StickyNote, "title" | "body" | "color">>) => {
+    async (
+      partial?: Partial<Pick<StickyNote, "title" | "body" | "color" | "noteDate">>,
+    ) => {
       const now = new Date().toISOString();
       const note: StickyNote = {
         id: generateId(),
         title: partial?.title ?? "",
         body: partial?.body ?? "",
         color: partial?.color ?? "default",
+        noteDate: partial?.noteDate !== undefined ? partial.noteDate : format(new Date(), "yyyy-MM-dd"),
         pinned: false,
         archived: false,
         sortOrder: 0,
@@ -216,7 +224,7 @@ export function useStickyNotes() {
   );
 
   const updateNote = useCallback(
-    (id: string, patch: Partial<Pick<StickyNote, "title" | "body" | "color" | "pinned" | "archived">>) => {
+    (id: string, patch: StickyNotePatch) => {
       const now = new Date().toISOString();
       setNotes((prev) => {
         const next = prev.map((n) =>
@@ -229,6 +237,26 @@ export function useStickyNotes() {
       pendingRef.current.add(id);
       void localMarkPending(id);
       scheduleSave(id);
+    },
+    [scheduleSave],
+  );
+
+  const applyBoardMove = useCallback(
+    (ordered: StickyNote[]) => {
+      const now = new Date().toISOString();
+      setNotes((prev) => {
+        const byId = new Map(prev.map((n) => [n.id, n]));
+        for (const note of ordered) {
+          byId.set(note.id, { ...note, clientUpdatedAt: now, updatedAt: now });
+        }
+        return Array.from(byId.values());
+      });
+      for (const note of ordered) {
+        pendingRef.current.add(note.id);
+        void localPutNote({ ...note, clientUpdatedAt: now, updatedAt: now });
+        void localMarkPending(note.id);
+        scheduleSave(note.id);
+      }
     },
     [scheduleSave],
   );
@@ -279,6 +307,7 @@ export function useStickyNotes() {
     setShowArchived,
     createNote,
     updateNote,
+    applyBoardMove,
     setColor,
     togglePin,
     archiveNote,

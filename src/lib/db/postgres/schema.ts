@@ -504,6 +504,7 @@ export const stickyNotes = pgTable(
     title: text("title").notNull().default(""),
     body: text("body").notNull().default(""),
     color: text("color").notNull().default("default"),
+    noteDate: date("note_date"),
     pinned: boolean("pinned").notNull().default(false),
     archived: boolean("archived").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
@@ -515,6 +516,7 @@ export const stickyNotes = pgTable(
     ownerIdx: index("idx_sticky_notes_owner").on(table.ownerId),
     ownerArchivedIdx: index("idx_sticky_notes_owner_archived").on(table.ownerId, table.archived),
     ownerUpdatedIdx: index("idx_sticky_notes_owner_updated").on(table.ownerId, table.clientUpdatedAt),
+    ownerNoteDateIdx: index("idx_sticky_notes_owner_note_date").on(table.ownerId, table.noteDate),
   }),
 );
 

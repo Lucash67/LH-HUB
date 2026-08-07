@@ -22,6 +22,8 @@ export const stickyNoteSchema = z.object({
   title: z.string().max(500).default(""),
   body: z.string().max(100_000).default(""),
   color: z.enum(STICKY_NOTE_COLORS).default("default"),
+  /** Data de referência da nota (yyyy-MM-dd). Null = Sem data. */
+  noteDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   pinned: z.boolean().default(false),
   archived: z.boolean().default(false),
   sortOrder: z.number().int().default(0),
@@ -37,6 +39,7 @@ export const stickyNoteUpsertSchema = stickyNoteSchema.partial().extend({
   title: z.string().max(500).optional(),
   body: z.string().max(100_000).optional(),
   color: z.enum(STICKY_NOTE_COLORS).optional(),
+  noteDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   pinned: z.boolean().optional(),
   archived: z.boolean().optional(),
   sortOrder: z.number().int().optional(),

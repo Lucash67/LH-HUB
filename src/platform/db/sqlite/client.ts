@@ -242,6 +242,7 @@ function initLegacyTables(sqlite: Database.Database) {
       title TEXT NOT NULL DEFAULT '',
       body TEXT NOT NULL DEFAULT '',
       color TEXT NOT NULL DEFAULT 'default',
+      note_date TEXT,
       pinned INTEGER NOT NULL DEFAULT 0,
       archived INTEGER NOT NULL DEFAULT 0,
       sort_order INTEGER NOT NULL DEFAULT 0,
@@ -522,12 +523,20 @@ function migrateInvestmentSourceColumns(sqlite: Database.Database) {
   }
 }
 
+function migrateStickyNotesNoteDate(sqlite: Database.Database) {
+  const columns = sqlite.prepare("PRAGMA table_info(sticky_notes)").all() as { name: string }[];
+  if (!columns.some((c) => c.name === "note_date")) {
+    sqlite.exec(`ALTER TABLE sticky_notes ADD COLUMN note_date TEXT`);
+  }
+}
+
 function initTables(sqlite: Database.Database) {
   initLegacyTables(sqlite);
   initBusinessUnitsTable(sqlite);
   migrateLegacyBusinessIdColumns(sqlite);
   migrateOperationalIntelligence(sqlite);
   migrateInvestmentSourceColumns(sqlite);
+  migrateStickyNotesNoteDate(sqlite);
   initUsersTable(sqlite);
   initPasswordResetTable(sqlite);
   seedBusinessUnits(sqlite);
