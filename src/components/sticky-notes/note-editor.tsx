@@ -149,7 +149,7 @@ export function NoteEditor({
   const autoResize = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.max(el.scrollHeight, 220)}px`;
+    el.style.height = `${Math.max(el.scrollHeight, 420)}px`;
   };
 
   useEffect(() => {
@@ -169,7 +169,7 @@ export function NoteEditor({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative z-10 flex w-full max-w-[600px] flex-col overflow-hidden rounded-xl border shadow-[0_8px_28px_rgba(0,0,0,0.55)]",
+          "relative z-10 flex h-[min(88vh,860px)] w-full max-w-[920px] flex-col overflow-hidden rounded-xl border shadow-[0_8px_28px_rgba(0,0,0,0.55)]",
           colors.card,
           colors.border,
         )}
@@ -196,8 +196,8 @@ export function NoteEditor({
           </ToolbarButton>
         </div>
 
-        {/* Corpo com scroll interno */}
-        <div className="max-h-[min(58vh,520px)] overflow-y-auto px-4 pb-3 pt-2 sm:px-5 [scrollbar-width:thin] [scrollbar-color:#5f6368_transparent]">
+        {/* Corpo amplo — ocupa o espaço restante do modal */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 pt-2 sm:px-7 [scrollbar-width:thin] [scrollbar-color:#5f6368_transparent]">
           <textarea
             ref={bodyRef}
             value={note.body}
@@ -210,8 +210,8 @@ export function NoteEditor({
               autoResize(e.target);
             }}
             placeholder="Anotar..."
-            rows={8}
-            className="w-full resize-none bg-transparent text-[15px] leading-[1.55] text-[#e8eaed]/92 placeholder:text-[#e8eaed]/35 focus:outline-none"
+            rows={16}
+            className="min-h-full w-full resize-none bg-transparent text-[16px] leading-[1.6] text-[#e8eaed]/92 placeholder:text-[#e8eaed]/35 focus:outline-none"
           />
         </div>
 
