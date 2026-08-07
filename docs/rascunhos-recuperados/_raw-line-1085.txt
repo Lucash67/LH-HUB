@@ -1,0 +1,280 @@
+# HOTFIX DE HOMOLOGAÇÃO — DIA 20/07/2026 (REVISÃO PELO RASCUNHO OFICIAL)
+
+==================================================
+CONTEXTO
+==================================================
+
+Após a revisão do dia 21, ficou definido que TODOS os dias da Consolidação Histórica devem ser homologados exclusivamente com base no rascunho oficial do operador.
+
+O banco NÃO é a fonte da verdade.
+
+O rascunho oficial é a única referência.
+
+O objetivo desta Sprint é confirmar que o dia 20 representa exatamente o rascunho oficial ou corrigir qualquer divergência encontrada.
+
+==================================================
+RASCUNHO OFICIAL
+==================================================
+
+Comprados:
+
+15 unidades (R$52,50)
+
+• 6 Croissant
+• 5 Pastel
+• 4 Misto com Catupiry
+
+Meta:
+
+15 unidades
+
+Resultado do dia:
+
+10 vendas registradas
++
+1 venda fiada (Mikely)
+
+VENDAS
+
+09:34
+Dona Raimunda
+1 Pastel
+
+09:40
+Lucas
+1 Pastel
+
+09:50
+Francisco Vanderson (Vandin)
+2 Pastéis
+
+10:04
+Dayanna Kelly
+1 Pastel
+
+10:48
+Jackson Mendes Pinheiro
+2 Mistos com Catupiry
+
+(Horário não registrado)
+Maria Mikelly Monteiro Coutinho
+1 Croissant
+Situação:
+FIADO
+
+12:10
+Laize
+1 Croissant
+
+15:30
+Bruno Medeiros
+1 Misto com Catupiry
+
+15:30
+Leonardo de Sousa Sena
+1 Misto com Catupiry
+
+21:00
+Henrique
+3 Croissants
+(Compra das sobras do dia)
+
+OBSERVAÇÕES OFICIAIS
+
+• Restaram 3 salgados ao final do expediente.
+
+• Mikely pegou um croissant e ainda não havia realizado o pagamento.
+
+• Existia um salgado considerado "perdido".
+
+• Posteriormente foi identificado que esse salgado havia sido consumido por Anselmo, que realizou o PIX apenas no dia 21/07.
+
+• Portanto:
+
+Não houve perda de estoque.
+
+As 15 unidades foram efetivamente destinadas.
+
+Distribuição correta:
+
+11 unidades vendidas durante o expediente
++
+1 venda fiada (Mikely)
++
+3 unidades compradas por Henrique
+
+Total:
+
+15 unidades.
+
+==================================================
+VALIDAÇÕES IMPORTANTES
+==================================================
+
+Confirmar que:
+
+• Henrique comprou apenas as sobras.
+
+Essa operação representa uma venda válida do dia 20.
+
+Receita operacional:
+
+R$75
+
+Investimento:
+
+R$52,50
+
+Lucro Operacional:
+
+R$22,50
+
+==================================================
+PAGAMENTOS
+==================================================
+
+Validar:
+
+Mikely
+
+Venda realizada em 20/07
+
+Recebimento realizado em 21/07
+
+Status final:
+
+PAID
+
+payment_date:
+
+21/07
+
+cash_flow:
+
+Recebimento em 21/07
+
+Sem alterar receita de 20/07.
+
+------------------------------------
+
+Anselmo
+
+Consumiu um salgado em 20/07
+
+Pagamento realizado apenas em 21/07.
+
+Registrar como:
+
+Venda do dia 20
+
+Recebimento do dia 21
+
+Sem alterar receita do dia 21.
+
+==================================================
+OPERATOR FINANCE
+==================================================
+
+Caso exista investimento de terceiros, validar.
+
+Caso tenha sido investimento próprio, manter.
+
+Não duplicar entradas de caixa.
+
+==================================================
+AUDITORIA
+==================================================
+
+Comparar:
+
+Banco
+
+×
+
+Rascunho Oficial
+
+Verificar:
+
+• compras
+
+• investimento
+
+• source_type
+
+• source_name
+
+• vendas
+
+• horários
+
+• clientes
+
+• produtos
+
+• unidades
+
+• pagamentos
+
+• payment_date
+
+• cash_flow
+
+• operatorFinance
+
+• CRM
+
+• Dashboard
+
+• Analytics
+
+• Diário Operacional
+
+• daily_purchases
+
+==================================================
+CASO HAJA DIVERGÊNCIAS
+==================================================
+
+Reconstruir somente o dia 20.
+
+Atualizar apenas o necessário.
+
+Jamais alterar:
+
+16/07
+
+17/07
+
+21/07
+
+==================================================
+RESPONDER
+==================================================
+
+✔ Divergências encontradas.
+
+✔ Valores antes/depois.
+
+✔ Quantidade de registros alterados.
+
+✔ Clientes reconciliados.
+
+✔ Clientes criados.
+
+✔ Scripts executados.
+
+✔ Backup.
+
+✔ Validação automática.
+
+✔ TypeScript.
+
+==================================================
+OBJETIVO FINAL
+==================================================
+
+Ao finalizar esta Sprint, o dia 20 deverá representar exatamente o rascunho oficial.
+
+Caso nenhuma divergência seja encontrada, informar explicitamente que o dia já estava consistente.
+
+Caso existam divergências, reconstruí-las e apresentar todas as alterações realizadas.

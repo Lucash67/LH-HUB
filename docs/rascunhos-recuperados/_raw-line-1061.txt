@@ -1,0 +1,175 @@
+# SPRINT A.3.2 — RECONSTRUÇÃO HISTÓRICA OFICIAL DO DIA 17/07/2026
+
+==================================================
+CONTEXTO
+==================================================
+
+Entramos na última etapa da Consolidação Histórica do Lucas Business OS.
+
+Os dias:
+
+✅ 16/07
+✅ 20/07
+✅ 21/07
+
+já foram auditados, reconstruídos e homologados.
+
+Agora será reconstruído o dia 17/07 utilizando exclusivamente o rascunho oficial do operador.
+
+IMPORTANTE:
+
+O rascunho oficial continua sendo a única Fonte da Verdade.
+
+Qualquer divergência entre banco, seed, scripts antigos ou registros históricos deverá ser resolvida em favor do rascunho.
+
+==================================================
+OBJETIVO
+==================================================
+
+Reconstruir integralmente o dia 17/07.
+
+Ao final, o dia deverá possuir exatamente o mesmo padrão de qualidade dos dias 16, 20 e 21.
+
+==================================================
+ETAPA 1 — AUDITORIA
+==================================================
+
+Antes de alterar qualquer dado:
+
+Executar auditoria read-only do dia 17.
+
+Comparar:
+
+• vendas
+• clientes
+• horários
+• produtos
+• pagamentos
+• investimento
+• receita
+• lucro operacional
+• fluxo do operador
+• pendências
+• CRM
+• Dashboard
+• Financeiro
+• Analytics
+• Diário Operacional
+
+Gerar relatório de diferenças.
+
+Nenhum dado deve ser alterado nesta etapa.
+
+==================================================
+ETAPA 2 — RECONSTRUÇÃO
+==================================================
+
+Após receber o rascunho oficial:
+
+Reconstruir completamente o dia 17.
+
+Corrigir apenas o que divergir.
+
+Atualizar:
+
+• vendas
+• horários
+• produtos
+• clientes
+• pagamentos
+• observações
+• diário operacional
+• daily_purchases
+• investimentos
+• operatorFinance (caso aplicável)
+
+==================================================
+ETAPA 3 — CRM
+==================================================
+
+Recalcular automaticamente:
+
+• compras
+• ticket médio
+• recorrência
+• produto favorito
+• timeline
+• badges
+• insights
+
+Sem criar clientes duplicados.
+
+==================================================
+ETAPA 4 — DASHBOARD
+==================================================
+
+Sincronizar:
+
+• Hero
+• Linha do Dia
+• KPIs
+• Top Produtos
+• Alertas
+• Prioridades
+
+==================================================
+ETAPA 5 — FINANCEIRO
+==================================================
+
+Recalcular:
+
+Receita
+
+Investimento
+
+Lucro Operacional
+
+Margem
+
+ROI
+
+Operator Finance (caso exista investimento de terceiros)
+
+Fluxo de Caixa
+
+==================================================
+ETAPA 6 — ANALYTICS
+==================================================
+
+Atualizar automaticamente:
+
+• histórico
+• comparativos
+• metas
+• planejamento inteligente
+• indicadores
+
+==================================================
+ETAPA 7 — VALIDAÇÃO
+==================================================
+
+Responder:
+
+✔ Quantos registros foram alterados.
+
+✔ Quantos clientes foram atualizados.
+
+✔ Quantos clientes foram criados.
+
+✔ Quais conflitos foram encontrados.
+
+✔ Evidências da reconstrução.
+
+✔ Validação automática.
+
+✔ TypeScript sem erros.
+
+==================================================
+OBJETIVO FINAL
+==================================================
+
+Ao concluir esta Sprint, o dia 17 deverá ser oficialmente homologado.
+
+Nenhum dos dias já homologados (16, 20 e 21) poderá sofrer qualquer alteração.
+
+Após essa homologação, a Consolidação Histórica do Lucas Business OS estará concluída, permitindo que as próximas evoluções do sistema sejam feitas sobre uma base histórica íntegra e auditada.

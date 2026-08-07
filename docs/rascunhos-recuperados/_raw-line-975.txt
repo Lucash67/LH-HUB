@@ -1,0 +1,579 @@
+# ATUALIZAÇÃO OPERACIONAL — DIA 21/07/2026
+# LUCAS BUSINESS OS
+# OPERAÇÃO REAL
+
+==================================================
+CONTEXTO
+==================================================
+
+Esta atualização refere-se ao segundo dia oficial de operação real do Projeto Salgados.
+
+NÃO se trata apenas de cadastrar vendas.
+
+Todo o sistema deve aprender com este dia.
+
+Atualize todas as áreas impactadas:
+
+- Dashboard
+- Diário Operacional
+- CRM
+- Analytics
+- Financeiro
+- Metas
+- Relatórios
+- Indicadores
+- Histórico
+
+Sem alterar arquitetura.
+
+Sem alterar Analytics Engine.
+
+Sem alterar Business Layer.
+
+Sem regressões.
+
+==================================================
+1. RECONCILIAÇÃO DO DIA 20/07
+==================================================
+
+Antes de registrar o dia 21, reconciliar o histórico.
+
+Foi confirmado que o salgado considerado "perdido" no dia 20 NÃO foi perdido.
+
+O cliente apareceu no dia seguinte e realizou o pagamento.
+
+Registrar:
+
+PIX recebido:
+
+R$5
+
+Cliente:
+
+Anselmo Gabriel Freire da Silva
+
+Também registrar:
+
+PIX recebido:
+
+R$5
+
+Cliente:
+
+Maria Mikelly Monteiro Coutinho
+
+Pagamento pendente encerrado.
+
+Consequência:
+
+O dia 20/07 deve ser recalculado.
+
+Resultado correto:
+
+15 comprados
+
+15 vendidos
+
+15 pagos
+
+Nenhuma perda
+
+Meta atingida
+
+Taxa de venda:
+
+100%
+
+Taxa de desperdício:
+
+0%
+
+Atualizar automaticamente:
+
+Dashboard
+
+Financeiro
+
+Relatórios
+
+Insights
+
+CRM
+
+Indicadores históricos
+
+Qualquer gráfico afetado.
+
+==================================================
+2. REGISTRAR A OPERAÇÃO DO DIA 21/07
+==================================================
+
+Compra:
+
+12 unidades
+
+Investimento:
+
+R$44,00
+
+Produtos:
+
+4 Croissant
+
+4 Pastel
+
+4 Misto com Catupiry
+
+Meta:
+
+Vender todas as unidades.
+
+Resultado:
+
+Meta atingida.
+
+12 vendidos.
+
+==================================================
+3. CADASTRAR TODAS AS VENDAS
+==================================================
+
+Registrar exatamente nesta ordem.
+
+09:14
+
+Ana Raquel Lima de Araújo
+
+1 Croissant
+
+1 Misto com Catupiry
+
+----------------------------------------
+
+09:24
+
+Maria Clara Gomes Mororo
+
+1 Pastel
+
+----------------------------------------
+
+09:24
+
+Maria Mikelly Monteiro Coutinho
+
+1 Pastel
+
+----------------------------------------
+
+09:47
+
+Gerb da Silva
+
+1 Misto com Catupiry
+
+----------------------------------------
+
+09:48
+
+Maria Graziele
+
+1 Pastel
+
+----------------------------------------
+
+09:48
+
+Francisco Vanderson
+
+1 Pastel
+
+----------------------------------------
+
+09:49
+
+Iury Guilherme
+
+1 Croissant
+
+1 Misto com Catupiry
+
+----------------------------------------
+
+10:03
+
+Dayanna Kelly
+
+1 Misto com Catupiry
+
+----------------------------------------
+
+11:28
+
+Francisco de Assis Soares Pereira
+
+1 Croissant
+
+----------------------------------------
+
+15:21
+
+Anselmo Gabriel Freire da Silva
+
+1 Croissant
+
+==================================================
+4. FINANCEIRO
+==================================================
+
+Registrar:
+
+Receita do dia.
+
+Investimento.
+
+Lucro.
+
+Margem.
+
+Atualizar automaticamente:
+
+Receita semanal
+
+Receita mensal
+
+Lucro semanal
+
+Lucro mensal
+
+Fluxo de caixa
+
+ROI
+
+Indicadores financeiros
+
+Pendências.
+
+Após registrar:
+
+Nenhum PIX pendente.
+
+==================================================
+5. CRM
+==================================================
+
+Atualizar automaticamente todos os clientes envolvidos.
+
+Registrar:
+
+Nova compra.
+
+Novo valor gasto.
+
+Novo ticket.
+
+Nova frequência.
+
+Última compra.
+
+Produto favorito.
+
+Timeline.
+
+Insights.
+
+Badges.
+
+Próxima ação.
+
+Caso algum cliente passe a ser recorrente, atualizar automaticamente.
+
+==================================================
+6. DASHBOARD
+==================================================
+
+Atualizar:
+
+Hero Cards.
+
+Resumo do Dia.
+
+Linha do Dia.
+
+Maior comprador.
+
+Top Produtos.
+
+Como Pagaram.
+
+Alertas.
+
+Prioridades.
+
+==================================================
+7. DIÁRIO OPERACIONAL
+==================================================
+
+Registrar integralmente as observações abaixo.
+
+Não resumir.
+
+Transformar cada observação em conhecimento operacional.
+
+==================================================
+APRENDIZADO 01
+
+Existe forte demanda antes do horário atual de chegada.
+
+Os colaboradores começam a procurar salgados entre 08h00 e 08h30.
+
+Como a operação inicia mais tarde, vendas estão sendo perdidas.
+
+Registrar como hipótese operacional:
+
+Chegar mais cedo pode aumentar significativamente o faturamento diário.
+
+==================================================
+APRENDIZADO 02
+
+Começar a construir relacionamento com clientes.
+
+Registrar recomendação:
+
+Coletar gradualmente contatos dos clientes.
+
+Objetivo:
+
+Permitir encomendas antecipadas.
+
+Criar demanda antes mesmo da compra.
+
+==================================================
+APRENDIZADO 03
+
+O salgado considerado perdido no dia anterior foi recuperado.
+
+Registrar que:
+
+Não houve perda operacional.
+
+A divergência ocorreu apenas por atraso no pagamento.
+
+==================================================
+APRENDIZADO 04
+
+Produtos precisam ficar mais visíveis.
+
+Registrar:
+
+Boa exposição aumenta conversão.
+
+Clientes novos observam antes de comprar.
+
+Clientes recorrentes procuram imediatamente seus sabores favoritos.
+
+==================================================
+APRENDIZADO 05
+
+Criar meta operacional.
+
+Objetivo:
+
+Até 10h da manhã:
+
+vender entre 8 e 9 unidades.
+
+Registrar esta meta para futuras análises.
+
+==================================================
+APRENDIZADO 06
+
+Foi identificada demanda reprimida às 15h30–16h00.
+
+Mesmo com estoque encerrado, clientes ainda procuraram produtos.
+
+Registrar:
+
+Existe oportunidade de aumentar quantidade comprada.
+
+Especialmente em dias de maior movimento.
+
+==================================================
+APRENDIZADO 07
+
+Terças e quintas possuem menos funcionários presenciais.
+
+Mesmo assim a demanda permaneceu alta.
+
+Registrar essa observação para futuras previsões de demanda por dia da semana.
+
+==================================================
+8. ANALYTICS
+==================================================
+
+Recalcular automaticamente:
+
+Produto mais vendido.
+
+Horário de maior venda.
+
+Velocidade de venda.
+
+Tempo para esgotar estoque.
+
+Receita média.
+
+Lucro médio.
+
+Ticket médio.
+
+Clientes recorrentes.
+
+Clientes novos.
+
+Comparação:
+
+20/07
+
+vs
+
+21/07
+
+Gerar tendências.
+
+==================================================
+9. NOVA BASE PARA IA
+==================================================
+
+Criar a estrutura lógica para um novo recurso:
+
+PLANEJAMENTO INTELIGENTE DE COMPRAS
+
+Ainda NÃO implementar interface.
+
+Apenas preparar os serviços.
+
+==================================================
+OBJETIVO
+==================================================
+
+Ao finalizar cada dia de operação, o sistema deverá calcular automaticamente:
+
+Quantidade total sugerida para o próximo dia.
+
+Distribuição por sabor.
+
+Exemplo:
+
+16 unidades
+
+6 Pastéis
+
+5 Croissants
+
+5 Mistos
+
+==================================================
+A IA DEVERÁ CONSIDERAR
+
+Histórico dos últimos dias
+
+Dias da semana
+
+Demanda reprimida
+
+Horário em que os produtos acabaram
+
+Produtos mais vendidos
+
+Produtos menos vendidos
+
+Observações do Diário Operacional
+
+Metas
+
+Clientes recorrentes
+
+Encomendas futuras
+
+Tendência de crescimento
+
+==================================================
+MODO AUTOMÁTICO
+
+O sistema define tudo.
+
+==================================================
+MODO MANUAL
+
+O usuário escolhe:
+
+Quantidade total
+
+OU
+
+Distribuição
+
+O sistema recalcula automaticamente a outra parte.
+
+Exemplo:
+
+Usuário informa:
+
+20 unidades.
+
+Sistema responde:
+
+8 Pastéis
+
+7 Croissants
+
+5 Mistos
+
+Ou:
+
+Usuário define os sabores.
+
+Sistema informa se a distribuição está adequada ou não.
+
+==================================================
+10. VALIDAÇÃO
+==================================================
+
+Ao final responder:
+
+✔ Histórico reconciliado.
+
+✔ Dia 20 corrigido.
+
+✔ Dia 21 registrado.
+
+✔ Financeiro atualizado.
+
+✔ Dashboard atualizado.
+
+✔ CRM atualizado.
+
+✔ Analytics recalculado.
+
+✔ Diário enriquecido.
+
+✔ Base do Planejamento Inteligente preparada.
+
+✔ Sem regressões.
+
+✔ TypeScript sem erros.
+
+==================================================
+OBJETIVO FINAL
+==================================================
+
+Pause temporariamente as etapas de melhorias para podermos atualizar os registros do dia 21/07 (dia atual)
+
+O Lucas Business OS não deve apenas registrar o dia 21/07.
+
+Ele deve aprender com esse dia. Não só esse mas todos os outros e os próximos
+
+Cada operação real deve tornar o sistema mais inteligente.
+
+O objetivo é que, após algumas semanas de uso, o sistema seja capaz de prever demanda, sugerir compras, identificar oportunidades de venda, orientar decisões operacionais e evoluir continuamente com base no histórico real da operação.

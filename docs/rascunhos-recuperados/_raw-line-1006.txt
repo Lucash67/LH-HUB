@@ -1,0 +1,282 @@
+# SPRINT A.2 — RECONCILIAÇÃO OFICIAL DAS PENDÊNCIAS (20/07 → 21/07)
+
+==================================================
+CONTEXTO
+==================================================
+
+A Sprint A.1 (Auditoria) foi concluída.
+
+Foi identificado que algumas informações do banco não refletem corretamente a operação real.
+
+IMPORTANTE:
+
+A partir desta Sprint, considerar como FONTE OFICIAL DA VERDADE os registros operacionais manuais (rascunhos do operador).
+
+Sempre que houver divergência entre banco e operação real, o banco deverá ser corrigido.
+
+Não modificar informações que estejam corretas.
+
+Corrigir apenas as inconsistências identificadas na auditoria.
+
+==================================================
+OBJETIVO
+==================================================
+
+Eliminar definitivamente todas as pendências relacionadas aos dias:
+
+20/07/2026
+
+21/07/2026
+
+Ao final, não deverá existir nenhuma inconsistência entre:
+
+• Banco
+• Dashboard
+• CRM
+• Financeiro
+• Diário Operacional
+• Analytics
+
+==================================================
+1. RECONCILIAR MIKELY
+==================================================
+
+Confirmar oficialmente:
+
+A venda ocorreu em:
+
+20/07/2026
+
+O pagamento NÃO ocorreu no dia da venda.
+
+O PIX foi recebido no dia:
+
+21/07/2026
+
+Valor:
+
+R$ 5,00
+
+Atualizar a venda de 20/07 para:
+
+payment_status = paid
+
+remaining_amount = 0
+
+amount_received = 5
+
+Registrar também:
+
+payment_date = 21/07/2026
+
+payment_method = PIX
+
+Adicionar observação:
+
+"Pagamento recebido via PIX em 21/07."
+
+IMPORTANTE:
+
+NÃO alterar a data da venda.
+
+Apenas registrar corretamente a data do recebimento.
+
+==================================================
+2. RECONCILIAR ANSELMO
+==================================================
+
+Confirmar oficialmente:
+
+O salgado entregue em 20/07 foi corretamente pago via PIX em:
+
+21/07/2026
+
+Atualizar a venda de 20/07.
+
+Registrar:
+
+payment_status = paid
+
+remaining_amount = 0
+
+amount_received = 5
+
+payment_date = 21/07/2026
+
+payment_method = PIX
+
+Observação:
+
+"Pagamento recebido via PIX em 21/07."
+
+Remover qualquer marcação de perda referente a essa venda.
+
+O dia 20 deverá permanecer oficialmente com:
+
+15 comprados
+
+15 vendidos
+
+15 pagos
+
+0 perdas
+
+==================================================
+3. ATUALIZAR CRM
+==================================================
+
+Recalcular automaticamente o CRM após as reconciliações.
+
+Especialmente:
+
+Maria Mikelly Monteiro Coutinho
+
+Atualizar:
+
+Valor gasto
+
+Receita recebida
+
+Ticket médio
+
+Timeline
+
+Última pendência
+
+Próxima ação
+
+Insights
+
+Badges
+
+Garantir que:
+
+Nenhum alerta de cobrança permaneça ativo.
+
+Também atualizar:
+
+Anselmo Gabriel Freire da Silva
+
+Caso qualquer métrica tenha sido alterada.
+
+==================================================
+4. ATUALIZAR FINANCEIRO
+==================================================
+
+Registrar corretamente os recebimentos realizados em:
+
+21/07/2026
+
+Recebimentos:
+
+PIX
+
+R$ 5,00
+
+Maria Mikelly Monteiro Coutinho
+
+PIX
+
+R$ 5,00
+
+Anselmo Gabriel Freire da Silva
+
+IMPORTANTE:
+
+Esses recebimentos NÃO representam novas vendas.
+
+Representam apenas entrada de caixa referente a vendas anteriores.
+
+O Financeiro deverá refletir:
+
+Entrada de caixa no dia 21.
+
+As vendas continuam pertencendo ao dia 20.
+
+==================================================
+5. ELIMINAR PENDÊNCIAS FANTASMAS
+==================================================
+
+Após as correções:
+
+Executar nova verificação.
+
+Confirmar que:
+
+Nenhum pagamento do dia 20 permanece pendente.
+
+Nenhum alerta de cobrança incorreto permanece.
+
+Nenhum insight relacionado à cobrança continua ativo.
+
+Nenhum card do Dashboard mostra cobrança inexistente.
+
+Nenhuma recomendação do CRM solicita cobrança da Mikely ou do Anselmo.
+
+==================================================
+6. CONSISTÊNCIA ENTRE MÓDULOS
+==================================================
+
+Garantir sincronização entre:
+
+Sales
+
+Payments
+
+Cash Flow
+
+CRM
+
+Dashboard
+
+Analytics
+
+Financeiro
+
+Diário Operacional
+
+Relatórios
+
+Todos os módulos devem apresentar exatamente o mesmo estado.
+
+==================================================
+7. VALIDAÇÃO
+==================================================
+
+Executar uma auditoria automática após as correções.
+
+Responder:
+
+✔ Venda Mikely reconciliada.
+
+✔ Venda Anselmo reconciliada.
+
+✔ Dia 20 corrigido.
+
+✔ Dia 21 permanece inalterado.
+
+✔ CRM atualizado.
+
+✔ Financeiro atualizado.
+
+✔ Cash Flow atualizado.
+
+✔ Dashboard sincronizado.
+
+✔ Analytics sincronizado.
+
+✔ Nenhuma pendência fantasma encontrada.
+
+✔ TypeScript sem erros.
+
+==================================================
+IMPORTANTE
+==================================================
+
+Esta Sprint NÃO deve adicionar funcionalidades.
+
+Ela existe exclusivamente para garantir a integridade histórica da operação.
+
+Após concluída, os dias 20 e 21 deverão ser considerados homologados e não deverão mais exigir correções, salvo descoberta de algum fato novo comprovado.
+
+A arquitetura existente deve ser preservada e nenhuma regressão deve ser introduzida.

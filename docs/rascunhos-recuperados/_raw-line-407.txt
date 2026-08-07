@@ -1,0 +1,437 @@
+# SPRINT 1.2 — REGISTRO OFICIAL DO DIA OPERACIONAL 17/07/2026
+
+## CONTEXTO
+
+Você está dando continuidade ao Lucas Business OS.
+
+A homologação do sistema foi oficialmente encerrada após a consolidação do dia 16/07/2026.
+
+O banco encontra-se íntegro, validado e protegido por baseline.
+
+Toda operação de negócio deve respeitar a ADR-002.
+
+Portanto:
+
+- NÃO utilizar SQL direto.
+- NÃO executar scripts de inserção.
+- NÃO modificar estrutura do banco.
+- NÃO criar novas funcionalidades.
+- NÃO alterar regras de negócio.
+
+Toda gravação deverá ocorrer utilizando exclusivamente o fluxo oficial existente da aplicação (UI/API/Business Engine).
+
+Caso alguma informação não possa ser registrada por inexistência de endpoint oficial, apenas informe essa limitação ao final. Não implemente nenhuma solução alternativa.
+
+------------------------------------------------------------
+REGISTRO OPERACIONAL OFICIAL
+ROO-0002
+------------------------------------------------------------
+
+Data:
+17/07/2026
+
+Dia:
+Sexta-feira
+
+=========================================================
+PRODUÇÃO
+=========================================================
+
+Croissant:
+5 unidades
+
+Pastel de Frango com Presunto:
+4 unidades
+
+Misto com Catupiry:
+3 unidades
+
+Total produzido:
+12 unidades
+
+Preço de venda:
+R$ 5,00
+
+Custo unitário:
+R$ 3,50
+
+Investimento:
+Responsável:
+Pai do operador
+
+Valor:
+R$ 42,00
+
+Observação:
+Caso não exista endpoint oficial para investimentos, registrar esta informação apenas como pendência da sprint.
+
+=========================================================
+VENDAS
+=========================================================
+
+08:52
+Cliente:
+Paulo André Cavalcante Oliveira
+
+Produto:
+Croissant
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+08:54
+
+Cliente:
+Raimunda Raimunda Sousa
+
+Produto:
+Pastel
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+09:02
+
+Cliente:
+Dayanna Kelly Costa da Silva
+
+Produto:
+Pastel
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+09:10
+
+Cliente:
+Jackson Mendes Pinheiro
+
+Produto:
+Croissant
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+09:10
+
+Cliente:
+Gerb da Silva Maganos
+
+Produto:
+Croissant
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+09:25
+
+Cliente:
+Maria Clara Gomes Mororo
+
+Produto:
+Pastel
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+09:47
+
+Cliente:
+Ana Letícia Ferreira dos Santos
+
+Produto:
+Misto com Catupiry
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+09:55
+
+Cliente:
+Maurício de Sá Machado Júnior
+
+Produto:
+Misto com Catupiry
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+09:59
+
+Cliente:
+Lucas Moraes
+
+Produto:
+Misto com Catupiry
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+14:58
+
+Cliente:
+Raimunda Raimunda Sousa
+
+Produto:
+Croissant
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+Observação:
+Segunda compra realizada pelo mesmo cliente no mesmo dia.
+
+---------------------------------------------------------
+
+15:35
+
+Cliente:
+José Inácio Silva da Cruz
+
+Produto:
+Croissant
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+---------------------------------------------------------
+
+15:37
+
+Cliente:
+Leonardo de Sousa Sena
+
+Produto:
+Pastel
+
+Quantidade:
+1
+
+Valor:
+R$5,00
+
+Pagamento:
+PIX
+
+=========================================================
+ESTOQUE FINAL
+=========================================================
+
+Croissant:
+0
+
+Pastel:
+0
+
+Misto:
+0
+
+Todo o estoque foi vendido.
+
+=========================================================
+FINANCEIRO
+=========================================================
+
+Receita operacional:
+R$ 60,00
+
+Quantidade vendida:
+12
+
+Lucro operacional:
+R$ 18,00
+
+Forma de pagamento:
+100% PIX
+
+Movimentações extraordinárias:
+
+Às 13:06 ocorreu um PIX de R$2,50 enviado por Fernando Martins Cruz.
+
+Esse valor NÃO pertence ao negócio.
+
+Trata-se de pagamento destinado ao negócio de outra colaboradora.
+
+Não registrar como:
+
+- venda;
+- cliente;
+- receita;
+- lucro;
+- faturamento.
+
+Caso exista mecanismo apropriado para auditoria financeira, registrar apenas como movimentação extraordinária.
+
+Caso contrário, informar essa limitação sem criar funcionalidades novas.
+
+=========================================================
+CLIENTES
+=========================================================
+
+Cliente recorrente do dia:
+
+Raimunda Raimunda Sousa
+
+Realizou duas compras em horários distintos.
+
+=========================================================
+OBSERVAÇÕES
+=========================================================
+
+Segundo dia oficial de operação.
+
+Primeiro aumento de produção.
+
+Todo estoque vendido novamente.
+
+Maior concentração de vendas entre 08:50 e 10:00.
+
+Ocorreram vendas também durante a tarde.
+
+=========================================================
+DECISÕES
+=========================================================
+
+Manter preço de R$5,00.
+
+Continuar crescimento gradual da produção.
+
+Continuar registrando clientes.
+
+Não alterar estratégia com apenas dois dias de histórico.
+
+=========================================================
+VALIDAÇÃO OBRIGATÓRIA
+=========================================================
+
+Ao finalizar:
+
+Conferir automaticamente:
+
+✓ Receita = R$60,00
+
+✓ Quantidade vendida = 12
+
+✓ Clientes únicos = 11
+
+✓ Cliente recorrente = Raimunda Raimunda Sousa
+
+✓ Estoque final = 0
+
+✓ Forma de pagamento = 100% PIX
+
+✓ Lucro operacional = R$18,00
+
+Validar integridade do banco.
+
+Confirmar que nenhuma gravação utilizou SQL direto.
+
+Caso alguma informação não possa ser persistida devido à inexistência de endpoint oficial (ex.: investimento ou movimentação extraordinária), apenas listar a pendência no relatório final.
+
+=========================================================
+RESPOSTA ESPERADA
+=========================================================
+
+Responder apenas com:
+
+1. Resumo da execução.
+
+2. Indicadores conferidos.
+
+3. Integridade do banco.
+
+4. Pendências encontradas.
+
+5. Confirmação de que o sistema está pronto para iniciar o próximo dia operacional.
+
+Não implemente melhorias.
+
+Não refatore código.
+
+Não altere arquitetura.
+
+Apenas registre fielmente a operação do dia 17/07/2026.

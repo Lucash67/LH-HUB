@@ -1,0 +1,184 @@
+# HOTFIX DE HOMOLOGAÇÃO — DIA 21/07/2026 (REVISÃO PELO RASCUNHO OFICIAL)
+
+==================================================
+CONTEXTO
+==================================================
+
+Durante a homologação final da Consolidação Histórica foi encontrada uma divergência entre o banco e o rascunho oficial do operador.
+
+IMPORTANTE:
+
+O rascunho oficial continua sendo a única Fonte da Verdade.
+
+Não confiar em dados já reconstruídos sem compará-los com o rascunho.
+
+==================================================
+RASCUNHO OFICIAL
+==================================================
+
+PIX recebidos referentes ao dia 20:
+
+• Anselmo Gabriel Freire da Silva → R$5
+• Maria Mikelly Monteiro Coutinho → R$5
+
+ATENÇÃO:
+
+Esses PIX NÃO representam vendas do dia 21.
+
+Eles representam apenas liquidação de pendências do dia 20.
+
+Devem permanecer registrados apenas como recebimentos.
+
+Jamais aumentar:
+
+• receita do dia 21
+• vendas do dia 21
+• lucro do dia 21
+
+==================================================
+COMPRA DO DIA
+==================================================
+
+12 unidades
+
+4 Croissant
+
+4 Pastel
+
+4 Misto com Catupiry
+
+Investimento:
+
+R$44,00
+
+==================================================
+VENDAS OFICIAIS
+==================================================
+
+09:14
+Ana Raquel Lima de Araújo
+1 Croissant
+1 Misto
+
+09:24
+Maria Clara Gomes Mororo
+1 Pastel
+
+09:24
+Maria Mikelly Monteiro Coutinho
+1 Pastel
+
+09:47
+Gerb da Silva
+1 Misto
+
+09:48
+Maria Graziele
+1 Pastel
+
+09:48
+Francisco Vanderson
+1 Pastel
+
+09:49
+Iury Guilherme
+1 Croissant
+1 Misto
+
+10:03
+Dayanna Kelly
+1 Misto
+
+11:28
+Francisco de Assis Soares Pereira
+1 Croissant
+
+15:21
+Anselmo Gabriel Freire da Silva
+1 Croissant
+
+==================================================
+TOTAL OFICIAL
+==================================================
+
+Clientes:
+
+10
+
+Vendas:
+
+12
+
+Unidades:
+
+12
+
+Receita:
+
+R$60
+
+Investimento:
+
+R$44
+
+Lucro Operacional:
+
+R$16
+
+Margem:
+
+26,67%
+
+Pendências:
+
+0
+
+==================================================
+VALIDAR
+==================================================
+
+Comparar banco x rascunho.
+
+Caso exista qualquer divergência:
+
+• reconstruir o dia 21
+
+• atualizar dashboard
+
+• atualizar CRM
+
+• atualizar analytics
+
+• atualizar diário
+
+• atualizar operator finance
+
+==================================================
+IMPORTANTE
+==================================================
+
+Os dias:
+
+16
+
+17
+
+20
+
+não podem sofrer nenhuma alteração.
+
+==================================================
+RESPONDER
+==================================================
+
+✔ divergências encontradas
+
+✔ registros alterados
+
+✔ valores antes/depois
+
+✔ validação automática
+
+✔ TypeScript
+
+✔ confirmação de que o dia 21 agora representa exatamente o rascunho oficial.

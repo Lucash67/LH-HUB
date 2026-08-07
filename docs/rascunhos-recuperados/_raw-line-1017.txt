@@ -1,0 +1,285 @@
+# SPRINT A.3.1 — RECONSTRUÇÃO HISTÓRICA OFICIAL DO DIA 16/07/2026
+
+==================================================
+CONTEXTO
+==================================================
+
+Entramos na fase de Consolidação Histórica do Lucas Business OS.
+
+Os dias 20 e 21 já foram auditados, reconciliados e homologados.
+
+Agora iniciaremos a reconstrução completa dos primeiros dias oficiais da operação.
+
+IMPORTANTE:
+
+O dia 16/07 possui registros antigos, incompletos e parcialmente incorretos.
+
+A partir desta Sprint, a única fonte oficial da verdade será o novo rascunho operacional fornecido pelo operador.
+
+Qualquer informação divergente existente no banco deverá ser substituída pelos dados oficiais.
+
+==================================================
+OBJETIVO
+==================================================
+
+Reconstruir completamente o dia 16/07.
+
+Não apenas cadastrar vendas.
+
+O objetivo é fazer com que todos os módulos utilizem um histórico consistente e confiável.
+
+==================================================
+FONTE OFICIAL
+==================================================
+
+Todo dado informado no novo rascunho deverá prevalecer sobre qualquer registro existente.
+
+Caso existam diferenças entre:
+
+Banco
+
+Seed
+
+Scripts antigos
+
+Dados de teste
+
+Mock
+
+Registros parciais
+
+Sempre utilizar o rascunho oficial.
+
+==================================================
+ANTES DE ALTERAR QUALQUER DADO
+==================================================
+
+Executar uma auditoria do dia 16.
+
+Gerar um relatório mostrando:
+
+• quantidade de vendas
+
+• clientes
+
+• horários
+
+• produtos
+
+• pagamentos
+
+• investimentos
+
+• receita
+
+• lucro
+
+• observações
+
+• pendências
+
+• CRM
+
+• Dashboard
+
+• Financeiro
+
+• Analytics
+
+Comparar tudo com o novo rascunho.
+
+Somente depois iniciar a reconstrução.
+
+==================================================
+RECONSTRUÇÃO
+==================================================
+
+Atualizar integralmente o dia 16 utilizando exclusivamente os dados oficiais.
+
+Corrigir:
+
+• vendas
+
+• horários
+
+• clientes
+
+• produtos
+
+• quantidades
+
+• pagamentos
+
+• formas de pagamento
+
+• pendências
+
+• investimentos
+
+• metas
+
+• observações
+
+• aprendizados
+
+==================================================
+CLIENTES
+==================================================
+
+Criar ou atualizar clientes.
+
+Evitar duplicações.
+
+Sempre utilizar nomes completos quando disponíveis.
+
+Atualizar CRM automaticamente.
+
+==================================================
+FINANCEIRO
+==================================================
+
+Atualizar:
+
+Receita
+
+Lucro
+
+Margem
+
+Fluxo de caixa
+
+ROI
+
+Pendências
+
+Recebimentos
+
+==================================================
+CRM
+==================================================
+
+Após reconstrução:
+
+Recalcular automaticamente:
+
+Valor gasto
+
+Compras
+
+Ticket médio
+
+Frequência
+
+Produto favorito
+
+Timeline
+
+Badges
+
+Insights
+
+Próxima ação
+
+==================================================
+DIÁRIO OPERACIONAL
+==================================================
+
+Registrar integralmente:
+
+Observações
+
+Hipóteses
+
+Aprendizados
+
+Conclusões
+
+Sem resumir.
+
+==================================================
+DASHBOARD
+==================================================
+
+Atualizar automaticamente:
+
+Linha do Dia
+
+Hero
+
+Resumo
+
+Top Produtos
+
+Maior comprador
+
+Prioridades
+
+Alertas
+
+==================================================
+ANALYTICS
+==================================================
+
+Recalcular:
+
+Receita
+
+Lucro
+
+Produtos
+
+Horários
+
+Clientes
+
+Comparativos
+
+Metas
+
+Planejamento Inteligente
+
+==================================================
+INTEGRIDADE
+==================================================
+
+Garantir que todos os módulos utilizem exatamente o mesmo conjunto de dados.
+
+Não permitir divergências entre:
+
+Dashboard
+
+CRM
+
+Financeiro
+
+Analytics
+
+Relatórios
+
+==================================================
+VALIDAÇÃO
+==================================================
+
+Ao final responder:
+
+1. Quantos registros foram alterados.
+
+2. Quantos clientes foram criados.
+
+3. Quantos clientes foram atualizados.
+
+4. Quais registros antigos foram substituídos.
+
+5. Se houve conflitos com dados antigos.
+
+6. Evidências da reconstrução.
+
+7. Validação automática.
+
+==================================================
+OBJETIVO FINAL
+==================================================
+
+O dia 16/07 deverá possuir a mesma qualidade de dados que os dias 20 e 21.
+
+Após homologado, esse dia deverá ser considerado parte oficial da base histórica do Lucas Business OS e servir como fonte confiável para Dashboard, CRM, Financeiro, Analytics, Metas Inteligentes e Planejamento Inteligente de Compras.
