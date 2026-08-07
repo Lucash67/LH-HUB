@@ -8,6 +8,7 @@ import {
   ClipboardPaste,
   FileText,
   LineChart,
+  NotebookPen,
   Package,
   PiggyBank,
   Sparkles,
@@ -87,6 +88,12 @@ export const SYSTEM_PILLARS: SystemPillar[] = [
         label: "Diário",
         hint: "Histórico operacional",
         icon: BookOpen,
+      },
+      {
+        href: "/notas",
+        label: "Notas",
+        hint: "Bloco de notas com autosave",
+        icon: NotebookPen,
       },
       {
         href: "/calendario",

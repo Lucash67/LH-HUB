@@ -492,4 +492,30 @@ export const passwordResetTokens = pgTable(
   }),
 );
 
+/** Bloco de notas pessoal (estilo Keep) — escopo por usuário. */
+export const stickyNotes = pgTable(
+  "sticky_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    businessId: uuid("business_id").references(() => businesses.id, { onDelete: "set null" }),
+    title: text("title").notNull().default(""),
+    body: text("body").notNull().default(""),
+    color: text("color").notNull().default("default"),
+    pinned: boolean("pinned").notNull().default(false),
+    archived: boolean("archived").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    clientUpdatedAt: timestamp("client_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerIdx: index("idx_sticky_notes_owner").on(table.ownerId),
+    ownerArchivedIdx: index("idx_sticky_notes_owner_archived").on(table.ownerId, table.archived),
+    ownerUpdatedIdx: index("idx_sticky_notes_owner_updated").on(table.ownerId, table.clientUpdatedAt),
+  }),
+);
+
 export * from "./schema-engine";

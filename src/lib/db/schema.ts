@@ -142,6 +142,22 @@ export const notes = sqliteTable("notes", {
   createdAt: text("created_at").notNull(),
 });
 
+/** Bloco de notas pessoal (estilo Keep). */
+export const stickyNotes = sqliteTable("sticky_notes", {
+  id: text("id").primaryKey(),
+  ownerId: text("owner_id").notNull(),
+  businessId: text("business_id"),
+  title: text("title").notNull().default(""),
+  body: text("body").notNull().default(""),
+  color: text("color").notNull().default("default"),
+  pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+  archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  clientUpdatedAt: text("client_updated_at").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 export const investments = sqliteTable("investments", {
   id: text("id").primaryKey(),
   businessId: text("business_id").notNull().default("salgados"),

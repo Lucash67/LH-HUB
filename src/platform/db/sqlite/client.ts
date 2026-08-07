@@ -235,6 +235,21 @@ function initLegacyTables(sqlite: Database.Database) {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS sticky_notes (
+      id TEXT PRIMARY KEY,
+      owner_id TEXT NOT NULL,
+      business_id TEXT,
+      title TEXT NOT NULL DEFAULT '',
+      body TEXT NOT NULL DEFAULT '',
+      color TEXT NOT NULL DEFAULT 'default',
+      pinned INTEGER NOT NULL DEFAULT 0,
+      archived INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      client_updated_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS investments (
       id TEXT PRIMARY KEY,
       description TEXT NOT NULL,
