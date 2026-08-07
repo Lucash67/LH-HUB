@@ -45,59 +45,59 @@ export const stickyNoteUpsertSchema = stickyNoteSchema.partial().extend({
 
 export type StickyNoteUpsert = z.infer<typeof stickyNoteUpsertSchema>;
 
-/** Cores Keep-like adaptadas ao tema escuro do LH Hub. */
+/** Paleta escura próxima do Google Keep. */
 export const STICKY_NOTE_COLOR_STYLES: Record<
   StickyNoteColor,
-  { card: string; border: string; accent: string }
+  { card: string; border: string; swatch: string }
 > = {
   default: {
-    card: "bg-[#2a2a2a]",
-    border: "border-white/10",
-    accent: "bg-[#3a3a3a]",
+    card: "bg-[#202124]",
+    border: "border-[#5f6368]/40",
+    swatch: "bg-[#202124] ring-1 ring-[#5f6368]",
   },
   coral: {
-    card: "bg-[#5c2b2b]",
-    border: "border-red-400/20",
-    accent: "bg-[#7a3a3a]",
+    card: "bg-[#5c2b29]",
+    border: "border-[#5c2b29]",
+    swatch: "bg-[#5c2b29]",
   },
   peach: {
-    card: "bg-[#5c3a22]",
-    border: "border-orange-400/20",
-    accent: "bg-[#7a4d2e]",
+    card: "bg-[#614a19]",
+    border: "border-[#614a19]",
+    swatch: "bg-[#614a19]",
   },
   sand: {
-    card: "bg-[#5c4f22]",
-    border: "border-yellow-400/20",
-    accent: "bg-[#7a682e]",
+    card: "bg-[#635d19]",
+    border: "border-[#635d19]",
+    swatch: "bg-[#635d19]",
   },
   mint: {
-    card: "bg-[#1f4a3a]",
-    border: "border-emerald-400/20",
-    accent: "bg-[#2a6350]",
+    card: "bg-[#345920]",
+    border: "border-[#345920]",
+    swatch: "bg-[#345920]",
   },
   fog: {
-    card: "bg-[#1f3f4a]",
-    border: "border-cyan-400/20",
-    accent: "bg-[#2a5563]",
+    card: "bg-[#16504b]",
+    border: "border-[#16504b]",
+    swatch: "bg-[#16504b]",
   },
   dusk: {
-    card: "bg-[#1f2f5c]",
-    border: "border-blue-400/20",
-    accent: "bg-[#2a407a]",
+    card: "bg-[#2d555e]",
+    border: "border-[#2d555e]",
+    swatch: "bg-[#2d555e]",
   },
   lilac: {
-    card: "bg-[#3a2a5c]",
-    border: "border-purple-400/20",
-    accent: "bg-[#4d387a]",
+    card: "bg-[#42275e]",
+    border: "border-[#42275e]",
+    swatch: "bg-[#42275e]",
   },
   rose: {
-    card: "bg-[#5c2a45]",
-    border: "border-pink-400/20",
-    accent: "bg-[#7a3a5c]",
+    card: "bg-[#5b2245]",
+    border: "border-[#5b2245]",
+    swatch: "bg-[#5b2245]",
   },
   slate: {
-    card: "bg-[#3a3f45]",
-    border: "border-slate-400/20",
-    accent: "bg-[#4a5058]",
+    card: "bg-[#3c3f43]",
+    border: "border-[#3c3f43]",
+    swatch: "bg-[#3c3f43]",
   },
 };

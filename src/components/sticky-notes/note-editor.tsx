@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Archive, Pin, PinOff, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Archive,
+  BellPlus,
+  Check,
+  ImagePlus,
+  MoreVertical,
+  Palette,
+  Pin,
+  Redo2,
+  Trash2,
+  Undo2,
+  UserPlus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   STICKY_NOTE_COLORS,
@@ -23,6 +35,37 @@ interface NoteEditorProps {
   onSetColor: (id: string, color: StickyNoteColor) => void;
 }
 
+type Snapshot = { title: string; body: string };
+
+function ToolbarButton({
+  title,
+  onClick,
+  disabled,
+  children,
+}: {
+  title: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#e8eaed]/75 transition-colors",
+        disabled
+          ? "cursor-default opacity-30"
+          : "hover:bg-white/10 hover:text-[#e8eaed]",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function NoteEditor({
   note,
   onChange,
@@ -33,112 +76,246 @@ export function NoteEditor({
   onSetColor,
 }: NoteEditorProps) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const [showPalette, setShowPalette] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [past, setPast] = useState<Snapshot[]>([]);
+  const [future, setFuture] = useState<Snapshot[]>([]);
+  const skipHistory = useRef(false);
   const colors = STICKY_NOTE_COLOR_STYLES[note.color] ?? STICKY_NOTE_COLOR_STYLES.default;
 
+  const pushHistory = useCallback((next: Snapshot, prev: Snapshot) => {
+    if (skipHistory.current) {
+      skipHistory.current = false;
+      return;
+    }
+    if (prev.title === next.title && prev.body === next.body) return;
+    setPast((stack) => [...stack.slice(-40), prev]);
+    setFuture([]);
+  }, []);
+
   useEffect(() => {
-    bodyRef.current?.focus();
+    // Foca o corpo se já houver título; senão o título.
+    if (note.title.trim()) bodyRef.current?.focus();
   }, [note.id]);
+
+  const undo = useCallback(() => {
+    setPast((stack) => {
+      if (stack.length === 0) return stack;
+      const prev = stack[stack.length - 1]!;
+      setFuture((f) => [{ title: note.title, body: note.body }, ...f]);
+      skipHistory.current = true;
+      onChange(note.id, prev);
+      return stack.slice(0, -1);
+    });
+  }, [note.body, note.id, note.title, onChange]);
+
+  const redo = useCallback(() => {
+    setFuture((stack) => {
+      if (stack.length === 0) return stack;
+      const next = stack[0]!;
+      setPast((p) => [...p, { title: note.title, body: note.body }]);
+      skipHistory.current = true;
+      onChange(note.id, next);
+      return stack.slice(1);
+    });
+  }, [note.body, note.id, note.title, onChange]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (showPalette || showMore) {
+          setShowPalette(false);
+          setShowMore(false);
+          return;
+        }
+        onClose();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))
+      ) {
+        e.preventDefault();
+        redo();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, redo, showMore, showPalette, undo]);
+
+  const autoResize = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(el.scrollHeight, 220)}px`;
+  };
+
+  useEffect(() => {
+    autoResize(bodyRef.current);
+  }, [note.body, note.id]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 sm:p-8">
       <button
         type="button"
-        aria-label="Fechar"
+        aria-label="Fechar editor"
         className="absolute inset-0 cursor-default"
         onClick={onClose}
       />
+
       <div
+        role="dialog"
+        aria-modal="true"
         className={cn(
-          "relative z-10 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border shadow-2xl",
+          "relative z-10 flex w-full max-w-[600px] flex-col overflow-hidden rounded-xl border shadow-[0_8px_28px_rgba(0,0,0,0.55)]",
           colors.card,
           colors.border,
         )}
       >
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              title={note.pinned ? "Desafixar" : "Fixar"}
-              onClick={() => onTogglePin(note.id)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/80 hover:bg-black/20"
-            >
-              {note.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-            </button>
-            <button
-              type="button"
-              title="Arquivar"
-              onClick={() => {
-                onArchive(note.id);
-                onClose();
-              }}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/80 hover:bg-black/20"
-            >
-              <Archive className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              title="Excluir"
-              onClick={() => {
-                onDelete(note.id);
-                onClose();
-              }}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/80 hover:bg-black/20 hover:text-red-300"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/80 hover:bg-black/20"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-4">
+        {/* Cabeçalho Keep: título + pin à direita */}
+        <div className="flex items-start gap-2 px-4 pb-1 pt-4 sm:px-5 sm:pt-5">
           <input
             value={note.title}
-            onChange={(e) => onChange(note.id, { title: e.target.value })}
+            onChange={(e) => {
+              pushHistory(
+                { title: e.target.value, body: note.body },
+                { title: note.title, body: note.body },
+              );
+              onChange(note.id, { title: e.target.value });
+            }}
             placeholder="Título"
-            className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/40 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[22px] font-normal leading-tight tracking-tight text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:outline-none"
           />
+          <ToolbarButton
+            title={note.pinned ? "Desafixar" : "Fixar"}
+            onClick={() => onTogglePin(note.id)}
+          >
+            <Pin className={cn("h-[18px] w-[18px]", note.pinned && "fill-current text-[#e8eaed]")} />
+          </ToolbarButton>
+        </div>
+
+        {/* Corpo com scroll interno */}
+        <div className="max-h-[min(58vh,520px)] overflow-y-auto px-4 pb-3 pt-2 sm:px-5 [scrollbar-width:thin] [scrollbar-color:#5f6368_transparent]">
           <textarea
             ref={bodyRef}
             value={note.body}
-            onChange={(e) => onChange(note.id, { body: e.target.value })}
-            placeholder="Escreva sua nota..."
-            rows={10}
-            className="min-h-[220px] w-full resize-none bg-transparent text-base leading-relaxed text-white/90 placeholder:text-white/35 focus:outline-none"
+            onChange={(e) => {
+              pushHistory(
+                { title: note.title, body: e.target.value },
+                { title: note.title, body: note.body },
+              );
+              onChange(note.id, { body: e.target.value });
+              autoResize(e.target);
+            }}
+            placeholder="Anotar..."
+            rows={8}
+            className="w-full resize-none bg-transparent text-[15px] leading-[1.55] text-[#e8eaed]/92 placeholder:text-[#e8eaed]/35 focus:outline-none"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-4 py-3">
-          {STICKY_NOTE_COLORS.map((color) => {
-            const style = STICKY_NOTE_COLOR_STYLES[color];
-            return (
+        {/* Barra inferior Keep */}
+        <div className="relative flex items-center gap-0.5 px-2 pb-2 pt-1 sm:px-3">
+          {showPalette && (
+            <div className="absolute bottom-12 left-2 z-20 flex flex-wrap gap-2 rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-2.5 shadow-xl">
+              {STICKY_NOTE_COLORS.map((color) => {
+                const style = STICKY_NOTE_COLOR_STYLES[color];
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    title={color}
+                    onClick={() => {
+                      onSetColor(note.id, color);
+                      setShowPalette(false);
+                    }}
+                    className={cn(
+                      "relative h-7 w-7 rounded-full",
+                      style.swatch,
+                      note.color === color && "ring-2 ring-[#e8eaed] ring-offset-1 ring-offset-[#2d2e30]",
+                    )}
+                  >
+                    {note.color === color && (
+                      <Check className="absolute inset-0 m-auto h-3.5 w-3.5 text-[#e8eaed]" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {showMore && (
+            <div className="absolute bottom-12 left-28 z-20 min-w-[160px] overflow-hidden rounded-lg border border-[#5f6368]/50 bg-[#2d2e30] py-1 shadow-xl">
               <button
-                key={color}
                 type="button"
-                title={color}
-                onClick={() => onSetColor(note.id, color)}
-                className={cn(
-                  "h-7 w-7 rounded-full border-2",
-                  style.accent,
-                  note.color === color ? "border-white" : "border-transparent",
-                )}
-              />
-            );
-          })}
-          <span className="ml-auto text-[11px] text-white/45">Esc para fechar · salva sozinho</span>
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#e8eaed]/90 hover:bg-white/10"
+                onClick={() => {
+                  onDelete(note.id);
+                  onClose();
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir nota
+              </button>
+            </div>
+          )}
+
+          <ToolbarButton
+            title="Cor de fundo"
+            onClick={() => {
+              setShowMore(false);
+              setShowPalette((v) => !v);
+            }}
+          >
+            <Palette className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+          <ToolbarButton title="Lembrete (em breve)" disabled>
+            <BellPlus className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+          <ToolbarButton title="Colaboradores (em breve)" disabled>
+            <UserPlus className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+          <ToolbarButton title="Imagem (em breve)" disabled>
+            <ImagePlus className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Arquivar"
+            onClick={() => {
+              onArchive(note.id);
+              onClose();
+            }}
+          >
+            <Archive className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Mais"
+            onClick={() => {
+              setShowPalette(false);
+              setShowMore((v) => !v);
+            }}
+          >
+            <MoreVertical className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+
+          <div className="mx-1 hidden h-5 w-px bg-white/10 sm:block" />
+
+          <ToolbarButton title="Desfazer" disabled={past.length === 0} onClick={undo}>
+            <Undo2 className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+          <ToolbarButton title="Refazer" disabled={future.length === 0} onClick={redo}>
+            <Redo2 className="h-[18px] w-[18px]" />
+          </ToolbarButton>
+
+          <div className="flex-1" />
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-3 py-1.5 text-sm font-medium text-[#e8eaed]/85 hover:bg-white/10"
+          >
+            Fechar
+          </button>
         </div>
       </div>
     </div>

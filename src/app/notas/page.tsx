@@ -42,25 +42,24 @@ export default function NotasPage() {
     setActive(notes.find((n) => n.id === note.id) ?? note);
   };
 
-  // Mantém o editor sincronizado com o estado autosave.
   const editing = active ? notes.find((n) => n.id === active.id) ?? active : null;
 
   return (
     <ModuleShell
       title="Notas"
-      subtitle="Seu bloco de notas — salva sozinho, estilo Keep"
+      subtitle="Bloco de notas com autosave"
       temporalFilter={false}
       actions={<StickySaveStatus status={status} />}
     >
-      <div className="mx-auto max-w-5xl space-y-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div className="mx-auto w-full max-w-[600px]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e8eaed]/40" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Pesquisar notas"
-              className="h-11 w-full rounded-xl border border-surface-border bg-surface-elevated pl-10 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-yellow/40 focus:outline-none"
+              placeholder="Pesquisar"
+              className="h-11 w-full rounded-lg border border-[#5f6368]/40 bg-[#202124] pl-10 pr-3 text-sm text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:border-[#5f6368] focus:outline-none"
             />
           </div>
         </div>
@@ -68,36 +67,36 @@ export default function NotasPage() {
         <ComposeBar
           onCreate={async (seed) => {
             const note = await createNote(seed);
-            setActive(note);
+            // Composer Keep: “Fechar” já salva; abre só se veio vazia e expandida via clique.
+            if (!seed?.title && !seed?.body) setActive(note);
           }}
         />
 
         {loading && notes.length === 0 ? (
           <PageLoader />
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-surface-border px-6 py-16 text-center">
-            <NotebookPen className="mx-auto mb-3 h-10 w-10 text-text-muted/50" />
-            <p className="text-base font-semibold text-text-primary">Nenhuma nota ainda</p>
-            <p className="mt-1 text-sm text-text-muted">
-              Escreva rascunhos do dia, ideias e anotações — tudo salva automaticamente.
+          <div className="px-6 py-20 text-center">
+            <NotebookPen className="mx-auto mb-3 h-10 w-10 text-[#e8eaed]/25" />
+            <p className="text-base text-[#e8eaed]/70">As suas notas aparecem aqui</p>
+            <p className="mt-1 text-sm text-[#e8eaed]/40">
+              Tudo salva sozinho — pode fechar a aba sem medo.
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {pinned.length > 0 && (
               <section>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                <p className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#e8eaed]/45">
                   Fixadas
                 </p>
-                <div className="columns-1 gap-3 sm:columns-2 lg:columns-3">
+                <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
                   {pinned.map((note) => (
-                    <div key={note.id} className="mb-3 break-inside-avoid">
+                    <div key={note.id} className="mb-4 break-inside-avoid">
                       <NoteCard
                         note={note}
                         onOpen={openNote}
                         onTogglePin={togglePin}
                         onArchive={archiveNote}
-                        onDelete={(id) => void deleteNote(id)}
                       />
                     </div>
                   ))}
@@ -108,19 +107,18 @@ export default function NotasPage() {
             {others.length > 0 && (
               <section>
                 {pinned.length > 0 && (
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                  <p className="mb-3 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#e8eaed]/45">
                     Outras
                   </p>
                 )}
-                <div className="columns-1 gap-3 sm:columns-2 lg:columns-3">
+                <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
                   {others.map((note) => (
-                    <div key={note.id} className="mb-3 break-inside-avoid">
+                    <div key={note.id} className="mb-4 break-inside-avoid">
                       <NoteCard
                         note={note}
                         onOpen={openNote}
                         onTogglePin={togglePin}
                         onArchive={archiveNote}
-                        onDelete={(id) => void deleteNote(id)}
                       />
                     </div>
                   ))}

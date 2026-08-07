@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
 
 interface ComposeBarProps {
   onCreate: (seed?: { title?: string; body?: string }) => Promise<unknown> | unknown;
 }
 
-/** Campo estilo Keep: “Tirar uma nota…” que abre/cria a nota. */
+/** Composer central estilo Keep. */
 export function ComposeBar({ onCreate }: ComposeBarProps) {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
@@ -39,45 +38,37 @@ export function ComposeBar({ onCreate }: ComposeBarProps) {
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="flex w-full items-center gap-3 rounded-2xl border border-surface-border bg-surface-card px-4 py-3.5 text-left shadow-lg transition hover:border-brand-yellow/30"
+        className="mx-auto flex w-full max-w-[600px] items-center rounded-lg border border-[#5f6368]/45 bg-[#202124] px-4 py-3.5 text-left text-[15px] text-[#e8eaed]/55 shadow-[0_1px_3px_rgba(0,0,0,0.45)] transition hover:bg-[#28292c]"
       >
-        <Plus className="h-4 w-4 text-brand-yellow" />
-        <span className="text-sm text-text-muted">Tirar uma nota...</span>
+        Tirar uma nota...
       </button>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-brand-yellow/25 bg-surface-card p-4 shadow-xl">
+    <div className="mx-auto w-full max-w-[600px] overflow-hidden rounded-lg border border-[#5f6368]/45 bg-[#202124] shadow-[0_4px_16px_rgba(0,0,0,0.45)]">
       <input
         autoFocus
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Título"
-        className="mb-2 w-full bg-transparent text-base font-bold text-text-primary placeholder:text-text-muted focus:outline-none"
+        className="w-full bg-transparent px-4 pt-4 text-[16px] font-medium text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:outline-none"
       />
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Escreva sua nota..."
-        rows={4}
-        className="w-full resize-none bg-transparent text-sm leading-relaxed text-text-secondary placeholder:text-text-muted focus:outline-none"
+        placeholder="Anotar..."
+        rows={3}
+        className="w-full resize-none bg-transparent px-4 py-3 text-[14px] leading-relaxed text-[#e8eaed]/90 placeholder:text-[#e8eaed]/35 focus:outline-none"
       />
-      <div className="mt-3 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-xl px-3 py-2 text-sm text-text-muted hover:bg-surface-hover"
-        >
-          Fechar
-        </button>
+      <div className="flex justify-end px-2 pb-2">
         <button
           type="button"
           disabled={busy}
           onClick={() => void submit()}
-          className="rounded-xl bg-brand-yellow/20 px-4 py-2 text-sm font-bold text-brand-yellow hover:bg-brand-yellow/30 disabled:opacity-50"
+          className="rounded-md px-3 py-1.5 text-sm font-medium text-[#e8eaed]/85 hover:bg-white/10 disabled:opacity-50"
         >
-          Criar nota
+          Fechar
         </button>
       </div>
     </div>
