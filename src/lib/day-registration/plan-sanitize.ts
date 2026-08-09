@@ -6,7 +6,7 @@ import {
   type DayRegistrationPreview,
 } from "./types";
 
-const DEPT_ACAL = "ACAL";
+const DEPT_ACAL = "Acal";
 
 /** Remove campos de preview e normaliza plano antes do commit. */
 export function sanitizeRegistrationPlan(input: DayRegistrationPreview | DayRegistrationPlan): DayRegistrationPlan {

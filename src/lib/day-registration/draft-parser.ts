@@ -4,7 +4,7 @@ import { formatSaleShift, normalizeSaleShiftTime } from "@/lib/sale-shift";
 import { UNIDENTIFIED_FLAVOR_PRODUCT_NAME } from "@/lib/salgados-flavors";
 import type { DayRegistrationPlan, DraftSale } from "./types";
 
-const DEPT_ACAL = "ACAL";
+const DEPT_ACAL = "Acal";
 const DEPT_PAI = "Clientes do trabalho do Henrique";
 const UNKNOWN_PRODUCT = UNIDENTIFIED_FLAVOR_PRODUCT_NAME;
 
@@ -59,18 +59,25 @@ function normalizeProductName(raw: string): string {
     return UNKNOWN_PRODUCT;
   }
   if (n.includes("croissant") || n.includes("croisant") || n.includes("crosisant")) return "Croissant";
-  // Pastel de carne antes do pastel padrão (frango/presunto).
+  // Carne com cheddar (forno vs frito) antes dos pastéis genéricos.
+  if (n.includes("cheddar") && n.includes("forno")) return "Carne com Cheddar de Forno";
+  if (n.includes("cheddar") || (n.includes("carne") && n.includes("frito") && !n.includes("pastel"))) {
+    return "Carne Frito";
+  }
+  // Pastel de carne antes do mistão frito (pastel / pastel mistão).
   if (n.includes("pastel") && n.includes("carne")) return "Pastel de Carne";
-  if (n.includes("pastel")) return "Pastel de Frango com Presunto";
-  // Sabor novo (só frango + catupiry) — antes do mistão, e nunca confundir com pastel de frango.
+  if (n.includes("pastel")) return "Mistão Frito";
+  // Mistão de forno (ex-Misto com Catupiry) — "mistao forno" / misto sem pastel.
+  if (n.includes("mist") && n.includes("forno")) return "Mistão de Forno";
+  if (n.includes("mist")) return "Mistão de Forno";
+  // Legado: frango + catupiry sem mistão.
   if (
     (n.includes("frango") || n.includes("catupiry") || n.includes("cautpiry")) &&
     !n.includes("mist") &&
     (n.includes("catupiry") || n.includes("cautpiry") || n.includes("forno"))
   ) {
-    return "Frango com Catupiry";
+    return "Mistão de Forno";
   }
-  if (n.includes("mist")) return "Misto com Catupiry";
   return raw.trim();
 }
 

@@ -47,16 +47,10 @@ function resolveProductByName(
   products: Awaited<ReturnType<typeof listProducts>>,
 ): { id: string; name: string } | null {
   const target = normalizeName(name);
+  // Somente match exato — match parcial misturava "Pastel de Carne" com
+  // "Pastel de Frango…" e "Carne Frito" com "Carne com Cheddar de Forno".
   const exact = products.find((p) => normalizeName(p.name) === target);
   if (exact) return { id: exact.id, name: exact.name };
-
-  const partial = products.find(
-    (p) =>
-      normalizeName(p.name).includes(target) ||
-      target.includes(normalizeName(p.name).slice(0, 6)),
-  );
-  if (partial) return { id: partial.id, name: partial.name };
-
   return null;
 }
 

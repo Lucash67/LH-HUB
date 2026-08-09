@@ -46,16 +46,13 @@ export function canonicalSalgadosFlavor(name: string): string | null {
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
   if (n.includes("croissant")) return "Croissant";
-  if (n.includes("pastel") && n.includes("carne")) return "Pastel de Carne";
-  if (n.includes("pastel")) return "Pastel";
-  if (n.includes("misto") || n.includes("mistao")) return "Misto";
-  if (
-    n.includes("frango") &&
-    (n.includes("catupiry") || n.includes("cautpiry")) &&
-    !n.includes("presunto")
-  ) {
-    return "Frango c/ Catupiry";
+  if (n.includes("cheddar") && n.includes("forno")) return "Carne c/ Cheddar Forno";
+  if (n.includes("cheddar") || (n.includes("carne") && n.includes("frito") && !n.includes("pastel"))) {
+    return "Carne Frito";
   }
+  if (n.includes("pastel") && n.includes("carne")) return "Pastel de Carne";
+  if (n.includes("mistao frito") || (n.includes("pastel") && !n.includes("carne"))) return "Mistão Frito";
+  if (n.includes("mistao") || n.includes("misto") || n.includes("frango")) return "Mistão de Forno";
   return name.trim();
 }
 
