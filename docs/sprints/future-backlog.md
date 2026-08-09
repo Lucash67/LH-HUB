@@ -6,8 +6,8 @@ Ideias para implementar **depois** da entrega atual.
 
 ## 1. Módulo de Projeções por Período (ambição & motivação)
 
-**Status:** MVP entregue (semana/mês + ritmo + meta + “o que falta”) · 2026-08-01  
-**Prioridade sugerida:** evoluções após uso real
+**Status:** Completo (semana/mês/2 meses/trimestre + cenários + banner de ciclo) · 2026-08-09  
+**Prioridade sugerida:** evoluções finas após uso real
 
 ### Visão
 
@@ -27,17 +27,18 @@ Gerar **faturamento, lucro, unidades e margem projetados** ao fechar cada “cic
 - [x] Comparativo: projetado vs. realizado vs. meta
 - [x] Painel “O que falta para bater a projeção” (unidades/dia restantes)
 - [x] Entrada no menu + simulador estático como secundário
-- [ ] Cenários (conservador · base · otimista) baseados no histórico
-- [ ] Projeção automática ao completar semana / mês / N meses
-- [ ] Notificação ou destaque no Dashboard quando um ciclo fecha
-- [ ] Períodos longos (2–3 meses, trimestre)
+- [x] Cenários (conservador · base · otimista) baseados no histórico
+- [x] Projeção automática ao completar semana / mês / N meses (derive-on-read + badge ciclo fechado)
+- [x] Notificação ou destaque no Dashboard quando um ciclo fecha
+- [x] Períodos longos (2–3 meses, trimestre)
 
 ### Notas
 
 - Rota `/projecoes` · serviço `src/lib/period-projections-service.ts`
 - Respeita calendário operacional ACAL (seg–sex)
 - Lucro/receita usam diário homologado quando existir (`buildOperationalDayMetrics`)
+- Banner: `ProjectionCycleBanner` · API `?mode=cycle-banner`
 
 ---
 
-_Última atualização: 2026-08-01_
+_Última atualização: 2026-08-09_

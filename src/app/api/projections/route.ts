@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProjections } from "@/lib/analytics";
-import { getPeriodProjectionView } from "@/lib/period-projections-service";
+import {
+  getPeriodProjectionView,
+  getProjectionCycleBanner,
+  type PeriodProjectionPeriod,
+} from "@/lib/period-projections-service";
 import { MSG, apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { withTenantScope } from "@/lib/auth/with-tenant-api";
+
+const PERIODS = new Set<PeriodProjectionPeriod>([
+  "weekly",
+  "monthly",
+  "bimonthly",
+  "quarterly",
+]);
 
 export async function GET(request: NextRequest) {
   const auth = await requireApiSession();
@@ -18,8 +29,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(await getProjections(scope.businessId));
       }
 
-      if (periodParam === "weekly" || periodParam === "monthly" || mode === "period") {
-        const period = periodParam === "monthly" ? "monthly" : "weekly";
+      if (mode === "cycle-banner") {
+        const banner = await getProjectionCycleBanner(scope.businessId);
+        return NextResponse.json(banner);
+      }
+
+      if (
+        (periodParam && PERIODS.has(periodParam as PeriodProjectionPeriod)) ||
+        mode === "period"
+      ) {
+        const period = PERIODS.has(periodParam as PeriodProjectionPeriod)
+          ? (periodParam as PeriodProjectionPeriod)
+          : "weekly";
         const offset = Number(params.get("offset") ?? "0");
         const safeOffset = Number.isFinite(offset) ? Math.min(0, Math.trunc(offset)) : 0;
         const view = await getPeriodProjectionView(scope.businessId, period, safeOffset);

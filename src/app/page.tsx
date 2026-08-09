@@ -7,6 +7,7 @@ import { DashboardWelcomeBanner } from "@/components/dashboard/dashboard-welcome
 import { DashboardDayView } from "@/components/dashboard/dashboard-day-view";
 import { DashboardGeneralView } from "@/components/dashboard/dashboard-general-view";
 import { WeekFocusSection } from "@/components/dashboard/week-focus-section";
+import { ProjectionCycleBanner } from "@/components/dashboard/projection-cycle-banner";
 import { PageLoader } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, RefreshCw } from "lucide-react";
@@ -140,6 +141,8 @@ export default function DashboardPage() {
         viewDate={context.mode === "day" ? context.viewDate : null}
         weekPulse={weekPulse}
       />
+
+      {viewingToday && <ProjectionCycleBanner />}
 
       {weekFirst && weekPulse && <WeekFocusSection pulse={weekPulse} />}
 
