@@ -73,21 +73,43 @@ export function buildWeekColumns(notes: StickyNote[]): WeekColumn[] {
   return columns;
 }
 
-/** Garante que a semana atual exista no board mesmo sem notas. */
-export function ensureCurrentWeekColumn(columns: WeekColumn[]): WeekColumn[] {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const currentStart = weekKeyFromDate(today);
-  if (columns.some((c) => c.id === currentStart)) return columns;
-  const end = format(endOfWeek(parseISO(currentStart), { weekStartsOn: 1 }), "yyyy-MM-dd");
-  const current: WeekColumn = {
-    id: currentStart,
-    weekStart: currentStart,
+export function weekRangeFromStart(weekStart: string): { start: string; end: string } {
+  const start = format(startOfWeek(parseISO(weekStart), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const end = format(endOfWeek(parseISO(start), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  return { start, end };
+}
+
+export function currentWeekStart(reference = new Date()): string {
+  return format(startOfWeek(reference, { weekStartsOn: 1 }), "yyyy-MM-dd");
+}
+
+/** Garante que uma semana exista no board mesmo sem notas. */
+export function ensureWeekColumn(columns: WeekColumn[], weekStart: string): WeekColumn[] {
+  const { start, end } = weekRangeFromStart(weekStart);
+  if (columns.some((c) => c.id === start)) return columns;
+  const column: WeekColumn = {
+    id: start,
+    weekStart: start,
     weekEnd: end,
-    label: weekLabel(currentStart, end),
+    label: weekLabel(start, end),
     notes: [],
   };
   // Depois de "Sem data"
-  return [columns[0]!, current, ...columns.slice(1)];
+  return [columns[0]!, column, ...columns.slice(1)];
+}
+
+/** Garante que a semana atual exista no board mesmo sem notas. */
+export function ensureCurrentWeekColumn(columns: WeekColumn[]): WeekColumn[] {
+  return ensureWeekColumn(columns, currentWeekStart());
+}
+
+/** Mantém "Sem data" + a semana focada (vazia se preciso). */
+export function focusWeekColumns(columns: WeekColumn[], weekStart: string): WeekColumn[] {
+  const ensured = ensureWeekColumn(columns, weekStart);
+  const { start } = weekRangeFromStart(weekStart);
+  const undated = ensured.find((c) => c.id === UNDATED_COLUMN_ID);
+  const focused = ensured.find((c) => c.id === start);
+  return [undated!, focused!].filter(Boolean);
 }
 
 export function neighboringWeekStarts(anchor: string, direction: -1 | 1): string {

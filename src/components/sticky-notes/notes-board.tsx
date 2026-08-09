@@ -27,13 +27,15 @@ import {
   UNDATED_COLUMN_ID,
   buildWeekColumns,
   dateForWeekDrop,
-  ensureCurrentWeekColumn,
+  focusWeekColumns,
   formatNoteDateLabel,
   type WeekColumn,
 } from "@/lib/sticky-notes/week-board";
 
 interface NotesBoardProps {
   notes: StickyNote[];
+  /** Segunda-feira da semana em foco (yyyy-MM-dd). */
+  focusWeekStart: string;
   onOpen: (note: StickyNote) => void;
   onBoardChange: (notes: StickyNote[]) => void;
 }
@@ -152,15 +154,15 @@ function resolveTargetColumn(
   return findColumnOfNote(columns, overId);
 }
 
-export function NotesBoard({ notes, onOpen, onBoardChange }: NotesBoardProps) {
+export function NotesBoard({ notes, focusWeekStart, onOpen, onBoardChange }: NotesBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
   const columns = useMemo(
-    () => ensureCurrentWeekColumn(buildWeekColumns(notes)),
-    [notes],
+    () => focusWeekColumns(buildWeekColumns(notes), focusWeekStart),
+    [notes, focusWeekStart],
   );
 
   const activeNote = activeId ? notes.find((n) => n.id === activeId) ?? null : null;

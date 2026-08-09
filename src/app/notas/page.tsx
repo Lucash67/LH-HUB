@@ -14,9 +14,10 @@ import {
   type NotesFilterState,
 } from "@/components/sticky-notes/notes-filters";
 import { StickySaveStatus } from "@/components/sticky-notes/save-status";
+import { WeekPicker } from "@/components/sticky-notes/week-picker";
 import { useStickyNotes } from "@/hooks/use-sticky-notes";
 import type { StickyNote } from "@/lib/sticky-notes/types";
-import { weekKeyFromDate } from "@/lib/sticky-notes/week-board";
+import { currentWeekStart, weekKeyFromDate } from "@/lib/sticky-notes/week-board";
 
 function applyFilters(notes: StickyNote[], filters: NotesFilterState, query: string): StickyNote[] {
   const q = query.trim().toLowerCase();
@@ -66,6 +67,7 @@ export default function NotasPage() {
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<NotesFilterState>(DEFAULT_NOTES_FILTERS);
+  const [focusWeekStart, setFocusWeekStart] = useState(() => currentWeekStart());
   const [active, setActive] = useState<StickyNote | null>(null);
 
   const filtered = useMemo(
@@ -97,6 +99,7 @@ export default function NotasPage() {
               className="h-11 w-full rounded-lg border border-[#5f6368]/40 bg-[#202124] pl-10 pr-3 text-sm text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:border-[#5f6368] focus:outline-none"
             />
           </div>
+          <WeekPicker weekStart={focusWeekStart} onChange={setFocusWeekStart} />
           <NotesFilters
             open={filtersOpen}
             onOpenChange={setFiltersOpen}
@@ -114,20 +117,21 @@ export default function NotasPage() {
 
         {loading && notes.length === 0 ? (
           <PageLoader />
-        ) : filtered.length === 0 ? (
-          <div className="px-6 py-16 text-center">
-            <NotebookPen className="mx-auto mb-3 h-10 w-10 text-[#e8eaed]/25" />
-            <p className="text-base text-[#e8eaed]/70">Nenhuma nota neste filtro</p>
-            <p className="mt-1 text-sm text-[#e8eaed]/40">
-              Crie uma nota ou limpe os filtros para ver o board.
-            </p>
-          </div>
         ) : (
-          <NotesBoard
-            notes={filtered}
-            onOpen={openNote}
-            onBoardChange={applyBoardMove}
-          />
+          <>
+            {filtered.length === 0 && (
+              <div className="rounded-xl border border-[#5f6368]/30 bg-[#202124]/60 px-4 py-3 text-sm text-[#e8eaed]/55">
+                <NotebookPen className="mr-2 inline h-4 w-4 align-text-bottom text-[#e8eaed]/35" />
+                Nenhuma nota neste filtro — você ainda pode trocar a semana ou criar uma nota nova.
+              </div>
+            )}
+            <NotesBoard
+              notes={filtered}
+              focusWeekStart={focusWeekStart}
+              onOpen={openNote}
+              onBoardChange={applyBoardMove}
+            />
+          </>
         )}
       </div>
 
