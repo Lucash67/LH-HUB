@@ -437,13 +437,23 @@ export async function getGoalsWithProgress(businessId: string = ALL_BUSINESSES_I
       });
       current = periodSales.reduce((s, v) => s + v.totalAmount, 0);
     }
-    const targetSource = goal.targetAmount > 0 ? "custom" : "smart";
-    const targetAmount = goal.targetAmount > 0 ? goal.targetAmount : suggestedTarget(goal.type);
+    const configuredAmount = goal.targetAmount ?? 0;
+    const configuredUnits = goal.targetUnits ?? null;
+    const isCustom = configuredAmount > 0 || (configuredUnits != null && configuredUnits > 0);
+    const targetSource = isCustom ? "custom" : "smart";
+    const targetAmount = isCustom
+      ? configuredAmount > 0
+        ? configuredAmount
+        : suggestedTarget(goal.type)
+      : suggestedTarget(goal.type);
     const progress = goalProgress(current, targetAmount);
     result.push({
       ...goal,
       type: goal.type,
+      configuredAmount,
+      configuredUnits,
       targetAmount,
+      targetUnits: configuredUnits,
       targetSource,
       periodStart,
       periodEnd,

@@ -117,6 +117,28 @@ export async function updateGoalTargets(
   }
 }
 
+/** Zera amount/units para a meta voltar a usar a sugestão inteligente. */
+export async function clearGoalsToSmart(
+  businessId: string,
+  types: GoalType[] = ["daily", "weekly", "monthly"],
+): Promise<void> {
+  if (isAllBusinesses(businessId)) {
+    throw new Error(BUSINESS_GOALS_BLOCKED_MESSAGE);
+  }
+  await initializeGoalsIfEmpty(businessId);
+  for (const type of types) {
+    const existing = await findGoalByType(businessId, type);
+    if (!existing) continue;
+    const bounds = periodBounds(type);
+    await updateGoalById(existing.id, {
+      targetAmount: 0,
+      targetUnits: null,
+      periodStart: bounds.periodStart,
+      periodEnd: bounds.periodEnd,
+    });
+  }
+}
+
 export async function getDailyGoalTarget(businessId: string = ALL_BUSINESSES_ID): Promise<number> {
   const dailyGoals = await listGoalsByType("daily");
   if (isAllBusinesses(businessId)) {

@@ -8,9 +8,11 @@ import { sumPendingRevenue } from "@/lib/analytics-engine/client";
 import { isAllBusinesses } from "@/lib/business-units";
 import { getDiaryEntry } from "@/lib/diary-service";
 import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
+import { fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import {
   buildSmartGoalsView,
   type SmartGoalsView,
+  type StoredGoalTarget,
 } from "@/lib/smart-goals-view";
 
 export async function getSmartGoalsView(
@@ -31,13 +33,16 @@ export async function getSmartGoalsView(
     (lastOperationalDate && lastOperationalDate <= today ? lastOperationalDate : today);
   const from = format(subMonths(new Date(ref), 3), "yyyy-MM-dd");
 
-  const scopedSales = await fetchScopedSales({ businessId, dateGte: from, dateLte: ref });
+  const [scopedSales, products, diary, goalRows] = await Promise.all([
+    fetchScopedSales({ businessId, dateGte: from, dateLte: ref }),
+    fetchActiveProducts(businessId),
+    getDiaryEntry(businessId, ref),
+    fetchMetricGoals(businessId),
+  ]);
   const saleIds = scopedSales.map((s) => s.id).filter(Boolean) as string[];
   const items = await fetchItemsForSales(saleIds);
-  const products = await fetchActiveProducts(businessId);
   const productMap = new Map(products.map((p) => [p.id, p.name]));
 
-  const diary = await getDiaryEntry(businessId, ref);
   const dayMetrics = metricsMap
     ? Array.from(metricsMap.values()).filter((d) => d.date >= from && d.date <= ref)
     : undefined;
@@ -50,6 +55,15 @@ export async function getSmartGoalsView(
   const avgCost = products.length > 0 ? totalCost / products.length : 3.75;
 
   const pendingRevenue = sumPendingRevenue(scopedSales.filter((s) => s.date === ref));
+
+  const storedGoals: StoredGoalTarget[] = goalRows
+    .filter((g) => g.type === "daily" || g.type === "weekly" || g.type === "monthly" || g.type === "yearly")
+    .map((g) => ({
+      id: g.id,
+      type: g.type as StoredGoalTarget["type"],
+      targetAmount: g.targetAmount,
+      targetUnits: g.targetUnits ?? null,
+    }));
 
   return buildSmartGoalsView({
     businessId,
@@ -80,5 +94,6 @@ export async function getSmartGoalsView(
         }
       : undefined,
     dayMetrics,
+    storedGoals,
   });
 }

@@ -16,9 +16,21 @@ interface GoalRow {
   id: string;
   type: string;
   targetAmount: number;
+  targetUnits?: number | null;
+  configuredAmount?: number;
+  configuredUnits?: number | null;
+  targetSource?: "custom" | "smart";
 }
 
-const emptyGoals = { daily: "0", weekly: "0", monthly: "0", yearly: "0" };
+const emptyGoals = {
+  daily: "0",
+  weekly: "0",
+  monthly: "0",
+  yearly: "0",
+  dailyUnits: "",
+  weeklyUnits: "",
+  monthlyUnits: "",
+};
 
 export default function ConfiguracoesPage() {
   const { theme, setTheme } = useTheme();
@@ -34,13 +46,22 @@ export default function ConfiguracoesPage() {
   });
 
   useEffect(() => {
-    if (!goalRows) return;
-    const byType = Object.fromEntries(goalRows.map((g) => [g.type, String(g.targetAmount)]));
+    if (!goalRows || !Array.isArray(goalRows)) return;
+    const byType = Object.fromEntries(goalRows.map((g) => [g.type, g]));
+    const amount = (g?: GoalRow) =>
+      String(g?.configuredAmount ?? (g?.targetSource === "smart" ? 0 : g?.targetAmount) ?? 0);
+    const units = (g?: GoalRow) => {
+      const u = g?.configuredUnits ?? g?.targetUnits;
+      return u != null && u > 0 ? String(u) : "";
+    };
     setGoals({
-      daily: byType.daily ?? "0",
-      weekly: byType.weekly ?? "0",
-      monthly: byType.monthly ?? "0",
-      yearly: byType.yearly ?? "0",
+      daily: amount(byType.daily),
+      weekly: amount(byType.weekly),
+      monthly: amount(byType.monthly),
+      yearly: amount(byType.yearly),
+      dailyUnits: units(byType.daily),
+      weeklyUnits: units(byType.weekly),
+      monthlyUnits: units(byType.monthly),
     });
   }, [goalRows]);
 
@@ -62,6 +83,7 @@ export default function ConfiguracoesPage() {
       setSaveSuccess(true);
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["smart-goals"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setTimeout(() => setSaveSuccess(false), 3000);
     },
@@ -99,10 +121,61 @@ export default function ConfiguracoesPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!canWrite && <BusinessWriteNotice message={goalsBlockedMessage} />}
-            <Input label="Meta Diária (R$)" type="number" value={goals.daily} onChange={(e) => setGoals({ ...goals, daily: e.target.value })} disabled={!canWrite} />
-            <Input label="Meta Semanal (R$)" type="number" value={goals.weekly} onChange={(e) => setGoals({ ...goals, weekly: e.target.value })} disabled={!canWrite} />
-            <Input label="Meta Mensal (R$)" type="number" value={goals.monthly} onChange={(e) => setGoals({ ...goals, monthly: e.target.value })} disabled={!canWrite} />
-            <Input label="Meta Anual (R$)" type="number" value={goals.yearly} onChange={(e) => setGoals({ ...goals, yearly: e.target.value })} disabled={!canWrite} />
+            <p className="text-xs text-text-muted">
+              Valores em branco/zero nas unidades e R$ fazem a meta voltar à sugestão automática em Metas Inteligentes.
+              Prefira editar o dia a dia em <strong>/metas</strong>.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Meta Diária (un.)"
+                type="number"
+                value={goals.dailyUnits}
+                onChange={(e) => setGoals({ ...goals, dailyUnits: e.target.value })}
+                disabled={!canWrite}
+              />
+              <Input
+                label="Meta Diária (R$)"
+                type="number"
+                value={goals.daily}
+                onChange={(e) => setGoals({ ...goals, daily: e.target.value })}
+                disabled={!canWrite}
+              />
+              <Input
+                label="Meta Semanal (un.)"
+                type="number"
+                value={goals.weeklyUnits}
+                onChange={(e) => setGoals({ ...goals, weeklyUnits: e.target.value })}
+                disabled={!canWrite}
+              />
+              <Input
+                label="Meta Semanal (R$)"
+                type="number"
+                value={goals.weekly}
+                onChange={(e) => setGoals({ ...goals, weekly: e.target.value })}
+                disabled={!canWrite}
+              />
+              <Input
+                label="Meta Mensal (un.)"
+                type="number"
+                value={goals.monthlyUnits}
+                onChange={(e) => setGoals({ ...goals, monthlyUnits: e.target.value })}
+                disabled={!canWrite}
+              />
+              <Input
+                label="Meta Mensal (R$)"
+                type="number"
+                value={goals.monthly}
+                onChange={(e) => setGoals({ ...goals, monthly: e.target.value })}
+                disabled={!canWrite}
+              />
+            </div>
+            <Input
+              label="Meta Anual (R$)"
+              type="number"
+              value={goals.yearly}
+              onChange={(e) => setGoals({ ...goals, yearly: e.target.value })}
+              disabled={!canWrite}
+            />
             <Button
               onClick={() => {
                 if (!canWrite) {
@@ -111,10 +184,13 @@ export default function ConfiguracoesPage() {
                 }
                 setSaveError(null);
                 saveSettings.mutate({
-                  daily_goal: goals.daily,
-                  weekly_goal: goals.weekly,
-                  monthly_goal: goals.monthly,
-                  yearly_goal: goals.yearly,
+                  daily_goal: goals.daily || "0",
+                  weekly_goal: goals.weekly || "0",
+                  monthly_goal: goals.monthly || "0",
+                  yearly_goal: goals.yearly || "0",
+                  daily_goal_units: goals.dailyUnits,
+                  weekly_goal_units: goals.weeklyUnits,
+                  monthly_goal_units: goals.monthlyUnits,
                 });
               }}
               size="lg"

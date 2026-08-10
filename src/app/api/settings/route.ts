@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateGoalTargets, type GoalType } from "@/lib/goals-service";
+import { updateGoalTargets } from "@/lib/goals-service";
 import { MSG, apiError } from "@/shared/api-messages";
 import fs from "fs";
 import { DB_PATH } from "@/lib/db";
@@ -39,18 +39,58 @@ export async function PUT(request: NextRequest) {
           await upsertSetting(key, String(value));
         }
 
-        const goalKeys: Partial<Record<GoalType, number>> = {};
-        if (body.daily_goal !== undefined) goalKeys.daily = Number(body.daily_goal);
-        if (body.weekly_goal !== undefined) goalKeys.weekly = Number(body.weekly_goal);
-        if (body.monthly_goal !== undefined) goalKeys.monthly = Number(body.monthly_goal);
-        if (body.yearly_goal !== undefined) goalKeys.yearly = Number(body.yearly_goal);
+        const hasGoalKeys =
+          body.daily_goal !== undefined ||
+          body.weekly_goal !== undefined ||
+          body.monthly_goal !== undefined ||
+          body.yearly_goal !== undefined ||
+          body.daily_goal_units !== undefined ||
+          body.weekly_goal_units !== undefined ||
+          body.monthly_goal_units !== undefined;
 
-        if (Object.keys(goalKeys).length > 0) {
+        if (hasGoalKeys) {
           const businessId = requireTenantBusinessWrite(
             scope,
             body.businessId ?? request.nextUrl.searchParams.get("businessId"),
           );
-          await updateGoalTargets(goalKeys, businessId);
+          const parseUnits = (v: unknown) => {
+            if (v === undefined) return undefined;
+            if (v === null || v === "") return null;
+            const n = Number(v);
+            return Number.isFinite(n) ? n : null;
+          };
+          await updateGoalTargets(
+            {
+              ...(body.daily_goal !== undefined || body.daily_goal_units !== undefined
+                ? {
+                    daily: {
+                      amount: Number(body.daily_goal ?? 0),
+                      units: parseUnits(body.daily_goal_units),
+                    },
+                  }
+                : {}),
+              ...(body.weekly_goal !== undefined || body.weekly_goal_units !== undefined
+                ? {
+                    weekly: {
+                      amount: Number(body.weekly_goal ?? 0),
+                      units: parseUnits(body.weekly_goal_units),
+                    },
+                  }
+                : {}),
+              ...(body.monthly_goal !== undefined || body.monthly_goal_units !== undefined
+                ? {
+                    monthly: {
+                      amount: Number(body.monthly_goal ?? 0),
+                      units: parseUnits(body.monthly_goal_units),
+                    },
+                  }
+                : {}),
+              ...(body.yearly_goal !== undefined
+                ? { yearly: { amount: Number(body.yearly_goal), units: null } }
+                : {}),
+            },
+            businessId,
+          );
         }
 
         return NextResponse.json({ success: true });

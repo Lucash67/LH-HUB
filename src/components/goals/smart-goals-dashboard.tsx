@@ -6,6 +6,7 @@ import { GoalStreakComparison } from "@/components/goals/goal-streak-comparison"
 import { GoalBreakdownGrid } from "@/components/goals/goal-breakdown-grid";
 import { GoalSimulator } from "@/components/goals/goal-simulator";
 import { GoalMotivationPanel } from "@/components/goals/goal-motivation-panel";
+import { GoalTargetEditor } from "@/components/goals/goal-target-editor";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import type { SmartGoalsView } from "@/lib/smart-goals-view";
 import { Target, Calendar, CalendarDays, TrendingUp } from "lucide-react";
@@ -19,6 +20,8 @@ export function SmartGoalsDashboard({ view }: SmartGoalsDashboardProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <GoalTargetEditor view={view} />
+
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <HeroMetric
           theme="goals"

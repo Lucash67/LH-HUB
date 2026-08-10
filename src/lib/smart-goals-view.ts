@@ -95,6 +95,25 @@ export interface SimulatorResult {
   projectedTotalUnits: number;
 }
 
+export type GoalTargetSource = "manual" | "smart";
+
+export interface GoalTargetSuggestion {
+  units: number;
+  revenue: number;
+}
+
+export interface EditableGoalSlot {
+  id: string | null;
+  type: "daily" | "weekly" | "monthly";
+  configuredUnits: number | null;
+  configuredAmount: number;
+  effectiveUnits: number;
+  effectiveAmount: number;
+  suggestedUnits: number;
+  suggestedAmount: number;
+  source: GoalTargetSource;
+}
+
 export interface SmartGoalsView {
   businessId: string;
   referenceDate: string;
@@ -106,6 +125,19 @@ export interface SmartGoalsView {
     previousMonthRevenue: number;
     previousMonthChangePercent: number;
   };
+  /** Sempre a sugestão automática (mesmo quando a meta ativa é manual). */
+  suggested: {
+    daily: GoalTargetSuggestion;
+    weekly: GoalTargetSuggestion;
+    monthly: GoalTargetSuggestion;
+  };
+  /** Fonte efetiva do alvo diário (manual vence quando há cadastro > 0). */
+  source: GoalTargetSource;
+  editable: {
+    daily: EditableGoalSlot;
+    weekly: EditableGoalSlot;
+    monthly: EditableGoalSlot;
+  };
   streak: StreakInfo;
   comparisons: ComparisonRow[];
   productGoals: ProductGoalRow[];
@@ -114,6 +146,13 @@ export interface SmartGoalsView {
   recommendations: GoalRecommendation[];
   avgUnitPrice: number;
   avgUnitProfit: number;
+}
+
+export interface StoredGoalTarget {
+  id?: string;
+  type: "daily" | "weekly" | "monthly" | "yearly";
+  targetAmount: number;
+  targetUnits?: number | null;
 }
 
 export interface SmartGoalsInput {
@@ -140,6 +179,8 @@ export interface SmartGoalsInput {
   };
   /** Métricas diário-primeiro por data — sobrescrevem os totais derivados das vendas. */
   dayMetrics?: Array<{ date: string; units?: number; revenue: number; profit: number }>;
+  /** Metas cadastradas (manual). Se units/amount > 0, vencem a sugestão. */
+  storedGoals?: StoredGoalTarget[];
 }
 
 function isOperationalDay(date: string, businessId: string): boolean {
@@ -583,10 +624,52 @@ function buildComparison(label: string, current: number, previous: number): Comp
   return { label, current, previous, changePercent: change, conclusion };
 }
 
+function isManualConfigured(goal: StoredGoalTarget | undefined): boolean {
+  if (!goal) return false;
+  const units = goal.targetUnits ?? 0;
+  const amount = goal.targetAmount ?? 0;
+  return units > 0 || amount > 0;
+}
+
+function resolveManualTarget(
+  goal: StoredGoalTarget | undefined,
+  avgPrice: number,
+): { units: number; revenue: number } | null {
+  if (!isManualConfigured(goal)) return null;
+  const price = avgPrice > 0 ? avgPrice : 5;
+  const unitsRaw = goal?.targetUnits ?? 0;
+  const amountRaw = goal?.targetAmount ?? 0;
+  let units = unitsRaw > 0 ? unitsRaw : Math.max(1, Math.round(amountRaw / price));
+  let revenue = amountRaw > 0 ? amountRaw : Math.round(units * price * 100) / 100;
+  return { units, revenue };
+}
+
+function buildEditableSlot(
+  type: "daily" | "weekly" | "monthly",
+  stored: StoredGoalTarget | undefined,
+  suggested: GoalTargetSuggestion,
+  effective: GoalTargetSuggestion,
+  source: GoalTargetSource,
+): EditableGoalSlot {
+  return {
+    id: stored?.id ?? null,
+    type,
+    configuredUnits: stored?.targetUnits ?? null,
+    configuredAmount: stored?.targetAmount ?? 0,
+    effectiveUnits: effective.units,
+    effectiveAmount: effective.revenue,
+    suggestedUnits: suggested.units,
+    suggestedAmount: suggested.revenue,
+    source,
+  };
+}
+
 export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
   const referenceDate = input.referenceDate ?? format(new Date(), "yyyy-MM-dd");
   const dayMap = unitsByDate(input);
   const allDays = sortedOperationalDays(dayMap, input.businessId);
+  const avgUnitPrice = input.avgPrice > 0 ? input.avgPrice : 5;
+  const avgUnitProfit = avgUnitPrice - (input.avgCost > 0 ? input.avgCost : 3.75);
 
   const dailySuggestion = suggestDailyTarget(
     allDays.filter((d) => d.date < referenceDate),
@@ -594,18 +677,14 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
     input.diaryInsights?.dailyGoalUnits,
   );
 
-  const todayRow = dayMap.get(referenceDate) ?? { date: referenceDate, units: 0, revenue: 0, profit: 0 };
-
-  const daily = buildPeriod(
-    dailySuggestion.units,
-    dailySuggestion.revenue,
-    todayRow.units,
-    todayRow.revenue,
-    todayRow.profit,
-    0,
-    allDays,
-    dailySuggestion.rationale,
+  const storedByType = new Map(
+    (input.storedGoals ?? []).map((g) => [g.type, g] as const),
   );
+  const storedDaily = storedByType.get("daily");
+  const storedWeekly = storedByType.get("weekly");
+  const storedMonthly = storedByType.get("monthly");
+
+  const todayRow = dayMap.get(referenceDate) ?? { date: referenceDate, units: 0, revenue: 0, profit: 0 };
 
   const anchor = parseISO(referenceDate);
   const { start: weekStart, end: weekEnd } = getWeekRange(anchor);
@@ -614,18 +693,16 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
   const weekRevenue = weekDays.reduce((s, r) => s + r.revenue, 0);
   const weekProfit = weekDays.reduce((s, r) => s + r.profit, 0);
   const operationalDaysLeft = countOperationalDaysInRange(referenceDate, weekEnd, input.businessId);
-  const weeklyTargetUnits = dailySuggestion.units * Math.max(1, weekDays.length + operationalDaysLeft);
+  const weekOpDays = Math.max(1, weekDays.length + operationalDaysLeft);
 
-  const weekly = buildPeriod(
-    weeklyTargetUnits,
-    dailySuggestion.revenue * Math.max(1, weekDays.length + operationalDaysLeft),
-    weekUnits,
-    weekRevenue,
-    weekProfit,
-    operationalDaysLeft,
-    allDays,
-    [`Meta semanal = meta diária × dias úteis (${weekDays.length + operationalDaysLeft}).`],
-  );
+  const suggestedDaily: GoalTargetSuggestion = {
+    units: dailySuggestion.units,
+    revenue: dailySuggestion.revenue,
+  };
+  const suggestedWeekly: GoalTargetSuggestion = {
+    units: dailySuggestion.units * weekOpDays,
+    revenue: Math.round(dailySuggestion.revenue * weekOpDays * 100) / 100,
+  };
 
   const { start: monthStart } = getMonthRange(anchor);
   const monthEnd = format(endOfMonth(anchor), "yyyy-MM-dd");
@@ -637,15 +714,97 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
   const operationalDaysElapsed = countOperationalDaysInRange(monthStart, referenceDate, input.businessId);
   const operationalDaysLeftMonth = operationalDaysInMonth - operationalDaysElapsed;
 
+  const suggestedMonthly: GoalTargetSuggestion = {
+    units: dailySuggestion.units * operationalDaysInMonth,
+    revenue: Math.round(dailySuggestion.revenue * operationalDaysInMonth * 100) / 100,
+  };
+
+  const manualDaily = resolveManualTarget(storedDaily, avgUnitPrice);
+  const manualWeekly = resolveManualTarget(storedWeekly, avgUnitPrice);
+  const manualMonthly = resolveManualTarget(storedMonthly, avgUnitPrice);
+
+  const dailySource: GoalTargetSource = manualDaily ? "manual" : "smart";
+  const weeklySource: GoalTargetSource = manualWeekly ? "manual" : "smart";
+  const monthlySource: GoalTargetSource = manualMonthly ? "manual" : "smart";
+
+  // Semanal/mensal sem cadastro próprio herdam da diária efetiva quando a diária é manual.
+  const effectiveDaily = manualDaily ?? suggestedDaily;
+  const effectiveWeekly =
+    manualWeekly ??
+    (dailySource === "manual"
+      ? {
+          units: effectiveDaily.units * weekOpDays,
+          revenue: Math.round(effectiveDaily.revenue * weekOpDays * 100) / 100,
+        }
+      : suggestedWeekly);
+  const effectiveMonthly =
+    manualMonthly ??
+    (dailySource === "manual"
+      ? {
+          units: effectiveDaily.units * operationalDaysInMonth,
+          revenue: Math.round(effectiveDaily.revenue * operationalDaysInMonth * 100) / 100,
+        }
+      : suggestedMonthly);
+
+  const dailyRationale =
+    dailySource === "manual"
+      ? [
+          "Meta manual ativa — definida por você em Metas ou Configurações.",
+          `Sugestão automática atual: ${suggestedDaily.units} un. / R$ ${suggestedDaily.revenue.toFixed(2)}.`,
+        ]
+      : dailySuggestion.rationale;
+
+  const weeklyRationale =
+    weeklySource === "manual"
+      ? [
+          "Meta semanal manual ativa.",
+          `Sugestão automática: ${suggestedWeekly.units} un.`,
+        ]
+      : dailySource === "manual"
+        ? [`Meta semanal = sua meta diária (${effectiveDaily.units}) × ${weekOpDays} dias úteis.`]
+        : [`Meta semanal = meta diária × dias úteis (${weekOpDays}).`];
+
+  const monthlyRationale =
+    monthlySource === "manual"
+      ? [
+          "Meta mensal manual ativa.",
+          `Sugestão automática: ${suggestedMonthly.units} un.`,
+        ]
+      : dailySource === "manual"
+        ? [`Projeção: sua meta diária (${effectiveDaily.units}) × ${operationalDaysInMonth} dias úteis.`]
+        : [`Projeção: ${suggestedDaily.units} un./dia × ${operationalDaysInMonth} dias úteis.`];
+
+  const daily = buildPeriod(
+    effectiveDaily.units,
+    effectiveDaily.revenue,
+    todayRow.units,
+    todayRow.revenue,
+    todayRow.profit,
+    0,
+    allDays,
+    dailyRationale,
+  );
+
+  const weekly = buildPeriod(
+    effectiveWeekly.units,
+    effectiveWeekly.revenue,
+    weekUnits,
+    weekRevenue,
+    weekProfit,
+    operationalDaysLeft,
+    allDays,
+    weeklyRationale,
+  );
+
   const monthlyBase = buildPeriod(
-    dailySuggestion.units * operationalDaysInMonth,
-    dailySuggestion.revenue * operationalDaysInMonth,
+    effectiveMonthly.units,
+    effectiveMonthly.revenue,
     monthUnits,
     monthRevenue,
     monthProfit,
     operationalDaysLeftMonth,
     allDays,
-    [`Projeção: ${dailySuggestion.units} un./dia × ${operationalDaysInMonth} dias úteis.`],
+    monthlyRationale,
   );
 
   const prevMonthStart = format(startOfMonth(subMonths(anchor, 1)), "yyyy-MM-dd");
@@ -657,7 +816,7 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
   const paceRevenue = operationalDaysElapsed > 0 ? monthRevenue / operationalDaysElapsed : 0;
   const paceProfit = operationalDaysElapsed > 0 ? monthProfit / operationalDaysElapsed : 0;
 
-  const streak = computeStreaks(allDays, dailySuggestion.units);
+  const streak = computeStreaks(allDays, effectiveDaily.units);
 
   const yesterday = format(subDays(anchor, 1), "yyyy-MM-dd");
   const prevWeekStart = format(subDays(parseISO(weekStart), 7), "yyyy-MM-dd");
@@ -673,13 +832,28 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
     buildComparison("Mês atual × anterior (receita)", monthRevenue, prevMonthRevenue),
   ];
 
-  const productGoals = buildProductGoals(input, dailySuggestion.units, referenceDate);
-  const hourGoals = buildHourGoals(input, dailySuggestion.units, referenceDate);
+  const productGoals = buildProductGoals(input, effectiveDaily.units, referenceDate);
+  const hourGoals = buildHourGoals(input, effectiveDaily.units, referenceDate);
   const challenges = buildChallenges(daily, streak, comparisons);
   const recommendations = buildRecommendations(input, daily, productGoals);
 
-  const avgUnitPrice = input.avgPrice > 0 ? input.avgPrice : 5;
-  const avgUnitProfit = avgUnitPrice - (input.avgCost > 0 ? input.avgCost : 3.75);
+  const editable = {
+    daily: buildEditableSlot("daily", storedDaily, suggestedDaily, effectiveDaily, dailySource),
+    weekly: buildEditableSlot(
+      "weekly",
+      storedWeekly,
+      suggestedWeekly,
+      effectiveWeekly,
+      weeklySource === "manual" || dailySource === "manual" ? "manual" : "smart",
+    ),
+    monthly: buildEditableSlot(
+      "monthly",
+      storedMonthly,
+      suggestedMonthly,
+      effectiveMonthly,
+      monthlySource === "manual" || dailySource === "manual" ? "manual" : "smart",
+    ),
+  };
 
   return {
     businessId: input.businessId,
@@ -693,6 +867,13 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
       previousMonthRevenue: prevMonthRevenue,
       previousMonthChangePercent: computeGrowth(monthRevenue, prevMonthRevenue),
     },
+    suggested: {
+      daily: suggestedDaily,
+      weekly: suggestedWeekly,
+      monthly: suggestedMonthly,
+    },
+    source: dailySource,
+    editable,
     streak,
     comparisons,
     productGoals,
