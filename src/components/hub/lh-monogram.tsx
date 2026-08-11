@@ -33,3 +33,36 @@ export function LhMonogram({ className, size = 48 }: LhMonogramProps) {
     </svg>
   );
 }
+
+interface LhMonogramOutlineProps {
+  className?: string;
+}
+
+/**
+ * Outline geométrico do monograma oficial LH Empreendimentos (skyline).
+ * Quatro pilares em stroke fino + filetes internos (wireframe).
+ */
+export function LhMonogramOutline({ className }: LhMonogramOutlineProps) {
+  return (
+    <svg
+      viewBox="0 0 220 140"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn(className)}
+      aria-hidden
+    >
+      <g stroke="#FFD400" strokeLinejoin="miter" vectorEffect="non-scaling-stroke">
+        {/* Contornos principais */}
+        <path d="M18 122V68L62 46V122H18Z" strokeWidth="1.25" />
+        <path d="M74 122V32H80V122H74Z" strokeWidth="1.25" />
+        <path d="M92 122V36L138 14V122H92Z" strokeWidth="1.25" />
+        <path d="M138 122V14L192 42V122H138Z" strokeWidth="1.25" />
+        {/* Filetes internos — profundidade wireframe */}
+        <path d="M30 118V72L54 58" strokeWidth="0.7" opacity="0.45" />
+        <path d="M104 118V40L130 26" strokeWidth="0.7" opacity="0.4" />
+        <path d="M150 118V28L178 48" strokeWidth="0.7" opacity="0.4" />
+        <path d="M18 122H192" strokeWidth="0.8" opacity="0.35" />
+      </g>
+    </svg>
+  );
+}
