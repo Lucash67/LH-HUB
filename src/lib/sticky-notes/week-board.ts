@@ -66,12 +66,11 @@ export function currentWeekStart(reference = new Date()): string {
 }
 
 /**
- * Board da semana focada: Sem data + uma coluna por dia (seg→dom).
- * Notas fora da semana não entram nas colunas de dia.
+ * Board da semana focada: uma coluna por dia (seg→dom).
+ * Notas sem data ou fora da semana não aparecem neste board.
  */
 export function buildDayColumnsForWeek(notes: StickyNote[], weekStart: string): WeekColumn[] {
   const { start, end } = weekRangeFromStart(weekStart);
-  const undated: StickyNote[] = [];
   const byDay = new Map<string, StickyNote[]>();
 
   const dayKeys: string[] = [];
@@ -84,33 +83,19 @@ export function buildDayColumnsForWeek(notes: StickyNote[], weekStart: string): 
   }
 
   for (const note of notes) {
-    if (!note.noteDate) {
-      undated.push(note);
-      continue;
-    }
+    if (!note.noteDate) continue;
     if (note.noteDate < start || note.noteDate > end) continue;
     const list = byDay.get(note.noteDate);
     if (list) list.push(note);
   }
 
-  const dayColumns: WeekColumn[] = dayKeys.map((date) => ({
+  return dayKeys.map((date) => ({
     id: date,
     weekStart: date,
     weekEnd: date,
     label: dayColumnLabel(date),
     notes: sortNotes(byDay.get(date) ?? []),
   }));
-
-  return [
-    {
-      id: UNDATED_COLUMN_ID,
-      weekStart: null,
-      weekEnd: null,
-      label: "Sem data",
-      notes: sortNotes(undated),
-    },
-    ...dayColumns,
-  ];
 }
 
 /** @deprecated Prefer buildDayColumnsForWeek — mantido para testes/legado. */
