@@ -286,14 +286,14 @@ async function main() {
       productName: P.croissant,
       quantity: 1,
     }),
-    // Lista nominal = 14 un; fat. R$90 ⇒ 18 un. 4 un sem nome no rascunho.
+    // Henrique levou 4 un para vender — vendeu todos.
     sale({
       time: "12:00",
-      clientName: "Clientes não anotados",
+      clientName: "Colegas do Henrique",
       productName: P.unknown,
       quantity: 4,
-      notes:
-        "Lote para fechar fat. R$90 (18×R$5). Lista escrita tinha 14 un; 4 sem identificação de cliente/sabor.",
+      department: "Colegas do Henrique",
+      notes: "Henrique levou 4 un para vender no trabalho — 100% vendidos.",
     }),
   ];
 
@@ -338,7 +338,7 @@ async function main() {
       "Vendidos 18 · perdidos 2 · inventário 20/20.",
       "Fat. do dia R$90 (sem quitação) · com quitação do 10 no caixa mental R$102,50 · esperado c/ 20 vendidos R$112,50.",
       "Lucro R$60 (= 90 − 30). Quitação R$12,50 só no 10/08 (lucro 10 → R$63).",
-      "Lista escrita: 14 un nominais + lote 4 não anotados = 18.",
+      "Lista escrita: 14 un Unifor/Acal + 4 Henrique (colegas) = 18.",
       "Experimento: salgados sozinhos a partir ~8h30 (mãe vai cobrir) — hoje −2 un.",
       "Decisão: parar de forçar anotação de horário/sabor para focar no trabalho Acal.",
       "Cofrinho teórico: R$1.150,50 · prático: R$1.153,28.",
@@ -382,6 +382,7 @@ async function main() {
     sales: {
       paidCount: 18,
       creditCount: 0,
+      fatherSale: { units: 4, amount: 20, buyerName: "Colegas do Henrique" },
     },
   });
 
