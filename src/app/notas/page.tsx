@@ -84,7 +84,7 @@ export default function NotasPage() {
   return (
     <ModuleShell
       title="Notas"
-      subtitle="Board por semana · arraste, filtre e autosave"
+      subtitle="Colunas por dia · arraste, filtre e autosave"
       temporalFilter={false}
       actions={<StickySaveStatus status={status} />}
     >

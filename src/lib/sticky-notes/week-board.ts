@@ -1,4 +1,12 @@
-import { format, parseISO, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
+import {
+  addDays,
+  addWeeks,
+  endOfWeek,
+  format,
+  parseISO,
+  startOfWeek,
+  subWeeks,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { StickyNote } from "./types";
 
@@ -6,7 +14,10 @@ export const UNDATED_COLUMN_ID = "undated";
 
 export interface WeekColumn {
   id: string;
-  /** Início da semana (yyyy-MM-dd) ou null para "Sem data". */
+  /**
+   * Data alvo ao soltar na coluna (yyyy-MM-dd).
+   * Em board por dia = o próprio dia; null = Sem data.
+   */
   weekStart: string | null;
   weekEnd: string | null;
   label: string;
@@ -27,7 +38,82 @@ export function formatNoteDateLabel(date: string | null | undefined): string {
   return format(parseISO(date), "dd/MM/yyyy", { locale: ptBR });
 }
 
-/** Monta colunas Trello: Sem data + semanas presentes (mais recente → mais antiga). */
+function sortNotes(list: StickyNote[]): StickyNote[] {
+  return [...list].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return b.clientUpdatedAt.localeCompare(a.clientUpdatedAt);
+  });
+}
+
+/** Rótulo da coluna do dia: "Segunda · 10/08". */
+export function dayColumnLabel(date: string): string {
+  const d = parseISO(date);
+  const raw = format(d, "EEEE", { locale: ptBR }); // segunda-feira
+  const short = raw.replace("-feira", "");
+  const capped = short.charAt(0).toUpperCase() + short.slice(1);
+  return `${capped} · ${format(d, "dd/MM")}`;
+}
+
+export function weekRangeFromStart(weekStart: string): { start: string; end: string } {
+  const start = format(startOfWeek(parseISO(weekStart), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const end = format(endOfWeek(parseISO(start), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  return { start, end };
+}
+
+export function currentWeekStart(reference = new Date()): string {
+  return format(startOfWeek(reference, { weekStartsOn: 1 }), "yyyy-MM-dd");
+}
+
+/**
+ * Board da semana focada: Sem data + uma coluna por dia (seg→dom).
+ * Notas fora da semana não entram nas colunas de dia.
+ */
+export function buildDayColumnsForWeek(notes: StickyNote[], weekStart: string): WeekColumn[] {
+  const { start, end } = weekRangeFromStart(weekStart);
+  const undated: StickyNote[] = [];
+  const byDay = new Map<string, StickyNote[]>();
+
+  const dayKeys: string[] = [];
+  let cursor = parseISO(start);
+  for (let i = 0; i < 7; i++) {
+    const key = format(cursor, "yyyy-MM-dd");
+    dayKeys.push(key);
+    byDay.set(key, []);
+    cursor = addDays(cursor, 1);
+  }
+
+  for (const note of notes) {
+    if (!note.noteDate) {
+      undated.push(note);
+      continue;
+    }
+    if (note.noteDate < start || note.noteDate > end) continue;
+    const list = byDay.get(note.noteDate);
+    if (list) list.push(note);
+  }
+
+  const dayColumns: WeekColumn[] = dayKeys.map((date) => ({
+    id: date,
+    weekStart: date,
+    weekEnd: date,
+    label: dayColumnLabel(date),
+    notes: sortNotes(byDay.get(date) ?? []),
+  }));
+
+  return [
+    {
+      id: UNDATED_COLUMN_ID,
+      weekStart: null,
+      weekEnd: null,
+      label: "Sem data",
+      notes: sortNotes(undated),
+    },
+    ...dayColumns,
+  ];
+}
+
+/** @deprecated Prefer buildDayColumnsForWeek — mantido para testes/legado. */
 export function buildWeekColumns(notes: StickyNote[]): WeekColumn[] {
   const byWeek = new Map<string, StickyNote[]>();
   const undated: StickyNote[] = [];
@@ -42,13 +128,6 @@ export function buildWeekColumns(notes: StickyNote[]): WeekColumn[] {
     list.push(note);
     byWeek.set(key, list);
   }
-
-  const sortNotes = (list: StickyNote[]) =>
-    [...list].sort((a, b) => {
-      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-      return b.clientUpdatedAt.localeCompare(a.clientUpdatedAt);
-    });
 
   const weekStarts = Array.from(byWeek.keys()).sort((a, b) => b.localeCompare(a));
   const columns: WeekColumn[] = weekStarts.map((start) => {
@@ -73,17 +152,6 @@ export function buildWeekColumns(notes: StickyNote[]): WeekColumn[] {
   return columns;
 }
 
-export function weekRangeFromStart(weekStart: string): { start: string; end: string } {
-  const start = format(startOfWeek(parseISO(weekStart), { weekStartsOn: 1 }), "yyyy-MM-dd");
-  const end = format(endOfWeek(parseISO(start), { weekStartsOn: 1 }), "yyyy-MM-dd");
-  return { start, end };
-}
-
-export function currentWeekStart(reference = new Date()): string {
-  return format(startOfWeek(reference, { weekStartsOn: 1 }), "yyyy-MM-dd");
-}
-
-/** Garante que uma semana exista no board mesmo sem notas. */
 export function ensureWeekColumn(columns: WeekColumn[], weekStart: string): WeekColumn[] {
   const { start, end } = weekRangeFromStart(weekStart);
   if (columns.some((c) => c.id === start)) return columns;
@@ -94,16 +162,14 @@ export function ensureWeekColumn(columns: WeekColumn[], weekStart: string): Week
     label: weekLabel(start, end),
     notes: [],
   };
-  // Depois de "Sem data"
   return [columns[0]!, column, ...columns.slice(1)];
 }
 
-/** Garante que a semana atual exista no board mesmo sem notas. */
 export function ensureCurrentWeekColumn(columns: WeekColumn[]): WeekColumn[] {
   return ensureWeekColumn(columns, currentWeekStart());
 }
 
-/** Mantém "Sem data" + a semana focada (vazia se preciso). */
+/** @deprecated Use buildDayColumnsForWeek. */
 export function focusWeekColumns(columns: WeekColumn[], weekStart: string): WeekColumn[] {
   const ensured = ensureWeekColumn(columns, weekStart);
   const { start } = weekRangeFromStart(weekStart);
@@ -118,14 +184,10 @@ export function neighboringWeekStarts(anchor: string, direction: -1 | 1): string
   return format(startOfWeek(next, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
-/** Data sugerida ao soltar numa coluna de semana. */
+/** Data ao soltar numa coluna (dia ou sem data). */
 export function dateForWeekDrop(
-  weekStart: string | null,
-  previousDate: string | null | undefined,
+  columnDate: string | null,
+  _previousDate?: string | null,
 ): string | null {
-  if (!weekStart) return null;
-  if (previousDate && weekKeyFromDate(previousDate) === weekStart) {
-    return previousDate;
-  }
-  return weekStart;
+  return columnDate;
 }

@@ -25,9 +25,8 @@ import type { StickyNote } from "@/lib/sticky-notes/types";
 import { STICKY_NOTE_COLOR_STYLES } from "@/lib/sticky-notes/types";
 import {
   UNDATED_COLUMN_ID,
-  buildWeekColumns,
+  buildDayColumnsForWeek,
   dateForWeekDrop,
-  focusWeekColumns,
   formatNoteDateLabel,
   type WeekColumn,
 } from "@/lib/sticky-notes/week-board";
@@ -113,12 +112,14 @@ function WeekLane({
     <section
       ref={setNodeRef}
       className={cn(
-        "flex h-full w-[280px] shrink-0 flex-col rounded-xl border bg-[#18191b]/90",
+        "flex h-full w-[200px] shrink-0 flex-col rounded-xl border bg-[#18191b]/90 sm:w-[220px]",
         isOver ? "border-brand-yellow/50 bg-[#202124]" : "border-[#5f6368]/30",
       )}
     >
       <header className="border-b border-[#5f6368]/25 px-3 py-3">
-        <p className="text-[12px] font-bold leading-snug text-[#e8eaed]/90">{column.label}</p>
+        <p className="text-[12px] font-bold capitalize leading-snug text-[#e8eaed]/90">
+          {column.label}
+        </p>
         <p className="mt-0.5 text-[11px] text-[#e8eaed]/40">
           {column.notes.length} {column.notes.length === 1 ? "nota" : "notas"}
         </p>
@@ -161,7 +162,7 @@ export function NotesBoard({ notes, focusWeekStart, onOpen, onBoardChange }: Not
   );
 
   const columns = useMemo(
-    () => focusWeekColumns(buildWeekColumns(notes), focusWeekStart),
+    () => buildDayColumnsForWeek(notes, focusWeekStart),
     [notes, focusWeekStart],
   );
 
