@@ -14,7 +14,6 @@ import {
   type NotesFilterState,
 } from "@/components/sticky-notes/notes-filters";
 import { StickySaveStatus } from "@/components/sticky-notes/save-status";
-import { WeekPicker } from "@/components/sticky-notes/week-picker";
 import { useStickyNotes } from "@/hooks/use-sticky-notes";
 import type { StickyNote } from "@/lib/sticky-notes/types";
 import { currentWeekStart, weekKeyFromDate } from "@/lib/sticky-notes/week-board";
@@ -84,37 +83,11 @@ export default function NotasPage() {
   return (
     <ModuleShell
       title="Notas"
-      subtitle="Colunas por dia · arraste, filtre e autosave"
+      subtitle="Colunas por dia · arraste entre dias ou semanas · autosave"
       temporalFilter={false}
       actions={<StickySaveStatus status={status} />}
     >
       <div className="space-y-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e8eaed]/40" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Pesquisar notas"
-              className="h-11 w-full rounded-lg border border-[#5f6368]/40 bg-[#202124] pl-10 pr-3 text-sm text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:border-[#5f6368] focus:outline-none"
-            />
-          </div>
-          <WeekPicker weekStart={focusWeekStart} onChange={setFocusWeekStart} />
-          <NotesFilters
-            open={filtersOpen}
-            onOpenChange={setFiltersOpen}
-            filters={filters}
-            onChange={setFilters}
-          />
-        </div>
-
-        <ComposeBar
-          onCreate={async (seed) => {
-            const note = await createNote(seed);
-            if (!seed?.title && !seed?.body) setActive(note);
-          }}
-        />
-
         {loading && notes.length === 0 ? (
           <PageLoader />
         ) : (
@@ -128,8 +101,36 @@ export default function NotasPage() {
             <NotesBoard
               notes={filtered}
               focusWeekStart={focusWeekStart}
+              onFocusWeekChange={setFocusWeekStart}
               onOpen={openNote}
               onBoardChange={applyBoardMove}
+              toolbarStart={
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e8eaed]/40" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Pesquisar notas"
+                    className="h-11 w-full rounded-lg border border-[#5f6368]/40 bg-[#202124] pl-10 pr-3 text-sm text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:border-[#5f6368] focus:outline-none"
+                  />
+                </div>
+              }
+              toolbarEnd={
+                <NotesFilters
+                  open={filtersOpen}
+                  onOpenChange={setFiltersOpen}
+                  filters={filters}
+                  onChange={setFilters}
+                />
+              }
+              belowToolbar={
+                <ComposeBar
+                  onCreate={async (seed) => {
+                    const note = await createNote(seed);
+                    if (!seed?.title && !seed?.body) setActive(note);
+                  }}
+                />
+              }
             />
           </>
         )}

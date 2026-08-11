@@ -1,6 +1,7 @@
 import {
   addDays,
   addWeeks,
+  differenceInCalendarDays,
   endOfWeek,
   format,
   parseISO,
@@ -11,6 +12,31 @@ import { ptBR } from "date-fns/locale";
 import type { StickyNote } from "./types";
 
 export const UNDATED_COLUMN_ID = "undated";
+export const WEEK_DROP_PREFIX = "week:";
+
+export function weekDropId(weekStart: string): string {
+  return `${WEEK_DROP_PREFIX}${weekStart}`;
+}
+
+export function parseWeekDropId(id: string): string | null {
+  if (!id.startsWith(WEEK_DROP_PREFIX)) return null;
+  return id.slice(WEEK_DROP_PREFIX.length) || null;
+}
+
+/**
+ * Preserva o dia da semana ao mudar de semana (terça → terça).
+ * Sem data → segunda da semana alvo.
+ */
+export function mapNoteDateToWeek(
+  noteDate: string | null | undefined,
+  targetWeekStart: string,
+): string {
+  const { start } = weekRangeFromStart(targetWeekStart);
+  if (!noteDate) return start;
+  const noteWeekStart = startOfWeek(parseISO(noteDate), { weekStartsOn: 1 });
+  const offset = differenceInCalendarDays(parseISO(noteDate), noteWeekStart);
+  return format(addDays(parseISO(start), Math.min(Math.max(offset, 0), 6)), "yyyy-MM-dd");
+}
 
 export interface WeekColumn {
   id: string;

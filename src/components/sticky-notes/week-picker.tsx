@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import { format, parseISO } from "date-fns";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   currentWeekStart,
   neighboringWeekStarts,
+  weekDropId,
   weekLabel,
   weekRangeFromStart,
 } from "@/lib/sticky-notes/week-board";
@@ -15,25 +17,79 @@ interface WeekPickerProps {
   weekStart: string;
   onChange: (weekStart: string) => void;
   className?: string;
+  /** Destaca as setas como alvos de soltura (arrastar nota entre semanas). */
+  weekDropActive?: boolean;
 }
 
-export function WeekPicker({ weekStart, onChange, className }: WeekPickerProps) {
+function WeekNavButton({
+  targetWeekStart,
+  label,
+  onNavigate,
+  dropActive,
+  children,
+}: {
+  targetWeekStart: string;
+  label: string;
+  onNavigate: () => void;
+  dropActive?: boolean;
+  children: ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: weekDropId(targetWeekStart),
+    data: { type: "week", weekStart: targetWeekStart },
+  });
+
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      aria-label={label}
+      title={
+        dropActive
+          ? `${label} — solte a nota aqui para mover`
+          : label
+      }
+      onClick={onNavigate}
+      className={cn(
+        "flex h-full items-center px-2.5 text-[#e8eaed]/70 transition hover:bg-white/5 hover:text-[#e8eaed]",
+        dropActive && "ring-1 ring-inset ring-brand-yellow/35",
+        isOver && "bg-brand-yellow/25 text-brand-yellow",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function WeekPicker({
+  weekStart,
+  onChange,
+  className,
+  weekDropActive = false,
+}: WeekPickerProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const range = useMemo(() => weekRangeFromStart(weekStart), [weekStart]);
   const label = weekLabel(range.start, range.end);
   const isCurrent = weekStart === currentWeekStart();
+  const prevWeek = neighboringWeekStarts(weekStart, -1);
+  const nextWeek = neighboringWeekStarts(weekStart, 1);
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      <div className="inline-flex h-11 items-center rounded-lg border border-[#5f6368]/40 bg-[#202124]">
-        <button
-          type="button"
-          aria-label="Semana anterior"
-          onClick={() => onChange(neighboringWeekStarts(weekStart, -1))}
-          className="flex h-full items-center px-2.5 text-[#e8eaed]/70 transition hover:bg-white/5 hover:text-[#e8eaed]"
+      <div
+        className={cn(
+          "inline-flex h-11 items-center rounded-lg border bg-[#202124]",
+          weekDropActive ? "border-brand-yellow/45" : "border-[#5f6368]/40",
+        )}
+      >
+        <WeekNavButton
+          targetWeekStart={prevWeek}
+          label="Semana anterior"
+          onNavigate={() => onChange(prevWeek)}
+          dropActive={weekDropActive}
         >
           <ChevronLeft className="h-4 w-4" />
-        </button>
+        </WeekNavButton>
 
         <button
           type="button"
@@ -45,14 +101,14 @@ export function WeekPicker({ weekStart, onChange, className }: WeekPickerProps) 
           <span className="truncate">{label}</span>
         </button>
 
-        <button
-          type="button"
-          aria-label="Próxima semana"
-          onClick={() => onChange(neighboringWeekStarts(weekStart, 1))}
-          className="flex h-full items-center px-2.5 text-[#e8eaed]/70 transition hover:bg-white/5 hover:text-[#e8eaed]"
+        <WeekNavButton
+          targetWeekStart={nextWeek}
+          label="Próxima semana"
+          onNavigate={() => onChange(nextWeek)}
+          dropActive={weekDropActive}
         >
           <ChevronRight className="h-4 w-4" />
-        </button>
+        </WeekNavButton>
       </div>
 
       {!isCurrent && (

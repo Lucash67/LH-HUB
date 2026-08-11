@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -28,15 +28,25 @@ import {
   buildDayColumnsForWeek,
   dateForWeekDrop,
   formatNoteDateLabel,
+  mapNoteDateToWeek,
+  parseWeekDropId,
   type WeekColumn,
 } from "@/lib/sticky-notes/week-board";
+import { WeekPicker } from "@/components/sticky-notes/week-picker";
 
 interface NotesBoardProps {
   notes: StickyNote[];
   /** Segunda-feira da semana em foco (yyyy-MM-dd). */
   focusWeekStart: string;
+  onFocusWeekChange: (weekStart: string) => void;
   onOpen: (note: StickyNote) => void;
   onBoardChange: (notes: StickyNote[]) => void;
+  /** Itens à esquerda do seletor de semana (ex.: busca), dentro do DndContext. */
+  toolbarStart?: ReactNode;
+  /** Itens à direita do seletor de semana (ex.: filtros). */
+  toolbarEnd?: ReactNode;
+  /** Conteúdo entre a barra de semana e as colunas (ex.: compose). */
+  belowToolbar?: ReactNode;
 }
 
 function SortableNoteCard({
@@ -70,7 +80,6 @@ function SortableNoteCard({
           className="mt-0.5 cursor-grab touch-none rounded p-0.5 text-[#e8eaed]/35 hover:bg-white/10 hover:text-[#e8eaed]/70 active:cursor-grabbing"
           {...attributes}
           {...listeners}
-          // Espaço/Enter no handle não devem ativar botão nem subir para o card.
           onKeyDown={(e) => {
             if (e.key === " " || e.key === "Enter") {
               e.preventDefault();
@@ -155,7 +164,24 @@ function resolveTargetColumn(
   return findColumnOfNote(columns, overId);
 }
 
-export function NotesBoard({ notes, focusWeekStart, onOpen, onBoardChange }: NotesBoardProps) {
+function appendToDay(notes: StickyNote[], noteId: string, nextDate: string): StickyNote[] {
+  const peers = notes.filter((n) => n.id !== noteId && n.noteDate === nextDate);
+  const maxOrder = peers.reduce((m, n) => Math.max(m, n.sortOrder), -1);
+  return notes.map((n) =>
+    n.id === noteId ? { ...n, noteDate: nextDate, sortOrder: maxOrder + 1 } : n,
+  );
+}
+
+export function NotesBoard({
+  notes,
+  focusWeekStart,
+  onFocusWeekChange,
+  onOpen,
+  onBoardChange,
+  toolbarStart,
+  toolbarEnd,
+  belowToolbar,
+}: NotesBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -167,6 +193,7 @@ export function NotesBoard({ notes, focusWeekStart, onOpen, onBoardChange }: Not
   );
 
   const activeNote = activeId ? notes.find((n) => n.id === activeId) ?? null : null;
+  const weekDropActive = Boolean(activeId);
 
   const onDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
@@ -179,12 +206,20 @@ export function NotesBoard({ notes, focusWeekStart, onOpen, onBoardChange }: Not
 
     const noteId = String(active.id);
     const overId = String(over.id);
+    const moving = notes.find((n) => n.id === noteId);
+    if (!moving) return;
+
+    const weekTarget = parseWeekDropId(overId);
+    if (weekTarget) {
+      const nextDate = mapNoteDateToWeek(moving.noteDate, weekTarget);
+      onBoardChange(appendToDay(notes, noteId, nextDate));
+      onFocusWeekChange(weekTarget);
+      return;
+    }
+
     const fromCol = findColumnOfNote(columns, noteId);
     const toCol = resolveTargetColumn(columns, overId);
     if (!fromCol || !toCol) return;
-
-    const moving = notes.find((n) => n.id === noteId);
-    if (!moving) return;
 
     const nextDate =
       toCol.id === UNDATED_COLUMN_ID
@@ -234,7 +269,26 @@ export function NotesBoard({ notes, focusWeekStart, onOpen, onBoardChange }: Not
       collisionDetection={closestCorners}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onDragCancel={() => setActiveId(null)}
     >
+      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
+        {toolbarStart}
+        <WeekPicker
+          weekStart={focusWeekStart}
+          onChange={onFocusWeekChange}
+          weekDropActive={weekDropActive}
+        />
+        {toolbarEnd}
+      </div>
+
+      {belowToolbar ? <div className="mb-5">{belowToolbar}</div> : null}
+
+      {weekDropActive ? (
+        <p className="mb-3 text-xs text-brand-yellow/80">
+          Solte nas setas ← → da semana para mover a nota (mantém o mesmo dia da semana).
+        </p>
+      ) : null}
+
       <div className="flex min-h-[420px] gap-3 overflow-x-auto pb-3 [scrollbar-width:thin]">
         {columns.map((column) => (
           <WeekLane key={column.id} column={column} onOpen={onOpen} />
