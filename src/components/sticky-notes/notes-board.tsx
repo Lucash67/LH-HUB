@@ -116,11 +116,11 @@ function WeekLane({
         isOver ? "border-brand-yellow/50 bg-[#202124]" : "border-[#5f6368]/30",
       )}
     >
-      <header className="border-b border-[#5f6368]/25 px-3 py-3">
-        <p className="text-[12px] font-bold capitalize leading-snug text-[#e8eaed]/90">
+      <header className="border-b border-[#5f6368]/25 px-3 py-3.5">
+        <p className="text-[16px] font-semibold capitalize leading-tight tracking-tight text-white sm:text-[17px]">
           {column.label}
         </p>
-        <p className="mt-0.5 text-[11px] text-[#e8eaed]/40">
+        <p className="mt-1 text-[11px] text-[#e8eaed]/45">
           {column.notes.length} {column.notes.length === 1 ? "nota" : "notas"}
         </p>
       </header>
