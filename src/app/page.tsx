@@ -55,7 +55,7 @@ export default function DashboardPage() {
       }
       return json;
     },
-    staleTime: 120_000,
+    staleTime: 30_000,
     // Sem placeholder: evita mostrar lucro/receita do dia/operação anterior.
     refetchInterval: shouldPoll ? 60_000 : false,
   });
