@@ -182,7 +182,10 @@ export default function DashboardPage() {
               profitMargin={profitMargin}
               bonusIncome={diaryEntry?.bonusIncome}
               operationResult={operationResult}
-              daySummary={daySummary}
+              daySummary={{
+                ...daySummary,
+                losses: Math.max(daySummary.losses, Number(diaryEntry?.quantityLost) || 0),
+              }}
               customerInsight={customerInsight}
               flavors={charts.flavors}
               timeline={timeline}

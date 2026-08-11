@@ -80,6 +80,13 @@ export async function GET(request: NextRequest) {
           businessId,
           dayMetrics,
         );
+        // Garante perdas do diário no card mesmo se o resumo vier desalinhado.
+        if (data.daySummary && entry) {
+          data.daySummary.losses = Math.max(
+            data.daySummary.losses,
+            Number(entry.quantityLost) || 0,
+          );
+        }
         return NextResponse.json({
           data,
           diaryEntry,

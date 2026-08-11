@@ -508,12 +508,13 @@ function buildDayExecutiveSummary(
         : metrics.profitToday,
     pendingCount: pendingSales.length || (diary?.revenue?.pending ? 1 : 0),
     pendingAmount: diary?.revenue?.pending ?? sumPendingRevenue(daySales),
-    // Diário é fonte oficial; se ausente, conta vendas marcadas como perda.
-    losses:
-      diary?.quantityLost ??
-      daySales.filter((s) => resolveSaleStatus(s).label === "Perda").reduce((n, s) => {
-        return n + s.items.reduce((q, it) => q + it.quantity, 0);
-      }, 0),
+    // Diário é fonte oficial; se 0/ausente, ainda conta vendas marcadas como perda.
+    losses: Math.max(
+      Number(diary?.quantityLost) || 0,
+      daySales
+        .filter((s) => resolveSaleStatus(s).label === "Perda")
+        .reduce((n, s) => n + s.items.reduce((q, it) => q + it.quantity, 0), 0),
+    ),
     lossReason: diary?.lossReason,
   };
 }

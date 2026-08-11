@@ -171,7 +171,10 @@ function assembleDiaryRecord(
     bonusIncome: narrative.bonusIncome,
     bonusIncomeDescription: narrative.bonusIncomeDescription,
     quantitySold: diary.quantitySold,
-    quantityLost: diary.quantityLost,
+    quantityLost: Math.max(
+      Number(diary.quantityLost) || 0,
+      related.losses.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0),
+    ),
     lossReason: narrative.lossReason ?? related.losses[0]?.reason ?? undefined,
     observations: diary.observations ?? undefined,
     manualInsights: diary.manualInsights ?? undefined,
