@@ -256,7 +256,7 @@ async function main() {
       clientName: "Ana Laura",
       productName: P.unknown,
       quantity: 1,
-      notes: "Sabor não anotado. (Quitação do fiado 10/08 é à parte.)",
+      notes: "Sabor não anotado. (Quitação do 10/08 registrada à parte no dia anterior.)",
     }),
     sale({
       time: "09:35",

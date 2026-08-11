@@ -326,11 +326,20 @@ function resolveSaleStatus(sale: DashboardSale): { label: string; tone: DayTimel
   if (isSaleExcludedFromMix(sale)) {
     return { label: "Perda", tone: "warning" };
   }
+  // Status de pagamento manda — notas com a palavra "fiado" (ex.: "quitação do fiado")
+  // não podem marcar venda já paga como pendente.
   if (sale.paymentStatus === "pending") {
     return { label: "Pendente", tone: "warning" };
   }
   if (sale.paymentStatus === "partial") {
     return { label: "Parcial", tone: "warning" };
+  }
+  if (sale.paymentStatus === "paid") {
+    const notes = (sale.notes ?? "").toLowerCase();
+    if (notes.includes("henrique") || notes.includes("pai")) {
+      return { label: "Recebido", tone: "success" };
+    }
+    return { label: "Pago", tone: "success" };
   }
   const notes = (sale.notes ?? "").toLowerCase();
   if (notes.includes("fiado") || notes.includes("devendo") || notes.includes("pendente")) {
@@ -481,7 +490,10 @@ function buildDayExecutiveSummary(
   metrics: DashboardViewMetrics,
   diary?: DiaryDayContext | null,
 ): DayExecutiveSummary {
-  const pendingSales = daySales.filter((s) => resolveSaleStatus(s).label === "Pendente");
+  const pendingSales = daySales.filter((s) => {
+    const label = resolveSaleStatus(s).label;
+    return label === "Pendente" || label === "Parcial";
+  });
 
   return {
     goalUnits: diary?.dailyGoalUnits ?? null,
@@ -496,7 +508,12 @@ function buildDayExecutiveSummary(
         : metrics.profitToday,
     pendingCount: pendingSales.length || (diary?.revenue?.pending ? 1 : 0),
     pendingAmount: diary?.revenue?.pending ?? sumPendingRevenue(daySales),
-    losses: diary?.quantityLost ?? 0,
+    // Diário é fonte oficial; se ausente, conta vendas marcadas como perda.
+    losses:
+      diary?.quantityLost ??
+      daySales.filter((s) => resolveSaleStatus(s).label === "Perda").reduce((n, s) => {
+        return n + s.items.reduce((q, it) => q + it.quantity, 0);
+      }, 0),
     lossReason: diary?.lossReason,
   };
 }
