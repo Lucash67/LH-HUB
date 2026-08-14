@@ -1,6 +1,7 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getPostgresDb } from "@/platform/db";
-import { fromDbBusinessId } from "@/platform/db/business-id";
+import { fromDbBusinessId, toDbBusinessId } from "@/platform/db/business-id";
+import { isAllBusinesses } from "@/lib/business-units";
 import {
   getOperationDayIdForDate,
   syncDiaryRelationalTables,
@@ -76,6 +77,57 @@ export async function getDailyPurchaseForDay(businessId: string, date: string) {
       unitCost: item.unitCost != null ? toNumber(item.unitCost) : null,
     })),
   };
+}
+
+/** Composição de compra por data — usada no mix semanal (rateio de sabores). */
+export async function listDailyPurchaseMixByDate(
+  businessId: string,
+): Promise<Record<string, Array<{ name: string; quantity: number }>>> {
+  if (isAllBusinesses(businessId)) {
+    // Visão consolidada: sem mix por sabor (negócios mistos).
+    return {};
+  }
+
+  const db = await getPostgresDb();
+  const bizId = toDbBusinessId(businessId);
+  const days = await queryAll(
+    db
+      .select({ id: operationDays.id, date: operationDays.operationDate })
+      .from(operationDays)
+      .where(eq(operationDays.businessId, bizId)),
+  );
+  if (days.length === 0) return {};
+
+  const dayIds = days.map((d) => d.id);
+  const purchases = await queryAll(
+    db.select().from(dailyPurchases).where(inArray(dailyPurchases.operationDayId, dayIds)),
+  );
+  if (purchases.length === 0) return {};
+
+  const purchaseIds = purchases.map((p) => p.id);
+  const items = await queryAll(
+    db
+      .select()
+      .from(dailyPurchaseItems)
+      .where(inArray(dailyPurchaseItems.dailyPurchaseId, purchaseIds)),
+  );
+
+  const dayByPurchase = new Map(
+    purchases.map((p) => {
+      const day = days.find((d) => d.id === p.operationDayId);
+      return [p.id, day?.date ?? ""] as const;
+    }),
+  );
+
+  const out: Record<string, Array<{ name: string; quantity: number }>> = {};
+  for (const item of items) {
+    const date = dayByPurchase.get(item.dailyPurchaseId);
+    if (!date) continue;
+    const list = out[date] ?? [];
+    list.push({ name: item.productName, quantity: item.quantity });
+    out[date] = list;
+  }
+  return out;
 }
 
 export async function getOperationalLossesForDay(businessId: string, date: string) {

@@ -144,8 +144,13 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
     operated.length > 1 ? [...operated].sort((a, b) => a.profit - b.profit)[0] ?? null : null;
   const missingToGoal = Math.max(pulse.goalRevenue - pulse.revenue, 0);
   const maxMix = Math.max(...pulse.products.map((product) => product.units), 1);
-  // O mix cobre só as vendas com sabor identificado, então não usa o total da semana.
   const mixUnits = pulse.products.reduce((total, product) => total + product.units, 0);
+  const mixIdentified = pulse.mixIdentifiedUnits ?? 0;
+  const mixAllocated = pulse.mixAllocatedUnits ?? 0;
+  const mixHint =
+    mixAllocated > 0
+      ? `${mixUnits} un · ${mixIdentified} anotadas + rateio da compra`
+      : `${mixUnits} un com sabor anotado`;
 
   return (
     <motion.section
@@ -239,18 +244,26 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
 
         <div className="space-y-3 lg:col-span-2">
           <div className="rounded-2xl border border-purple-500/20 bg-surface-card/80 p-4">
-            <div className="mb-2.5 flex items-center justify-between gap-2">
+            <div className="mb-2.5 flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-purple-400" />
-                <h3 className="text-sm font-bold text-text-primary">Mix da semana</h3>
+                <Package className="h-4 w-4 shrink-0 text-purple-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-text-primary">Mix da semana</h3>
+                  <p className="text-[10px] text-text-muted">{pulse.rangeLabel}</p>
+                </div>
               </div>
-              <span className="text-[11px] text-text-muted">{mixUnits} un identificadas</span>
+              <span className="max-w-[48%] text-right text-[10px] leading-snug text-text-muted">
+                {mixHint}
+              </span>
             </div>
             {pulse.products.length === 0 ? (
-              <p className="text-xs text-text-muted">Sem vendas com sabor identificado.</p>
+              <p className="text-xs text-text-muted">
+                Sem dados de sabor nesta semana (anote o produto na venda ou registre a compra do
+                dia).
+              </p>
             ) : (
               <div className="space-y-2">
-                {pulse.products.slice(0, 4).map((product, index) => (
+                {pulse.products.slice(0, 5).map((product, index) => (
                   <div key={product.label}>
                     <div className="mb-1 flex items-center justify-between gap-2 text-xs">
                       <span className="truncate font-medium text-text-primary">{product.label}</span>

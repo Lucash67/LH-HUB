@@ -8,6 +8,7 @@ import { buildOperationalDayMetrics, sortOperationalDays } from "@/lib/operation
 import { buildWeekPulse } from "@/lib/week-pulse";
 import { buildConservativeWeekForecast } from "@/lib/conservative-week-forecast";
 import { isAllBusinesses } from "@/lib/business-units";
+import { listDailyPurchaseMixByDate } from "@/lib/operational-data-service";
 import { fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import { listSalesEnriched } from "@/platform/db/repositories/sale-repository";
 import type { TemporalViewContext } from "@/stores/temporal-context-store";
@@ -40,9 +41,10 @@ export async function GET(request: NextRequest) {
 
       const context: TemporalViewContext = { mode: viewMode, viewDate };
 
-      const [sales, goals] = await Promise.all([
+      const [sales, goals, purchasesByDate] = await Promise.all([
         listSalesEnriched(businessId),
         fetchMetricGoals(businessId),
+        listDailyPurchaseMixByDate(businessId).catch(() => ({})),
       ]);
 
       let dailyGoal = goals.find((g) => g.type === "daily")?.targetAmount ?? 0;
@@ -51,6 +53,13 @@ export async function GET(request: NextRequest) {
       // Base diário-primeiro: alimenta o resumo da semana nas duas visões.
       const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
       const dayMetrics = metricsMap ? sortOperationalDays(metricsMap) : null;
+
+      const weekPulseOptions = {
+        goalRevenue: weeklyGoal,
+        allowFallback: true as const,
+        sales,
+        purchasesByDate,
+      };
 
       let diaryEntry = null;
       let autoInsights: Awaited<ReturnType<typeof generateDiaryAutoInsights>> = [];
@@ -93,9 +102,8 @@ export async function GET(request: NextRequest) {
           autoInsights,
           weekPulse: dayMetrics
             ? buildWeekPulse(dayMetrics, viewDate, {
+                ...weekPulseOptions,
                 goalRevenue: weeklyGoal,
-                allowFallback: true,
-                sales,
               })
             : null,
           conservativeWeek:
@@ -129,9 +137,8 @@ export async function GET(request: NextRequest) {
         autoInsights: [],
         weekPulse: dayMetrics
           ? buildWeekPulse(dayMetrics, pulseDate, {
+              ...weekPulseOptions,
               goalRevenue: weeklyGoal,
-              allowFallback: true,
-              sales,
             })
           : null,
         conservativeWeek:
