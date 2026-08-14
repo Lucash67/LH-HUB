@@ -56,15 +56,16 @@ function ToolbarButton({
     <button
       type="button"
       title={title}
+      aria-label={title}
       disabled={disabled}
       // Evita roubar o foco do input/textarea (Espaço/Enter ativariam o botão).
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-full text-[#e8eaed]/75 transition-colors",
+        "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#e8eaed]/75 transition-colors sm:h-9 sm:w-9",
         disabled
           ? "cursor-default opacity-30"
-          : "hover:bg-white/10 hover:text-[#e8eaed]",
+          : "hover:bg-white/10 hover:text-[#e8eaed] active:bg-white/15",
       )}
     >
       {children}
@@ -281,13 +282,12 @@ export function NoteEditor({
   }, [flushDraftToParent, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/70 sm:items-center sm:bg-black/55 sm:p-6 md:p-8">
       {/* div (não button): Espaço não “clica” no overlay e fecha o editor */}
       <div
         aria-hidden
-        className="absolute inset-0 cursor-default"
+        className="absolute inset-0 cursor-default max-sm:hidden"
         onMouseDown={(e) => {
-          // Só fecha no clique no backdrop; não rouba foco no mousedown do editor.
           if (e.target === e.currentTarget) handleClose();
         }}
       />
@@ -296,20 +296,23 @@ export function NoteEditor({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative z-10 flex h-[min(88vh,860px)] w-full max-w-[920px] flex-col overflow-hidden rounded-xl border shadow-[0_8px_28px_rgba(0,0,0,0.55)]",
+          "relative z-10 flex w-full flex-col overflow-hidden border shadow-[0_8px_28px_rgba(0,0,0,0.55)]",
+          // Mobile: tela cheia estilo app; desktop: card centralizado
+          "h-dvh max-h-dvh rounded-none border-transparent",
+          "sm:h-[min(88vh,860px)] sm:max-h-[860px] sm:max-w-[920px] sm:rounded-xl sm:border",
           colors.card,
           colors.border,
         )}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-2 px-4 pb-1 pt-4 sm:px-5 sm:pt-5">
+        <div className="flex items-start gap-2 px-3 pb-1 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pt-5">
           <input
             ref={titleRef}
             value={draftTitle}
             onChange={(e) => commitTitle(e.target.value)}
             onKeyDown={(e) => e.stopPropagation()}
             placeholder="Título"
-            className="min-w-0 flex-1 bg-transparent text-[22px] font-normal leading-tight tracking-tight text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-[20px] font-normal leading-tight tracking-tight text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:outline-none sm:text-[22px]"
           />
           <ToolbarButton
             title={note.pinned ? "Desafixar" : "Fixar"}
@@ -319,13 +322,12 @@ export function NoteEditor({
           </ToolbarButton>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden px-5 pb-3 pt-2 sm:px-7">
+        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-1 sm:px-7 sm:pb-3 sm:pt-2">
           <textarea
             ref={bodyRef}
             value={draftBody}
             onChange={(e) => commitBody(e.target.value)}
             onKeyDown={(e) => {
-              // Garante que Espaço/Enter nunca subam para botões do dialog.
               e.stopPropagation();
             }}
             placeholder="Anotar..."
@@ -333,9 +335,15 @@ export function NoteEditor({
           />
         </div>
 
-        <div className="relative flex items-center gap-0.5 px-2 pb-2 pt-1 sm:px-3">
+        {/* Barra inferior: ferramentas + undo/redo sempre visíveis no mobile */}
+        <div
+          className={cn(
+            "relative shrink-0 border-t border-white/5",
+            "pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 sm:pb-2 sm:pt-1",
+          )}
+        >
           {showPalette && (
-            <div className="absolute bottom-12 left-2 z-20 flex flex-wrap gap-2 rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-2.5 shadow-xl">
+            <div className="absolute bottom-[calc(100%+0.35rem)] left-2 right-2 z-20 flex flex-wrap gap-2 rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-2.5 shadow-xl sm:right-auto sm:max-w-[320px]">
               {STICKY_NOTE_COLORS.map((color) => {
                 const style = STICKY_NOTE_COLOR_STYLES[color];
                 return (
@@ -349,7 +357,7 @@ export function NoteEditor({
                       setShowPalette(false);
                     }}
                     className={cn(
-                      "relative h-7 w-7 rounded-full",
+                      "relative h-9 w-9 rounded-full sm:h-7 sm:w-7",
                       style.swatch,
                       note.color === color && "ring-2 ring-[#e8eaed] ring-offset-1 ring-offset-[#2d2e30]",
                     )}
@@ -364,7 +372,7 @@ export function NoteEditor({
           )}
 
           {showDate && (
-            <div className="absolute bottom-12 left-12 z-20 w-[240px] rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-3 shadow-xl">
+            <div className="absolute bottom-[calc(100%+0.35rem)] left-2 right-2 z-20 rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-3 shadow-xl sm:left-12 sm:right-auto sm:w-[260px]">
               <p className="mb-2 text-xs font-semibold text-[#e8eaed]/55">Data da nota</p>
               <input
                 ref={dateInputRef}
@@ -374,16 +382,16 @@ export function NoteEditor({
                   const value = e.target.value || null;
                   onChange(note.id, { noteDate: value });
                 }}
-                className="w-full rounded-lg border border-[#5f6368]/50 bg-[#202124] px-2 py-2 text-sm text-[#e8eaed] focus:outline-none"
+                className="w-full rounded-lg border border-[#5f6368]/50 bg-[#202124] px-2 py-2.5 text-sm text-[#e8eaed] focus:outline-none"
               />
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     onChange(note.id, { noteDate: format(new Date(), "yyyy-MM-dd") });
                   }}
-                  className="rounded-md px-2 py-1 text-xs text-[#e8eaed]/80 hover:bg-white/10"
+                  className="rounded-md px-2.5 py-1.5 text-xs text-[#e8eaed]/80 hover:bg-white/10"
                 >
                   Hoje
                 </button>
@@ -393,7 +401,7 @@ export function NoteEditor({
                   onClick={() => {
                     onChange(note.id, { noteDate: null });
                   }}
-                  className="rounded-md px-2 py-1 text-xs text-[#e8eaed]/80 hover:bg-white/10"
+                  className="rounded-md px-2.5 py-1.5 text-xs text-[#e8eaed]/80 hover:bg-white/10"
                 >
                   Sem data
                 </button>
@@ -401,7 +409,7 @@ export function NoteEditor({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setShowDate(false)}
-                  className="ml-auto rounded-md px-2 py-1 text-xs font-medium text-brand-yellow hover:bg-brand-yellow/10"
+                  className="ml-auto rounded-md px-2.5 py-1.5 text-xs font-medium text-brand-yellow hover:bg-brand-yellow/10"
                 >
                   Salvar
                 </button>
@@ -413,12 +421,31 @@ export function NoteEditor({
           )}
 
           {showMore && (
-            <div className="absolute bottom-12 left-36 z-20 min-w-[160px] overflow-hidden rounded-lg border border-[#5f6368]/50 bg-[#2d2e30] py-1 shadow-xl">
+            <div className="absolute bottom-[calc(100%+0.35rem)] left-2 z-20 min-w-[180px] overflow-hidden rounded-lg border border-[#5f6368]/50 bg-[#2d2e30] py-1 shadow-xl sm:left-auto">
+              <button
+                type="button"
+                disabled
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[#e8eaed]/40 sm:hidden"
+              >
+                <UserPlus className="h-4 w-4" />
+                Colaboradores
+                <span className="ml-auto text-[10px]">em breve</span>
+              </button>
+              <button
+                type="button"
+                disabled
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[#e8eaed]/40 sm:hidden"
+              >
+                <ImagePlus className="h-4 w-4" />
+                Imagem
+                <span className="ml-auto text-[10px]">em breve</span>
+              </button>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#e8eaed]/90 hover:bg-white/10"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[#e8eaed]/90 hover:bg-white/10"
                 onClick={() => {
+                  flushDraftToParent();
                   onDelete(note.id);
                   onClose();
                 }}
@@ -429,71 +456,78 @@ export function NoteEditor({
             </div>
           )}
 
-          <ToolbarButton
-            title="Cor de fundo"
-            onClick={() => {
-              setShowMore(false);
-              setShowDate(false);
-              setShowPalette((v) => !v);
-            }}
-          >
-            <Palette className="h-[18px] w-[18px]" />
-          </ToolbarButton>
-          <ToolbarButton
-            title="Data da nota"
-            onClick={() => {
-              setShowMore(false);
-              setShowPalette(false);
-              setShowDate((v) => !v);
-            }}
-          >
-            <CalendarDays className="h-[18px] w-[18px]" />
-          </ToolbarButton>
-          <ToolbarButton title="Colaboradores (em breve)" disabled>
-            <UserPlus className="h-[18px] w-[18px]" />
-          </ToolbarButton>
-          <ToolbarButton title="Imagem (em breve)" disabled>
-            <ImagePlus className="h-[18px] w-[18px]" />
-          </ToolbarButton>
-          <ToolbarButton
-            title="Arquivar"
-            onClick={() => {
-              onArchive(note.id);
-              onClose();
-            }}
-          >
-            <Archive className="h-[18px] w-[18px]" />
-          </ToolbarButton>
-          <ToolbarButton
-            title="Mais"
-            onClick={() => {
-              setShowPalette(false);
-              setShowDate(false);
-              setShowMore((v) => !v);
-            }}
-          >
-            <MoreVertical className="h-[18px] w-[18px]" />
-          </ToolbarButton>
+          <div className="flex items-center gap-0.5 px-1.5 sm:px-3">
+            {/* Ferramentas: scroll horizontal no mobile se precisar */}
+            <div className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <ToolbarButton
+                title="Cor de fundo"
+                onClick={() => {
+                  setShowMore(false);
+                  setShowDate(false);
+                  setShowPalette((v) => !v);
+                }}
+              >
+                <Palette className="h-[18px] w-[18px]" />
+              </ToolbarButton>
+              <ToolbarButton
+                title="Data da nota"
+                onClick={() => {
+                  setShowMore(false);
+                  setShowPalette(false);
+                  setShowDate((v) => !v);
+                }}
+              >
+                <CalendarDays className="h-[18px] w-[18px]" />
+              </ToolbarButton>
+              <span className="hidden sm:inline-flex">
+                <ToolbarButton title="Colaboradores (em breve)" disabled>
+                  <UserPlus className="h-[18px] w-[18px]" />
+                </ToolbarButton>
+                <ToolbarButton title="Imagem (em breve)" disabled>
+                  <ImagePlus className="h-[18px] w-[18px]" />
+                </ToolbarButton>
+              </span>
+              <ToolbarButton
+                title="Arquivar"
+                onClick={() => {
+                  flushDraftToParent();
+                  onArchive(note.id);
+                  onClose();
+                }}
+              >
+                <Archive className="h-[18px] w-[18px]" />
+              </ToolbarButton>
+              <ToolbarButton
+                title="Mais"
+                onClick={() => {
+                  setShowPalette(false);
+                  setShowDate(false);
+                  setShowMore((v) => !v);
+                }}
+              >
+                <MoreVertical className="h-[18px] w-[18px]" />
+              </ToolbarButton>
+            </div>
 
-          <div className="mx-1 hidden h-5 w-px bg-white/10 sm:block" />
+            <div className="mx-0.5 h-5 w-px shrink-0 bg-white/10 sm:mx-1" />
 
-          <ToolbarButton title="Desfazer" disabled={past.length === 0} onClick={undo}>
-            <Undo2 className="h-[18px] w-[18px]" />
-          </ToolbarButton>
-          <ToolbarButton title="Refazer" disabled={future.length === 0} onClick={redo}>
-            <Redo2 className="h-[18px] w-[18px]" />
-          </ToolbarButton>
+            {/* Undo / Redo — sempre fixos e tocáveis */}
+            <ToolbarButton title="Desfazer" disabled={past.length === 0} onClick={undo}>
+              <Undo2 className="h-[18px] w-[18px]" />
+            </ToolbarButton>
+            <ToolbarButton title="Refazer" disabled={future.length === 0} onClick={redo}>
+              <Redo2 className="h-[18px] w-[18px]" />
+            </ToolbarButton>
 
-          <div className="flex-1" />
-
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleClose}
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-[#e8eaed]/85 hover:bg-white/10"
-          >
-            Fechar
-          </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleClose}
+              className="ml-0.5 shrink-0 rounded-md px-3 py-2.5 text-sm font-medium text-[#e8eaed]/90 hover:bg-white/10 active:bg-white/15 sm:ml-1 sm:py-1.5"
+            >
+              Fechar
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -83,7 +83,11 @@ export default function NotasPage() {
   return (
     <ModuleShell
       title="Notas"
-      subtitle="Colunas por dia · arraste entre dias ou semanas · autosave"
+      subtitle={
+        <span className="hidden sm:inline">
+          Colunas por dia · arraste entre dias ou semanas · autosave
+        </span>
+      }
       temporalFilter={false}
       actions={<StickySaveStatus status={status} />}
     >

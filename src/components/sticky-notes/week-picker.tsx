@@ -94,7 +94,7 @@ export function WeekPicker({
         <button
           type="button"
           onClick={() => setPickerOpen((v) => !v)}
-          className="flex min-w-0 items-center gap-2 px-2 text-sm font-medium text-[#e8eaed]"
+          className="flex min-w-0 max-w-[min(52vw,220px)] items-center gap-1.5 px-2 text-sm font-medium text-[#e8eaed] sm:max-w-none sm:gap-2"
           title="Escolher semana"
         >
           <CalendarDays className="h-4 w-4 shrink-0 text-brand-yellow" />

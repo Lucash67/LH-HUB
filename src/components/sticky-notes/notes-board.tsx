@@ -82,11 +82,11 @@ function SortableNoteCard({
         isDragging && "opacity-40",
       )}
     >
-      <div className="flex items-start gap-1 p-2.5">
+      <div className="flex items-start gap-1 p-3 sm:p-2.5">
         <button
           type="button"
           aria-label="Arrastar nota"
-          className="mt-0.5 cursor-grab touch-none rounded p-0.5 text-[#e8eaed]/35 hover:bg-white/10 hover:text-[#e8eaed]/70 active:cursor-grabbing"
+          className="mt-0.5 flex h-9 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-[#e8eaed]/35 hover:bg-white/10 hover:text-[#e8eaed]/70 active:cursor-grabbing sm:h-auto sm:w-auto sm:p-0.5"
           {...attributes}
           {...listeners}
           onKeyDown={(e) => {
@@ -98,11 +98,11 @@ function SortableNoteCard({
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <button type="button" onClick={() => onOpen(note)} className="min-w-0 flex-1 text-left">
+        <button type="button" onClick={() => onOpen(note)} className="min-w-0 flex-1 py-0.5 text-left">
           {note.title.trim() ? (
-            <p className="truncate text-sm font-medium text-[#e8eaed]">{note.title}</p>
+            <p className="truncate text-[15px] font-medium text-[#e8eaed] sm:text-sm">{note.title}</p>
           ) : null}
-          <p className="mt-0.5 line-clamp-4 whitespace-pre-wrap text-[13px] leading-snug text-[#e8eaed]/75">
+          <p className="mt-0.5 line-clamp-4 whitespace-pre-wrap text-[14px] leading-snug text-[#e8eaed]/75 sm:text-[13px]">
             {note.body.trim() || "Nota vazia"}
           </p>
           <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-[#e8eaed]/40">
@@ -136,12 +136,12 @@ function WeekLane({
     <section
       ref={setNodeRef}
       className={cn(
-        "flex h-full w-[200px] shrink-0 flex-col rounded-xl border bg-[#18191b]/90 sm:w-[220px]",
+        "flex h-full w-[min(78vw,240px)] shrink-0 snap-start flex-col rounded-xl border bg-[#18191b]/90 sm:w-[220px]",
         isOver ? "border-brand-yellow/50 bg-[#202124]" : "border-[#5f6368]/30",
       )}
     >
       <header className="border-b border-[#5f6368]/25 px-3 py-3">
-        <p className="text-[16px] font-semibold capitalize leading-tight tracking-tight text-white sm:text-[17px]">
+        <p className="text-[15px] font-semibold capitalize leading-tight tracking-tight text-white sm:text-[17px]">
           {column.label}
         </p>
         <p className="mt-1 text-[11px] text-[#e8eaed]/45">
@@ -151,15 +151,15 @@ function WeekLane({
           <button
             type="button"
             onClick={() => onCreateForDay?.(column.id)}
-            className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[#5f6368]/40 bg-[#202124]/80 px-2 py-1.5 text-[11px] font-medium text-[#e8eaed]/75 transition hover:border-brand-yellow/40 hover:bg-[#28292c] hover:text-[#e8eaed]"
+            className="mt-2.5 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-lg border border-[#5f6368]/40 bg-[#202124]/80 px-2 py-2 text-[12px] font-medium text-[#e8eaed]/80 transition hover:border-brand-yellow/40 hover:bg-[#28292c] hover:text-[#e8eaed] active:bg-[#303134]"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
             Criar nota
           </button>
         ) : null}
       </header>
       <SortableContext items={column.notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:thin]">
+        <div className="flex min-h-[200px] flex-1 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:thin] sm:min-h-[160px]">
           {column.notes.map((note) => (
             <SortableNoteCard key={note.id} note={note} onOpen={onOpen} />
           ))}
@@ -297,17 +297,20 @@ export function NotesBoard({
       onDragEnd={onDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="mb-4 flex flex-col gap-2.5 sm:mb-5 sm:gap-3 lg:flex-row lg:items-center">
         {toolbarStart}
-        <WeekPicker
-          weekStart={focusWeekStart}
-          onChange={onFocusWeekChange}
-          weekDropActive={weekDropActive}
-        />
-        {toolbarEnd}
+        <div className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <WeekPicker
+            weekStart={focusWeekStart}
+            onChange={onFocusWeekChange}
+            weekDropActive={weekDropActive}
+            className="min-w-0 flex-1 sm:flex-none"
+          />
+          {toolbarEnd}
+        </div>
       </div>
 
-      {belowToolbar ? <div className="mb-5">{belowToolbar}</div> : null}
+      {belowToolbar ? <div className="mb-4 sm:mb-5">{belowToolbar}</div> : null}
 
       {weekDropActive ? (
         <p className="mb-3 text-xs text-brand-yellow/80">
@@ -315,7 +318,7 @@ export function NotesBoard({
         </p>
       ) : null}
 
-      <div className="flex min-h-[420px] gap-3 overflow-x-auto pb-3 [scrollbar-width:thin]">
+      <div className="-mx-1 flex min-h-[min(60vh,480px)] snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-4 [scrollbar-width:thin] sm:mx-0 sm:min-h-[420px] sm:gap-3 sm:px-0 sm:pb-3">
         {columns.map((column) => (
           <WeekLane
             key={column.id}
