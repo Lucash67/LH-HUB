@@ -162,7 +162,7 @@ export function DashboardDayView({
             ? "border-surface-border bg-gradient-to-br from-surface-elevated/60 via-surface-card to-surface-card"
             : profitPositive
               ? "border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-surface-card to-blue-500/10"
-              : "border-red-500/30 bg-gradient-to-br from-red-500/15 via-surface-card to-[#FFD400]/10",
+              : "border-red-500/30 bg-gradient-to-br from-red-500/15 via-surface-card to-[#00D4A8]/10",
         )}
       >
         <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl" />
@@ -184,7 +184,7 @@ export function DashboardDayView({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="info" className="capitalize">{dateLabel}</Badge>
               {idleDay ? (
-                <span className="inline-flex items-center rounded-full border border-[#FFD400]/30 bg-[#FFD400]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#FFD400]">
+                <span className="inline-flex items-center rounded-full border border-[#00D4A8]/30 bg-[#00D4A8]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#00D4A8]">
                   Sem operação — Salgados não opera no fim de semana
                 </span>
               ) : (
@@ -395,10 +395,10 @@ export function DashboardDayView({
           )}
 
           {alerts.length > 0 && (
-            <div className="rounded-2xl border border-[#FFD400]/25 bg-[#FFD400]/5 p-4 space-y-2">
+            <div className="rounded-2xl border border-[#00D4A8]/25 bg-[#00D4A8]/5 p-4 space-y-2">
               {alerts.slice(0, 2).map((a) => (
                 <p key={a.id} className="text-xs text-text-secondary leading-relaxed flex gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#FFD400] mt-0.5" />
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#00D4A8] mt-0.5" />
                   {a.message}
                 </p>
               ))}

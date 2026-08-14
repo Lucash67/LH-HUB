@@ -137,7 +137,7 @@ export function DashboardWelcomeBanner({
       className={cn(
         "relative mb-4 overflow-hidden rounded-3xl border border-brand-yellow/20",
         "bg-gradient-to-br from-brand-yellow/[0.09] via-surface-card to-surface-card",
-        "p-4 shadow-[0_0_40px_rgba(255,212,0,0.06)] sm:p-5",
+        "p-4 shadow-[0_0_40px_rgba(0, 212, 168,0.06)] sm:p-5",
         className,
       )}
     >
@@ -145,7 +145,7 @@ export function DashboardWelcomeBanner({
         className="pointer-events-none absolute inset-0 opacity-[0.35]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(255,212,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,212,0,0.04) 1px, transparent 1px)",
+            "linear-gradient(rgba(0, 212, 168,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 168,0.04) 1px, transparent 1px)",
           backgroundSize: "32px 32px",
         }}
       />
@@ -176,7 +176,7 @@ export function DashboardWelcomeBanner({
           <div className="space-y-1.5 sm:space-y-2">
             <h2 className="text-[1.65rem] font-black leading-[1.12] tracking-tight text-text-primary sm:text-3xl sm:leading-[1.1] lg:text-4xl">
               {copy.greeting},{" "}
-              <span className="bg-gradient-to-r from-brand-yellow via-[#FFEA70] to-brand-secondary bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-brand-yellow via-[#5EEAD4] to-brand-secondary bg-clip-text text-transparent">
                 {firstName}
               </span>
               .

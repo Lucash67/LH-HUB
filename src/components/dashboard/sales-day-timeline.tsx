@@ -20,10 +20,10 @@ const PERIOD_META = {
   morning: {
     label: "Manhã",
     icon: Sun,
-    gradient: "from-[#FFD400]/20 via-[#FF9500]/10 to-transparent",
-    border: "border-[#FFD400]/25",
-    accent: "text-[#FFD400]",
-    dot: "bg-[#FFD400]",
+    gradient: "from-[#00D4A8]/20 via-[#14B8A6]/10 to-transparent",
+    border: "border-[#00D4A8]/25",
+    accent: "text-[#00D4A8]",
+    dot: "bg-[#00D4A8]",
   },
   afternoon: {
     label: "Tarde",
@@ -41,8 +41,8 @@ const STATUS_STYLES = {
     amount: "text-emerald-300",
   },
   warning: {
-    badge: "bg-[#FFD400]/15 text-[#FFEA70] ring-[#FFD400]/30",
-    amount: "text-[#FFEA70]",
+    badge: "bg-[#00D4A8]/15 text-[#5EEAD4] ring-[#00D4A8]/30",
+    amount: "text-[#5EEAD4]",
   },
   neutral: {
     badge: "bg-surface-elevated text-text-muted ring-surface-border",
@@ -71,7 +71,7 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
             <span className="h-2 w-2 rounded-full bg-emerald-400" /> Pago
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-[#FFD400]" /> Pendente / Perda
+            <span className="h-2 w-2 rounded-full bg-[#00D4A8]" /> Pendente / Perda
           </span>
         </span>
       </div>

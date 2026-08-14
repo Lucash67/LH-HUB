@@ -5,12 +5,12 @@ import { HubAuthForm } from "@/components/hub/hub-auth-form";
 
 function AuthFormSkeleton() {
   return (
-    <div className="w-full max-w-[400px] animate-pulse space-y-4 rounded-3xl border border-[#FFD400]/10 bg-[#0a0a0a]/80 p-6">
-      <div className="h-7 w-28 rounded-lg bg-[#FFD400]/10" />
+    <div className="w-full max-w-[400px] animate-pulse space-y-4 rounded-3xl border border-[#00D4A8]/10 bg-[#0a0a0a]/80 p-6">
+      <div className="h-7 w-28 rounded-lg bg-[#00D4A8]/10" />
       <div className="h-4 w-40 rounded bg-white/5" />
       <div className="h-10 rounded-xl bg-white/5" />
       <div className="h-10 rounded-xl bg-white/5" />
-      <div className="h-11 rounded-xl bg-[#FFD400]/15" />
+      <div className="h-11 rounded-xl bg-[#00D4A8]/15" />
     </div>
   );
 }

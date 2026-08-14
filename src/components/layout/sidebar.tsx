@@ -72,14 +72,14 @@ function NavLink({
         "group flex min-h-[44px] items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-all duration-150 lg:min-h-0 lg:text-[13px]",
         nested ? "px-2.5 pl-3" : "px-3",
         active &&
-          "bg-brand-yellow/10 text-brand-yellow shadow-[inset_0_0_0_1px_rgba(255,212,0,0.18),0_0_20px_rgba(255,212,0,0.06)]",
+          "bg-brand-yellow/10 text-brand-yellow shadow-[inset_0_0_0_1px_rgba(0, 212, 168,0.18),0_0_20px_rgba(0, 212, 168,0.06)]",
         !active && "text-text-secondary hover:bg-surface-hover hover:text-text-primary",
       )}
     >
       <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
       <span className="flex-1 truncate">{item.label}</span>
       {active && (
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-yellow shadow-[0_0_8px_rgba(255,212,0,0.7)]" />
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-yellow shadow-[0_0_8px_rgba(0, 212, 168,0.7)]" />
       )}
     </Link>
   );

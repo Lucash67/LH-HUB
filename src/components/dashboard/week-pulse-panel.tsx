@@ -92,7 +92,7 @@ export function WeekPulsePanel({
                 className={cn(
                   "w-full rounded-[4px]",
                   day.isFocus
-                    ? "bg-gradient-to-t from-brand-yellow to-[#FFEA70]"
+                    ? "bg-gradient-to-t from-brand-yellow to-[#5EEAD4]"
                     : "bg-brand-yellow/35",
                 )}
               />

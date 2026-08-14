@@ -40,11 +40,11 @@ const VARIANT_STYLES: Record<
     blob: "bg-purple-500/15",
   },
   info: {
-    ring: "border-[#FFD400]/40",
-    glow: "shadow-[0_0_24px_rgba(255,212,0,0.18)]",
-    icon: "bg-[#FFD400]/20 text-[#FFD400]",
-    value: "text-[#FFD400]",
-    blob: "bg-[#FFD400]/15",
+    ring: "border-[#00D4A8]/40",
+    glow: "shadow-[0_0_24px_rgba(0, 212, 168,0.18)]",
+    icon: "bg-[#00D4A8]/20 text-[#00D4A8]",
+    value: "text-[#00D4A8]",
+    blob: "bg-[#00D4A8]/15",
   },
   neutral: {
     ring: "border-surface-border",

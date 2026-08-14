@@ -18,18 +18,18 @@ export function LhMonogram({ className, size = 48 }: LhMonogramProps) {
       aria-hidden
     >
       <defs>
-        <linearGradient id="lh-gold" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFE066" />
-          <stop offset="100%" stopColor="#FFD400" />
+        <linearGradient id="lh-mint" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#5EEAD4" />
+          <stop offset="100%" stopColor="#00D4A8" />
         </linearGradient>
       </defs>
       {/* L — barra esquerda + base */}
-      <rect x="4" y="8" width="10" height="32" rx="1" fill="url(#lh-gold)" />
-      <rect x="4" y="34" width="22" height="6" rx="1" fill="url(#lh-gold)" />
+      <rect x="4" y="8" width="10" height="32" rx="1" fill="url(#lh-mint)" />
+      <rect x="4" y="34" width="22" height="6" rx="1" fill="url(#lh-mint)" />
       {/* H — duas colunas + travessa */}
-      <rect x="22" y="8" width="8" height="32" rx="1" fill="url(#lh-gold)" />
-      <rect x="36" y="8" width="8" height="32" rx="1" fill="url(#lh-gold)" />
-      <rect x="22" y="20" width="22" height="6" rx="1" fill="url(#lh-gold)" />
+      <rect x="22" y="8" width="8" height="32" rx="1" fill="url(#lh-mint)" />
+      <rect x="36" y="8" width="8" height="32" rx="1" fill="url(#lh-mint)" />
+      <rect x="22" y="20" width="22" height="6" rx="1" fill="url(#lh-mint)" />
     </svg>
   );
 }
@@ -51,7 +51,7 @@ export function LhMonogramOutline({ className }: LhMonogramOutlineProps) {
       className={cn(className)}
       aria-hidden
     >
-      <g stroke="#FFD400" strokeLinejoin="miter" vectorEffect="non-scaling-stroke">
+      <g stroke="#00D4A8" strokeLinejoin="miter" vectorEffect="non-scaling-stroke">
         {/* Contornos principais */}
         <path d="M18 122V68L62 46V122H18Z" strokeWidth="1.25" />
         <path d="M74 122V32H80V122H74Z" strokeWidth="1.25" />

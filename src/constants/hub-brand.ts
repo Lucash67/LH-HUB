@@ -10,19 +10,20 @@ export const HUB_BRAND_ASSETS = {
   favicon: "/brand/lh-empreendimentos-favicon.png?v=3",
 } as const;
 
-/** Tokens visuais LH Empreendimentos / LH Hub */
+/** Tokens visuais LH Empreendimentos / LH Hub — paleta mint/teal (refs dash). */
 export const HUB_COLORS = {
-  black: "#0B0B0B",
-  yellow: "#FFD400",
-  secondary: "#FF9500",
+  black: "#121212",
+  yellow: "#00D4A8",
+  secondary: "#14B8A6",
+  mintLight: "#5EEAD4",
   white: "#FFFFFF",
   gray: {
-    400: "#A3A3A3",
-    500: "#737373",
+    400: "#A0A0A0",
+    500: "#8E8E93",
     600: "#525252",
-    700: "#262626",
-    800: "#161616",
-    900: "#111111",
+    700: "#2A2A2A",
+    800: "#1C1C1C",
+    900: "#121212",
   },
 } as const;
 

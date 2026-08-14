@@ -57,7 +57,7 @@ export function VisaoGeralHero({ operationCount, className }: VisaoGeralHeroProp
 
       <h1 className="relative mt-4 max-w-3xl text-2xl font-black leading-[1.15] tracking-tight text-text-primary sm:text-3xl lg:text-[2.15rem]">
         {copy.greeting},{" "}
-        <span className="bg-gradient-to-r from-brand-yellow via-[#FFEA70] to-brand-orange bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-brand-yellow via-[#5EEAD4] to-brand-orange bg-clip-text text-transparent">
           {firstName}
         </span>
         , deseja consultar qual de suas operações hoje?

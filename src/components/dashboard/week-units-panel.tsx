@@ -76,7 +76,7 @@ export function WeekUnitsPanel({
                 <div
                   className={cn(
                     "w-full rounded-[4px]",
-                    day.isFocus ? "bg-[#FFD400]" : "bg-[#C9A800]",
+                    day.isFocus ? "bg-[#00D4A8]" : "bg-[#0D9488]",
                   )}
                   style={{ height: barPx, minHeight: barPx > 0 ? 10 : 0 }}
                 />
