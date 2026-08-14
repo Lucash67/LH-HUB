@@ -176,17 +176,8 @@ async function main() {
     sale({ time: "14:00", clientName: "Ana Angélica", productName: P.unknown, quantity: 1, notes: "Sabor não visto." }),
     sale({ time: "14:20", clientName: "Francisco Bruno", productName: P.unknown, quantity: 2, notes: "Sabor não visto." }),
     sale({ time: "15:00", clientName: "Ana Laura", productName: P.unknown, quantity: 1, notes: "Sabor não visto." }),
-    // 1 dos 2 roubos foi quitado → entra como venda recuperada
-    sale({
-      time: "16:00",
-      clientName: "Recuperação roubo",
-      productName: P.unknown,
-      quantity: 1,
-      notes:
-        "Quitação de 1 dos 2 roubos do dia — rascunho: 'Recebi 1 quitação, a outra como perdida'.",
-    }),
   ];
-  assertUnits(sales12, 29, "12/08");
+  assertUnits(sales12, 28, "12/08");
 
   const plan12: DayRegistrationPlan = {
     businessId: BUSINESS,
@@ -215,12 +206,12 @@ async function main() {
       ],
     },
     summary: {
-      revenue: 145,
-      profit: 58,
-      quantitySold: 29,
-      quantityLost: 1,
+      revenue: 140,
+      profit: 53,
+      quantitySold: 28,
+      quantityLost: 2,
       lossReason:
-        "2 roubos no dia; 1 quitado depois. Fica 1 perda líquida (rascunho).",
+        "2 roubos no dia (sem quitação neste dia). Anderson quitou fiado do 11, não destes.",
       forecastProfit: 63,
     },
     sales: sales12,
@@ -228,29 +219,28 @@ async function main() {
     observations: [
       "Encomenda 30 un = R$87 (100% próprio).",
       "Henrique 12 un · 100% vendidos R$60.",
-      "Unifor/Acal 18 un: lista 16 vendidas + 1 quitação de roubo + 1 perda = 18.",
-      "Fat. R$145 (29×5) · lucro R$58 · esperado R$150 / R$63.",
-      "Ao chegar: teoria 9 sobras, havia 8 → 1º roubo; à tarde +1 roubo; 1 quitação recuperada.",
-      "Cofrinho teórico: R$1.208,50.",
+      "Unifor/Acal: 16 un na lista + 2 perdas = 18.",
+      "Fat. R$140 (28×5) · lucro R$53. Quitação Anderson é do 11/08 (não entra no fat. do 12).",
+      "Rascunho citava fat R$145 / lucro R$58 contando a quitação no caixa do 12 — no sistema a quitação fica no 11.",
+      "Cofrinho teórico pós-12: R$1.208,50.",
     ].join("\n"),
     manualInsights:
-      "Quitação de roubo registrada como venda 'Recuperação roubo'. A outra unidade permanece como perda.",
+      "Quitação Anderson atualiza o 11/08. Claudia no 13 = 1 un. Estagiário loiro: perda até avisar.",
     lessonsLearned:
       "Vigilância ainda frágil quando salgados ficam sozinhos — 2 tentativas de roubo no dia.",
   };
 
   await registerDay(plan12, {
-    profit: 58,
-    quantitySold: 29,
-    quantityLost: 1,
+    profit: 53,
+    quantitySold: 28,
+    quantityLost: 2,
     lossReason: plan12.summary.lossReason,
-    revenueReceived: 145,
+    revenueReceived: 140,
     fatherSale: { units: 12, amount: 60, buyerName: "Colegas do Henrique" },
   });
 
   // ——— 13/08 ———
-  // Lista Unifor/Acal soma 18 un pagas + Henrique 5 = 23, mas fat. real R$110 = 22×5.
-  // Ajuste: Claudia 2 → 1 (CONFERIR). Perda = estagiário loiro (1 un).
+  // Lista Unifor/Acal + Henrique. Claudia = 1 un (confirmado). Perda = estagiário loiro.
   const sales13: DraftSale[] = [
     sale({
       time: "11:00",
@@ -356,7 +346,7 @@ async function main() {
       "Cofrinho teórico: R$1.263,50 · prático R$1.268,03.",
     ].join("\n"),
     manualInsights:
-      "Pendente de verificação: quantidade da Claudia (1 vs 2). Perda do estagiário pode virar quitação neste mesmo dia.",
+      "Claudia = 1 un (confirmado). Estagiário loiro: perda até avisar pagamento.",
     lessonsLearned:
       "Identificar o estagiário loiro para cobrança. Novo sabor no pedido: Queijo Frito.",
   };
@@ -371,7 +361,7 @@ async function main() {
   });
 
   console.log("\n======== COFRINHO ========");
-  console.log("Esperado teórico fim 13/08: R$1.263,50 (= 1.150,50 + 58 + 55)");
+  console.log("Esperado teórico fim 13/08: R$1.263,50 (= 1.150,50 − 60 + 65 + 53 + 55)");
 }
 
 main().catch((e) => {

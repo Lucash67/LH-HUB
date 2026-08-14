@@ -4,9 +4,10 @@
  *
  * 11/08 (oficial):
  * - Compra 20 un · R$70 (próprio R$30 + Flaviana R$40)
- * - Vendidos 18 · perdidos 2 · fat. do dia R$90 · lucro R$60 (90 − 30)
- * - Quitações R$12,50 atualizam o 10/08 (não entram no lucro do 11)
- * - Cofrinho teórico: R$1.150,50 (= 1.078 + 12,50 no 10 + 60 no 11)
+ * - Vendidos 19 · perdidos 1 · fat R$95 · lucro R$65 (95 − 30)
+ * - Inclui quitação Anderson (R$5) paga em 12/08, fat. no 11
+ * - Quitações R$12,50 do 10 atualizam o 10/08 (não entram no lucro do 11)
+ * - Cofrinho teórico pós-11: R$1.155,50
  */
 import "./load-env";
 import { and, eq } from "drizzle-orm";
@@ -295,10 +296,19 @@ async function main() {
       department: "Colegas do Henrique",
       notes: "Henrique levou 4 un para vender no trabalho — 100% vendidos.",
     }),
+    // Quitação Anderson (fiado/roubo do 11) — paga no 12, fat. no 11
+    sale({
+      time: "17:00",
+      clientName: "Francisco Anderson das Chagas",
+      productName: P.unknown,
+      quantity: 1,
+      notes:
+        "Quitação Anderson — fiado/roubo do 11/08 pago em 12/08; fat. permanece no 11/08.",
+    }),
   ];
 
   const units = salesList.reduce((n, s) => n + s.quantity, 0);
-  if (units !== 18) throw new Error(`Units vendidas ${units} ≠ 18`);
+  if (units !== 19) throw new Error(`Units vendidas ${units} ≠ 19 (18 + quitação Anderson)`);
 
   const plan: DayRegistrationPlan = {
     businessId: BUSINESS,
@@ -322,12 +332,12 @@ async function main() {
       ],
     },
     summary: {
-      revenue: 90,
-      profit: 60,
-      quantitySold: 18,
-      quantityLost: 2,
+      revenue: 95,
+      profit: 65,
+      quantitySold: 19,
+      quantityLost: 1,
       lossReason:
-        "2 salgados perdidos (roubo ou fiado sem autorização) — deixados sozinhos ~8h30–9h.",
+        "1 salgado perdido (roubo/fiado sem autorização). O outro foi quitado por Anderson das Chagas em 12/08.",
       forecastProfit: 30,
     },
     sales: salesList,
@@ -335,22 +345,21 @@ async function main() {
     observations: [
       "Encomenda 20 un = R$70 (Mistão frito 10 · Croissant 4 · Carne forno 3 · Mistão forno 3).",
       "Custo próprio R$30 + Flaviana R$40 · bônus R$0.",
-      "Vendidos 18 · perdidos 2 · inventário 20/20.",
-      "Fat. do dia R$90 (sem quitação) · com quitação do 10 no caixa mental R$102,50 · esperado c/ 20 vendidos R$112,50.",
-      "Lucro R$60 (= 90 − 30). Quitação R$12,50 só no 10/08 (lucro 10 → R$63).",
-      "Lista escrita: 14 un Unifor/Acal + 4 Henrique (colegas) = 18.",
-      "Experimento: salgados sozinhos a partir ~8h30 (mãe vai cobrir) — hoje −2 un.",
-      "Decisão: parar de forçar anotação de horário/sabor para focar no trabalho Acal.",
-      "Cofrinho teórico: R$1.150,50 · prático: R$1.153,28.",
+      "Vendidos 19 (18 do dia + quitação Anderson) · perdidos 1 · inventário 20/20.",
+      "Fat. R$95 · lucro R$65 (= 95 − 30).",
+      "Quitações do 10/08 (R$12,50) no 10. Quitação Anderson (R$5) paga no 12 conta no 11.",
+      "Lista escrita: 14 un Unifor/Acal + 4 Henrique = 18; + Anderson quitação = 19.",
+      "Experimento: salgados sozinhos a partir ~8h30 (mãe vai cobrir).",
+      "Cofrinho teórico pós-11 ajustado: R$1.155,50.",
     ].join("\n"),
     manualInsights:
-      "Quitações Ana Laura / Israel / Adriana gravadas no 10/08. Perdas = roubo/fiado não autorizado, não fiado combinado.",
+      "Quitação Anderson atualiza o 11/08. Estagiário loiro do 13: perda até avisar pagamento.",
     lessonsLearned:
       "Deixar salgados sem vigilância custa unidades. Priorizar operação Acal vs. anotar sabor/hora de cada venda.",
   };
 
   console.log(`\n======== SALGADOS ${DATE} ========`);
-  console.log(`Preview: ${units} un · fat R$90 · lucro R$60 · perda 2 · custo próprio R$30`);
+  console.log(`Preview: ${units} un · fat R$95 · lucro R$65 · perda 1 · custo próprio R$30`);
 
   await cleanupOperationDay(BUSINESS, DATE);
   const existing = await countSalesForDate(BUSINESS, DATE);
@@ -366,21 +375,21 @@ async function main() {
 
   await upsertDiaryEntry({
     ...entry,
-    profit: 60,
+    profit: 65,
     bonusIncome: undefined,
-    quantitySold: 18,
-    quantityLost: 2,
+    quantitySold: 19,
+    quantityLost: 1,
     lossReason: plan.summary.lossReason,
     observations: plan.observations,
     manualInsights: plan.manualInsights,
     lessonsLearned: plan.lessonsLearned,
     revenue: {
-      received: 90,
+      received: 95,
       pending: 0,
-      total: 90,
+      total: 95,
     },
     sales: {
-      paidCount: 18,
+      paidCount: 19,
       creditCount: 0,
       fatherSale: { units: 4, amount: 20, buyerName: "Colegas do Henrique" },
     },
@@ -388,11 +397,11 @@ async function main() {
 
   const nSales = await countSalesForDate(BUSINESS, DATE);
   const d10 = await getDiaryEntry(BUSINESS, PREV);
-  console.log(`✅ ${DATE} OK — ${nSales} tickets · lucro R$60 · fat R$90 · perda 2`);
+  console.log(`✅ ${DATE} OK — ${nSales} tickets · lucro R$65 · fat R$95 · perda 1`);
   console.log(
     `✅ ${PREV} pós-quitação — fat R$${d10?.revenue?.received} · lucro R$${d10?.profit} · pend R$${d10?.revenue?.pending}`,
   );
-  console.log("Cofrinho teórico esperado: R$1.150,50");
+  console.log("Cofrinho teórico pós-11 (ajustado): R$1.155,50");
 }
 
 main().catch((e) => {
