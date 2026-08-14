@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description:
     "Administre todos os empreendimentos da LH Empreendimentos em um único lugar. Vendas, estoque, clientes, financeiro e indicadores.",
   icons: {
-    icon: "/brand/lh-empreendimentos-favicon.png?v=3",
+    icon: "/icons/hub-favicon.svg",
   },
 };
 

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { cn } from "@/components/ui/utils";
-import { HUB_BRAND_ASSETS } from "@/constants/hub-brand";
+import { LhMonogram } from "@/components/hub/lh-monogram";
+import { HUB_COPY } from "@/constants/hub-brand";
 
 type HubLogoVariant = "horizontal" | "horizontal-compact" | "stacked" | "icon";
 
@@ -16,6 +16,10 @@ function resolveHeight(height?: number, iconSize?: number, fallback = 40): numbe
   return height ?? iconSize ?? fallback;
 }
 
+/**
+ * Placeholders tipográficos + monograma SVG (mint).
+ * PNGs de marca foram removidos — aguardando assets novos na paleta teal.
+ */
 export function LhHubLogo({
   variant = "horizontal",
   className,
@@ -25,33 +29,16 @@ export function LhHubLogo({
   const h = resolveHeight(height, iconSize, variant === "icon" ? 28 : 40);
 
   if (variant === "icon") {
-    return (
-      <Image
-        src={HUB_BRAND_ASSETS.hubIcon}
-        alt="LH Hub"
-        width={120}
-        height={80}
-        className={cn("w-auto object-contain", className)}
-        style={{ height: h }}
-      />
-    );
+    return <LhMonogram size={h} className={className} />;
   }
 
-  const useCompact = variant === "horizontal-compact";
-  const src = useCompact ? HUB_BRAND_ASSETS.hubHorizontalCompact : HUB_BRAND_ASSETS.hubHorizontal;
-  const nativeW = useCompact ? 695 : 420;
-  const nativeH = useCompact ? 56 : 118;
-
   return (
-    <Image
-      src={src}
-      alt="LH Hub — Centro operacional"
-      width={nativeW}
-      height={nativeH}
-      className={cn("w-auto object-contain", className)}
-      style={{ height: h, width: "auto" }}
-      priority
-    />
+    <div className={cn("inline-flex items-center gap-2.5", className)} style={{ height: h }}>
+      <LhMonogram size={Math.round(h * 0.85)} />
+      <span className="text-[1.05em] font-bold tracking-tight text-white" style={{ fontSize: h * 0.42 }}>
+        LH <span className="text-brand-yellow">Hub</span>
+      </span>
+    </div>
   );
 }
 
@@ -59,30 +46,26 @@ export function LhHoldingLogo({ className, height, iconSize }: BrandLogoProps) {
   const h = resolveHeight(height, iconSize, 44);
 
   return (
-    <Image
-      src={HUB_BRAND_ASSETS.holding}
-      alt="LH Empreendimentos — Holding de negócios"
-      width={485}
-      height={433}
-      className={cn("w-auto object-contain", className)}
-      style={{ height: h, width: "auto" }}
-      priority
-    />
+    <div
+      className={cn("inline-flex flex-col items-start justify-center gap-1", className)}
+      style={{ minHeight: h }}
+    >
+      <div className="inline-flex items-center gap-3">
+        <LhMonogram size={Math.min(56, Math.round(h * 0.55))} />
+        <div className="leading-tight">
+          <p className="text-lg font-bold tracking-tight text-white sm:text-xl">
+            LH <span className="text-brand-yellow">Empreendimentos</span>
+          </p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">
+            {HUB_COPY.holdingTagline}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export function LhHoldingIcon({ className, height, iconSize }: BrandLogoProps) {
   const h = resolveHeight(height, iconSize, 36);
-
-  return (
-    <Image
-      src={HUB_BRAND_ASSETS.holdingIcon}
-      alt="LH Empreendimentos"
-      width={1024}
-      height={491}
-      className={cn("w-auto object-contain", className)}
-      style={{ height: h, width: "auto" }}
-      priority
-    />
-  );
+  return <LhMonogram size={h} className={className} />;
 }

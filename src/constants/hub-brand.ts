@@ -1,13 +1,19 @@
 import { BRIGADEIROS_BUSINESS_ID, SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 
-/** Assets oficiais de marca (PNG em /public/brand). */
+/** Assets de marca — PNGs amarelos removidos; aguardando pacote teal. */
 export const HUB_BRAND_ASSETS = {
-  holding: "/brand/lh-empreendimentos.png?v=5",
-  holdingIcon: "/brand/lh-empreendimentos-icon.png?v=3",
-  hubHorizontal: "/brand/lh-hub-horizontal.png",
-  hubHorizontalCompact: "/brand/lh-hub-horizontal-compact.png",
-  hubIcon: "/brand/lh-empreendimentos-icon.png?v=3",
-  favicon: "/brand/lh-empreendimentos-favicon.png?v=3",
+  /** Favicon temporário (SVG monograma mint). */
+  favicon: "/icons/hub-favicon.svg",
+  /**
+   * Slots para quando você enviar os novos arquivos (sugestão de nomes):
+   * - /brand/lh-empreendimentos.png
+   * - /brand/lh-empreendimentos-icon.png
+   * - /brand/lh-empreendimentos-favicon.png
+   * - /brand/lh-hub-horizontal.png
+   * - /brand/lh-hub-horizontal-compact.png
+   * - /brand/lh-hub-icon.png
+   * - /brand/lh-hub-favicon.png
+   */
 } as const;
 
 /** Tokens visuais LH Empreendimentos / LH Hub — paleta mint/teal (refs dash). */

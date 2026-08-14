@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "LH Hub — Centro Operacional | LH Empreendimentos",
   description: "Centro operacional de gestão — vendas, financeiro, metas e indicadores da LH Empreendimentos.",
   icons: {
-    icon: "/brand/lh-empreendimentos-favicon.png?v=3",
+    icon: "/icons/hub-favicon.svg",
   },
 };
 
