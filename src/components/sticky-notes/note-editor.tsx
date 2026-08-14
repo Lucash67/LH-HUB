@@ -100,6 +100,8 @@ export function NoteEditor({
   const [past, setPast] = useState<Snapshot[]>([]);
   const [future, setFuture] = useState<Snapshot[]>([]);
   const skipHistory = useRef(false);
+  /** Evita re-render do board a cada tecla (causa jump de scroll). */
+  const propagateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Rascunho local: evita que o autosave/re-render do board apague teclas (ex.: espaço).
   const [draftTitle, setDraftTitle] = useState(note.title);
@@ -109,22 +111,63 @@ export function NoteEditor({
 
   const colors = STICKY_NOTE_COLOR_STYLES[note.color] ?? STICKY_NOTE_COLOR_STYLES.default;
 
-  useEffect(() => {
-    if (noteIdRef.current !== note.id) {
-      noteIdRef.current = note.id;
-      setDraftTitle(note.title);
-      setDraftBody(note.body);
-      draftRef.current = { title: note.title, body: note.body };
-      setPast([]);
-      setFuture([]);
-      skipHistory.current = false;
-      // Foco inicial só ao abrir outra nota.
-      requestAnimationFrame(() => {
-        if (note.title.trim()) bodyRef.current?.focus();
-        else titleRef.current?.focus();
-      });
+  const flushDraftToParent = useCallback(() => {
+    if (propagateTimer.current) {
+      clearTimeout(propagateTimer.current);
+      propagateTimer.current = null;
     }
-  }, [note.id, note.title, note.body]);
+    const draft = draftRef.current;
+    onChange(noteIdRef.current, { title: draft.title, body: draft.body });
+  }, [onChange]);
+
+  const schedulePropagate = useCallback(() => {
+    if (propagateTimer.current) clearTimeout(propagateTimer.current);
+    propagateTimer.current = setTimeout(() => {
+      propagateTimer.current = null;
+      const draft = draftRef.current;
+      onChange(noteIdRef.current, { title: draft.title, body: draft.body });
+    }, 220);
+  }, [onChange]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (draftRef.current.title.trim()) {
+        bodyRef.current?.focus({ preventScroll: true });
+      } else {
+        titleRef.current?.focus({ preventScroll: true });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (noteIdRef.current === note.id) return;
+    flushDraftToParent();
+    noteIdRef.current = note.id;
+    setDraftTitle(note.title);
+    setDraftBody(note.body);
+    draftRef.current = { title: note.title, body: note.body };
+    setPast([]);
+    setFuture([]);
+    skipHistory.current = false;
+    requestAnimationFrame(() => {
+      if (note.title.trim()) bodyRef.current?.focus({ preventScroll: true });
+      else titleRef.current?.focus({ preventScroll: true });
+    });
+  }, [flushDraftToParent, note.id, note.title, note.body]);
+
+  useEffect(() => {
+    return () => {
+      if (propagateTimer.current) clearTimeout(propagateTimer.current);
+    };
+  }, []);
 
   const pushHistory = useCallback((next: Snapshot, prev: Snapshot) => {
     if (skipHistory.current) {
@@ -143,9 +186,9 @@ export function NoteEditor({
       pushHistory(next, prev);
       draftRef.current = next;
       setDraftTitle(title);
-      onChange(note.id, { title });
+      schedulePropagate();
     },
-    [note.id, onChange, pushHistory],
+    [pushHistory, schedulePropagate],
   );
 
   const commitBody = useCallback(
@@ -155,9 +198,9 @@ export function NoteEditor({
       pushHistory(next, prev);
       draftRef.current = next;
       setDraftBody(body);
-      onChange(note.id, { body });
+      schedulePropagate();
     },
-    [note.id, onChange, pushHistory],
+    [pushHistory, schedulePropagate],
   );
 
   const undo = useCallback(() => {
@@ -170,6 +213,10 @@ export function NoteEditor({
       draftRef.current = prev;
       setDraftTitle(prev.title);
       setDraftBody(prev.body);
+      if (propagateTimer.current) {
+        clearTimeout(propagateTimer.current);
+        propagateTimer.current = null;
+      }
       onChange(note.id, prev);
       return stack.slice(0, -1);
     });
@@ -185,6 +232,10 @@ export function NoteEditor({
       draftRef.current = next;
       setDraftTitle(next.title);
       setDraftBody(next.body);
+      if (propagateTimer.current) {
+        clearTimeout(propagateTimer.current);
+        propagateTimer.current = null;
+      }
       onChange(note.id, next);
       return stack.slice(1);
     });
@@ -199,6 +250,7 @@ export function NoteEditor({
           setShowDate(false);
           return;
         }
+        flushDraftToParent();
         onClose();
         return;
       }
@@ -221,27 +273,12 @@ export function NoteEditor({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, redo, showDate, showMore, showPalette, undo]);
+  }, [flushDraftToParent, onClose, redo, showDate, showMore, showPalette, undo]);
 
-  const autoResize = (el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    el.style.height = "0px";
-    el.style.height = `${Math.max(el.scrollHeight, 420)}px`;
-    // Restaura caret — alguns browsers perdem a posição no resize.
-    if (document.activeElement === el) {
-      try {
-        el.setSelectionRange(start, end);
-      } catch {
-        /* ignore */
-      }
-    }
-  };
-
-  useEffect(() => {
-    autoResize(bodyRef.current);
-  }, [draftBody, note.id]);
+  const handleClose = useCallback(() => {
+    flushDraftToParent();
+    onClose();
+  }, [flushDraftToParent, onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3 sm:p-8">
@@ -251,7 +288,7 @@ export function NoteEditor({
         className="absolute inset-0 cursor-default"
         onMouseDown={(e) => {
           // Só fecha no clique no backdrop; não rouba foco no mousedown do editor.
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) handleClose();
         }}
       />
 
@@ -282,21 +319,17 @@ export function NoteEditor({
           </ToolbarButton>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 pt-2 sm:px-7 [scrollbar-width:thin] [scrollbar-color:#5f6368_transparent]">
+        <div className="min-h-0 flex-1 overflow-hidden px-5 pb-3 pt-2 sm:px-7">
           <textarea
             ref={bodyRef}
             value={draftBody}
-            onChange={(e) => {
-              commitBody(e.target.value);
-              autoResize(e.target);
-            }}
+            onChange={(e) => commitBody(e.target.value)}
             onKeyDown={(e) => {
               // Garante que Espaço/Enter nunca subam para botões do dialog.
               e.stopPropagation();
             }}
             placeholder="Anotar..."
-            rows={16}
-            className="min-h-full w-full resize-none bg-transparent text-[16px] leading-[1.6] text-[#e8eaed]/92 placeholder:text-[#e8eaed]/35 focus:outline-none"
+            className="h-full w-full resize-none overflow-y-auto bg-transparent text-[16px] leading-[1.6] text-[#e8eaed]/92 placeholder:text-[#e8eaed]/35 focus:outline-none [scrollbar-width:thin] [scrollbar-color:#5f6368_transparent]"
           />
         </div>
 
@@ -456,7 +489,7 @@ export function NoteEditor({
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-md px-3 py-1.5 text-sm font-medium text-[#e8eaed]/85 hover:bg-white/10"
           >
             Fechar

@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StickyNote } from "@/lib/sticky-notes/types";
 import { STICKY_NOTE_COLOR_STYLES } from "@/lib/sticky-notes/types";
@@ -41,12 +41,21 @@ interface NotesBoardProps {
   onFocusWeekChange: (weekStart: string) => void;
   onOpen: (note: StickyNote) => void;
   onBoardChange: (notes: StickyNote[]) => void;
+  /** Cria nota já datada no dia da coluna (seg–sáb). */
+  onCreateForDay?: (date: string) => void;
   /** Itens à esquerda do seletor de semana (ex.: busca), dentro do DndContext. */
   toolbarStart?: ReactNode;
   /** Itens à direita do seletor de semana (ex.: filtros). */
   toolbarEnd?: ReactNode;
   /** Conteúdo entre a barra de semana e as colunas (ex.: compose). */
   belowToolbar?: ReactNode;
+}
+
+/** Seg–sáb (domingo = 0 fica de fora). Parse local evita shift UTC. */
+function isWeekdayColumn(dateKey: string): boolean {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  if (!y || !m || !d) return false;
+  return new Date(y, m - 1, d).getDay() !== 0;
 }
 
 function SortableNoteCard({
@@ -108,14 +117,20 @@ function SortableNoteCard({
 function WeekLane({
   column,
   onOpen,
+  onCreateForDay,
 }: {
   column: WeekColumn;
   onOpen: (note: StickyNote) => void;
+  onCreateForDay?: (date: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `col:${column.id}`,
     data: { type: "column", columnId: column.id },
   });
+  const canCreate =
+    Boolean(onCreateForDay) &&
+    column.id !== UNDATED_COLUMN_ID &&
+    isWeekdayColumn(column.id);
 
   return (
     <section
@@ -125,13 +140,23 @@ function WeekLane({
         isOver ? "border-brand-yellow/50 bg-[#202124]" : "border-[#5f6368]/30",
       )}
     >
-      <header className="border-b border-[#5f6368]/25 px-3 py-3.5">
+      <header className="border-b border-[#5f6368]/25 px-3 py-3">
         <p className="text-[16px] font-semibold capitalize leading-tight tracking-tight text-white sm:text-[17px]">
           {column.label}
         </p>
         <p className="mt-1 text-[11px] text-[#e8eaed]/45">
           {column.notes.length} {column.notes.length === 1 ? "nota" : "notas"}
         </p>
+        {canCreate ? (
+          <button
+            type="button"
+            onClick={() => onCreateForDay?.(column.id)}
+            className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[#5f6368]/40 bg-[#202124]/80 px-2 py-1.5 text-[11px] font-medium text-[#e8eaed]/75 transition hover:border-brand-yellow/40 hover:bg-[#28292c] hover:text-[#e8eaed]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Criar nota
+          </button>
+        ) : null}
       </header>
       <SortableContext items={column.notes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
         <div className="flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:thin]">
@@ -178,6 +203,7 @@ export function NotesBoard({
   onFocusWeekChange,
   onOpen,
   onBoardChange,
+  onCreateForDay,
   toolbarStart,
   toolbarEnd,
   belowToolbar,
@@ -291,7 +317,12 @@ export function NotesBoard({
 
       <div className="flex min-h-[420px] gap-3 overflow-x-auto pb-3 [scrollbar-width:thin]">
         {columns.map((column) => (
-          <WeekLane key={column.id} column={column} onOpen={onOpen} />
+          <WeekLane
+            key={column.id}
+            column={column}
+            onOpen={onOpen}
+            onCreateForDay={onCreateForDay}
+          />
         ))}
       </div>
 
