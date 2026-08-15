@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { Trophy, Package, Users, Calendar, Clock, DollarSign } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -20,7 +21,19 @@ interface RankingsData {
   highestTicket?: { date: string; totalAmount: number };
 }
 
-function RankingList({ items, renderItem }: { items: Array<Record<string, unknown>>; renderItem: (item: Record<string, unknown>, index: number) => React.ReactNode }) {
+function RankingList({
+  items,
+  emptyLabel,
+  renderItem,
+}: {
+  items: Array<Record<string, unknown>>;
+  emptyLabel: string;
+  renderItem: (item: Record<string, unknown>, index: number) => React.ReactNode;
+}) {
+  if (items.length === 0) {
+    return <p className="py-4 text-center text-sm text-text-muted">{emptyLabel}</p>;
+  }
+
   return (
     <div className="space-y-2">
       {items.map((item, i) => (
@@ -34,7 +47,7 @@ function RankingList({ items, renderItem }: { items: Array<Record<string, unknow
 
 export default function RankingsPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
-  const { data, isLoading } = useQuery<RankingsData>({
+  const { data, isLoading, isError, error, refetch } = useQuery<RankingsData>({
     queryKey: ["rankings", activeBusinessId],
     queryFn: async () => {
       const r = await fetch(withQuery("/api/rankings"));
@@ -47,6 +60,19 @@ export default function RankingsPage() {
     staleTime: 120_000,
   });
 
+  if (isError) {
+    return (
+      <ModuleShell title="Rankings">
+        <EmptyModuleState
+          icon={Trophy}
+          title="Não foi possível carregar os rankings"
+          description={error instanceof Error ? error.message : "Tente novamente em instantes."}
+          onRetry={() => void refetch()}
+        />
+      </ModuleShell>
+    );
+  }
+
   if (isLoading || !data) {
     return (
       <ModuleShell title="Rankings">
@@ -55,16 +81,28 @@ export default function RankingsPage() {
     );
   }
 
-  if (!data) {
-    return (
-      <ModuleShell title="Rankings">
-        <p className="text-text-muted">Não foi possível carregar os rankings.</p>
-      </ModuleShell>
-    );
-  }
+  const hasAny =
+    data.topProducts.length > 0 ||
+    data.topClients.length > 0 ||
+    data.bestDays.length > 0 ||
+    data.bestHours.length > 0 ||
+    Boolean(data.highestRevenue || data.highestProfit || data.highestTicket);
 
   return (
     <ModuleShell title="Rankings" subtitle="Os melhores do seu negócio">
+      {!hasAny ? (
+        <div className="mb-4 sm:mb-6">
+          <EmptyModuleState
+            icon={Trophy}
+            title="Ainda sem rankings"
+            description="Com as primeiras vendas, produtos, clientes e recordes aparecem aqui automaticamente."
+            actionHref="/vendas"
+            actionLabel="Registrar venda"
+            compact
+          />
+        </div>
+      ) : null}
+
       <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -73,6 +111,7 @@ export default function RankingsPage() {
           <CardContent>
             <RankingList
               items={data.topProducts as Array<Record<string, unknown>>}
+              emptyLabel="Sem produtos vendidos ainda"
               renderItem={(item, i) => (
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-elevated p-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -96,6 +135,7 @@ export default function RankingsPage() {
           <CardContent>
             <RankingList
               items={data.topClients as Array<Record<string, unknown>>}
+              emptyLabel="Sem clientes com compras ainda"
               renderItem={(item, i) => (
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-elevated p-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -119,6 +159,7 @@ export default function RankingsPage() {
           <CardContent>
             <RankingList
               items={data.bestDays as Array<Record<string, unknown>>}
+              emptyLabel="Sem dias com faturamento ainda"
               renderItem={(item, i) => (
                 <div className="flex items-center justify-between rounded-xl bg-surface-elevated p-3">
                   <div className="flex items-center gap-3">
@@ -139,7 +180,8 @@ export default function RankingsPage() {
           <CardContent>
             <RankingList
               items={data.bestHours as Array<Record<string, unknown>>}
-              renderItem={(item, i) => (
+              emptyLabel="Sem turnos com vendas ainda"
+              renderItem={(item) => (
                 <div className="flex items-center justify-between rounded-xl bg-surface-elevated p-3">
                   <span>{item.hour as string}</span>
                   <span className="font-semibold">{item.count as number} vendas</span>
@@ -154,29 +196,33 @@ export default function RankingsPage() {
             <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5 text-brand-orange" />Recordes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-              {data.highestRevenue && (
-                <div className="rounded-2xl bg-brand-orange/10 p-4 text-center sm:p-5">
-                  <p className="text-xs text-text-muted mb-1">Maior Faturamento</p>
-                  <p className="text-xl font-bold">{formatCurrency(data.highestRevenue[1])}</p>
-                  <p className="text-xs text-text-muted mt-1">{formatDate(data.highestRevenue[0])}</p>
-                </div>
-              )}
-              {data.highestProfit && (
-                <div className="rounded-2xl bg-brand-green/10 p-5 text-center">
-                  <p className="text-xs text-text-muted mb-1">Maior Lucro</p>
-                  <p className="text-xl font-bold text-brand-green">{formatCurrency(data.highestProfit.profit)}</p>
-                  <p className="text-xs text-text-muted mt-1">{formatDate(data.highestProfit.date)}</p>
-                </div>
-              )}
-              {data.highestTicket && (
-                <div className="rounded-2xl bg-surface-elevated p-5 text-center">
-                  <p className="text-xs text-text-muted mb-1">Maior Ticket Médio</p>
-                  <p className="text-xl font-bold">{formatCurrency(data.highestTicket.totalAmount)}</p>
-                  <p className="text-xs text-text-muted mt-1">{formatDate(data.highestTicket.date)}</p>
-                </div>
-              )}
-            </div>
+            {!data.highestRevenue && !data.highestProfit && !data.highestTicket ? (
+              <p className="py-4 text-center text-sm text-text-muted">Os recordes aparecem após a primeira venda.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+                {data.highestRevenue && (
+                  <div className="rounded-2xl bg-brand-orange/10 p-4 text-center sm:p-5">
+                    <p className="text-xs text-text-muted mb-1">Maior Faturamento</p>
+                    <p className="text-xl font-bold">{formatCurrency(data.highestRevenue[1])}</p>
+                    <p className="text-xs text-text-muted mt-1">{formatDate(data.highestRevenue[0])}</p>
+                  </div>
+                )}
+                {data.highestProfit && (
+                  <div className="rounded-2xl bg-brand-green/10 p-5 text-center">
+                    <p className="text-xs text-text-muted mb-1">Maior Lucro</p>
+                    <p className="text-xl font-bold text-brand-green">{formatCurrency(data.highestProfit.profit)}</p>
+                    <p className="text-xs text-text-muted mt-1">{formatDate(data.highestProfit.date)}</p>
+                  </div>
+                )}
+                {data.highestTicket && (
+                  <div className="rounded-2xl bg-surface-elevated p-5 text-center">
+                    <p className="text-xs text-text-muted mb-1">Maior Ticket Médio</p>
+                    <p className="text-xl font-bold">{formatCurrency(data.highestTicket.totalAmount)}</p>
+                    <p className="text-xs text-text-muted mt-1">{formatDate(data.highestTicket.date)}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

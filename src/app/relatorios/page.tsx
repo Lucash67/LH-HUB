@@ -158,15 +158,7 @@ export default function RelatoriosPage() {
     };
   }, [data, goals, effectiveType]);
 
-  if (isLoading || !data) {
-    return (
-      <ModuleShell title="Relatórios">
-        <PageLoader />
-      </ModuleShell>
-    );
-  }
-
-  if (isError || !data || !summary) {
+  if (isError) {
     return (
       <ModuleShell title="Relatórios">
         <p className="text-text-muted mb-3">
@@ -175,6 +167,14 @@ export default function RelatoriosPage() {
         <button type="button" className="text-sm text-brand-orange underline" onClick={() => void refetch()}>
           Tentar novamente
         </button>
+      </ModuleShell>
+    );
+  }
+
+  if (isLoading || !data || !summary) {
+    return (
+      <ModuleShell title="Relatórios">
+        <PageLoader />
       </ModuleShell>
     );
   }

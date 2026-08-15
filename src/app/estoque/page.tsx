@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { AlertTriangle, ArrowDown, ArrowUp, Package } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
@@ -53,15 +54,7 @@ export default function EstoquePage() {
     onError: (error: Error) => setFormError(error.message),
   });
 
-  if (isLoading || !data) {
-    return (
-      <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
-        <PageLoader />
-      </ModuleShell>
-    );
-  }
-
-  if (isError || !data) {
+  if (isError) {
     return (
       <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
         <p className="text-text-muted mb-3">
@@ -74,12 +67,31 @@ export default function EstoquePage() {
     );
   }
 
+  if (isLoading || !data) {
+    return (
+      <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
+        <PageLoader />
+      </ModuleShell>
+    );
+  }
+
   const totalStock = data.products.reduce((s, p) => s + p.stockQuantity, 0);
 
   return (
     <ModuleShell title="Estoque" subtitle="Controle de entrada, saída e saldo">
       <div className="space-y-6">
         {!canWrite && <BusinessWriteNotice message={writeBlockedMessage} />}
+
+        {data.products.length === 0 ? (
+          <EmptyModuleState
+            icon={Package}
+            title="Nenhum produto no estoque"
+            description="Cadastre produtos na operação para controlar saldo, entradas e saídas."
+            actionHref="/produtos"
+            actionLabel="Ir para produtos"
+            compact
+          />
+        ) : null}
 
         {data.lowStock.length > 0 && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>

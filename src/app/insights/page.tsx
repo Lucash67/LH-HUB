@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
@@ -34,12 +35,25 @@ export default function InsightsPage() {
     ? withQuery("/api/insights")
     : withQuery(`/api/insights?date=${context.viewDate}&viewMode=day`);
 
-  const { data: insights = [], isLoading } = useQuery<Insight[]>({
+  const { data: insights = [], isLoading, isError, error, refetch } = useQuery<Insight[]>({
     queryKey: ["insights", activeBusinessId, context.mode, context.viewDate],
     queryFn: () => fetchJsonArray<Insight>(insightsUrl),
     staleTime: 120_000,
     refetchInterval: 120_000,
   });
+
+  if (isError) {
+    return (
+      <ModuleShell title="Insights">
+        <EmptyModuleState
+          icon={Sparkles}
+          title="Não foi possível carregar os insights"
+          description={error instanceof Error ? error.message : "Tente novamente em instantes."}
+          onRetry={() => void refetch()}
+        />
+      </ModuleShell>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -63,10 +77,22 @@ export default function InsightsPage() {
           <div className="min-w-0">
             <p className="font-semibold text-text-primary">Análise consultiva automática</p>
             <p className="text-sm text-text-secondary">
-              {insights.length} recomendações · diário + analytics engine
+              {insights.length === 0
+                ? "Aguardando os primeiros registros da operação"
+                : `${insights.length} recomendações · diário + analytics engine`}
             </p>
           </div>
         </div>
+
+        {insights.length === 0 ? (
+          <EmptyModuleState
+            icon={Sparkles}
+            title="Sem insights ainda"
+            description="Registre vendas e o diário operacional. As recomendações automáticas surgem com o primeiro histórico."
+            actionHref="/vendas"
+            actionLabel="Registrar venda"
+          />
+        ) : null}
 
         {diaryFirst.length > 0 && (
           <SectionPanel
@@ -100,36 +126,38 @@ export default function InsightsPage() {
           </SectionPanel>
         )}
 
-        <SectionPanel theme="alerts" title="Prioridades executivas" subtitle="Ações com maior impacto no negócio">
-          <div className="space-y-3">
-            {executive.map((insight, i) => {
-              const config = typeConfig[insight.type];
-              const Icon = config.icon;
-              return (
-                <motion.div
-                  key={insight.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className={`rounded-2xl border p-4 transition-shadow hover:shadow-card ${config.accent}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card">
-                      <Icon className={`h-4 w-4 ${config.iconColor}`} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <h3 className="font-semibold text-text-primary">{insight.title}</h3>
-                        {insight.metric && <Badge variant={config.badge}>{insight.metric}</Badge>}
+        {executive.length > 0 ? (
+          <SectionPanel theme="alerts" title="Prioridades executivas" subtitle="Ações com maior impacto no negócio">
+            <div className="space-y-3">
+              {executive.map((insight, i) => {
+                const config = typeConfig[insight.type];
+                const Icon = config.icon;
+                return (
+                  <motion.div
+                    key={insight.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className={`rounded-2xl border p-4 transition-shadow hover:shadow-card ${config.accent}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card">
+                        <Icon className={`h-4 w-4 ${config.iconColor}`} />
                       </div>
-                      <p className="mt-1 text-sm leading-relaxed text-text-secondary">{insight.description}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <h3 className="font-semibold text-text-primary">{insight.title}</h3>
+                          {insight.metric && <Badge variant={config.badge}>{insight.metric}</Badge>}
+                        </div>
+                        <p className="mt-1 text-sm leading-relaxed text-text-secondary">{insight.description}</p>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </SectionPanel>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </SectionPanel>
+        ) : null}
 
         {operational.length > 0 && (
           <SectionPanel theme="dashboard" title="Detalhes operacionais" subtitle="Contexto complementar">

@@ -104,6 +104,10 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
       >
       {!mounted ? (
         <div className="h-full animate-pulse rounded-lg bg-surface-elevated" />
+      ) : chartData.length === 0 ? (
+        <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-surface-border bg-surface-elevated/30 px-4">
+          <p className="text-center text-sm text-text-muted">Sem dados neste período — registre vendas para ver o gráfico.</p>
+        </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
           {type === "area" ? (

@@ -132,14 +132,6 @@ function ProjecoesContent() {
     };
   }, [data, activeSlice]);
 
-  if (isLoading || !data || !activeSlice || !gapForScenario) {
-    return (
-      <ModuleShell title="Projeções" subtitle="Ritmo, cenários e o que falta">
-        <PageLoader />
-      </ModuleShell>
-    );
-  }
-
   if (isError) {
     return (
       <ModuleShell title="Projeções" subtitle="Ritmo, cenários e o que falta">
@@ -149,6 +141,14 @@ function ProjecoesContent() {
         <Button variant="outline" size="sm" onClick={() => void refetch()}>
           Tentar novamente
         </Button>
+      </ModuleShell>
+    );
+  }
+
+  if (isLoading || !data || !activeSlice || !gapForScenario) {
+    return (
+      <ModuleShell title="Projeções" subtitle="Ritmo, cenários e o que falta">
+        <PageLoader />
       </ModuleShell>
     );
   }

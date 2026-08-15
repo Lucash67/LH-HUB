@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { BusinessWriteNotice } from "@/components/business/business-write-notice";
-import { Card } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { SmartGoalsDashboard } from "@/components/goals/smart-goals-dashboard";
 import { Target } from "lucide-react";
 import { useBusinessScope } from "@/hooks/use-business-scope";
@@ -15,7 +15,7 @@ export default function MetasPage() {
   const { activeBusinessId, withQuery, goalsBlockedMessage } = useBusinessScope();
   const isAggregated = isAllBusinesses(activeBusinessId);
 
-  const { data: view, isLoading, isError, error } = useQuery<SmartGoalsView>({
+  const { data: view, isLoading, isError, error, refetch } = useQuery<SmartGoalsView>({
     queryKey: ["smart-goals", activeBusinessId],
     queryFn: async () => {
       const r = await fetch(withQuery("/api/smart-goals"));
@@ -41,6 +41,26 @@ export default function MetasPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <ModuleShell
+        title="Metas Inteligentes"
+        subtitle="Centro de planejamento operacional baseado no seu histórico real"
+      >
+        <EmptyModuleState
+          icon={Target}
+          title="Não foi possível carregar as metas"
+          description={
+            error instanceof Error
+              ? error.message
+              : "Tente novamente em instantes."
+          }
+          onRetry={() => void refetch()}
+        />
+      </ModuleShell>
+    );
+  }
+
   if (isLoading || !view) {
     return (
       <ModuleShell
@@ -48,23 +68,6 @@ export default function MetasPage() {
         subtitle="Centro de planejamento operacional baseado no seu histórico real"
       >
         <PageLoader />
-      </ModuleShell>
-    );
-  }
-
-  if (isError || !view) {
-    return (
-      <ModuleShell
-        title="Metas Inteligentes"
-        subtitle="Centro de planejamento operacional baseado no seu histórico real"
-      >
-        <Card className="mx-auto max-w-lg p-6 text-center sm:p-8">
-          <Target className="mx-auto mb-3 h-10 w-10 text-text-muted" />
-          <p className="text-text-secondary mb-2">Não foi possível calcular metas inteligentes.</p>
-          <p className="text-sm text-text-muted">
-            {error instanceof Error ? error.message : "Registre vendas para gerar sugestões automáticas."}
-          </p>
-        </Card>
       </ModuleShell>
     );
   }

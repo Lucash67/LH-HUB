@@ -88,20 +88,20 @@ export default function FinanceiroPage() {
       data.scope.mode === "day" &&
       (!data.scope.date || data.scope.date === context.viewDate));
 
-  if (isLoading || !data || !scopeMatches) {
-    return (
-      <ModuleShell title="Financeiro" subtitle="Visão executiva das finanças">
-        <PageLoader />
-      </ModuleShell>
-    );
-  }
-
   if (isError) {
     return (
       <ModuleShell title="Financeiro" subtitle="Visão executiva das finanças">
         <p className="text-text-muted">
           {error instanceof Error ? error.message : "Não foi possível carregar o financeiro."}
         </p>
+      </ModuleShell>
+    );
+  }
+
+  if (isLoading || !data || !scopeMatches) {
+    return (
+      <ModuleShell title="Financeiro" subtitle="Visão executiva das finanças">
+        <PageLoader />
       </ModuleShell>
     );
   }

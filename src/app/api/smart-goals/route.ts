@@ -18,8 +18,9 @@ export async function GET(request: NextRequest) {
       }
 
       const view = await getSmartGoalsView(businessId, referenceDate);
+      // getSmartGoalsView só retorna null em visão agregada (já tratada acima).
       if (!view) {
-        return apiError("Não foi possível calcular metas para esta operação.", 400);
+        return apiError("Selecione uma operação específica para ver metas inteligentes.", 400);
       }
 
       return NextResponse.json(view);

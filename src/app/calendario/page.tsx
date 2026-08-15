@@ -108,15 +108,7 @@ export default function CalendarioPage() {
     return { pct, conclusion };
   }, [matchedDayReport, calendar]);
 
-  if (isLoading || !calendar) {
-    return (
-      <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
-        <PageLoader />
-      </ModuleShell>
-    );
-  }
-
-  if (isError || !calendar) {
+  if (isError) {
     return (
       <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
         <p className="text-text-muted mb-3">
@@ -125,6 +117,14 @@ export default function CalendarioPage() {
         <button type="button" className="text-sm text-brand-orange underline" onClick={() => void refetch()}>
           Tentar novamente
         </button>
+      </ModuleShell>
+    );
+  }
+
+  if (isLoading || !calendar) {
+    return (
+      <ModuleShell title="Calendário" subtitle="Metas e desempenho diário">
+        <PageLoader />
       </ModuleShell>
     );
   }

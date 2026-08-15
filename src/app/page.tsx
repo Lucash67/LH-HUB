@@ -85,6 +85,21 @@ export default function DashboardPage() {
     payload.context.mode === context.mode &&
     (context.mode === "general" || payload.context.viewDate === context.viewDate);
 
+  if (isError) {
+    return (
+      <ModuleShell title="Dashboard" subtitle={<span className="capitalize">{dayLabel}</span>} temporalChip={false}>
+        <div className="rounded-2xl border border-brand-red/30 bg-brand-red/10 p-5 text-center sm:p-8">
+          <p className="text-text-primary mb-4">
+            {error instanceof Error ? error.message : "Não foi possível carregar o painel."}
+          </p>
+          <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboard-view"] })}>
+            Tentar novamente
+          </Button>
+        </div>
+      </ModuleShell>
+    );
+  }
+
   if (isLoading || !payload || (payload.context && !contextMatches)) {
     return (
       <ModuleShell title="Dashboard" subtitle={<span className="capitalize">{dayLabel}</span>} temporalChip={false}>
@@ -93,13 +108,11 @@ export default function DashboardPage() {
     );
   }
 
-  if (isError || !payload?.data) {
+  if (!payload.data) {
     return (
       <ModuleShell title="Dashboard" subtitle={<span className="capitalize">{dayLabel}</span>} temporalChip={false}>
         <div className="rounded-2xl border border-brand-red/30 bg-brand-red/10 p-5 text-center sm:p-8">
-          <p className="text-text-primary mb-4">
-            {error instanceof Error ? error.message : "Não foi possível carregar o painel."}
-          </p>
+          <p className="text-text-primary mb-4">Não foi possível carregar o painel.</p>
           <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboard-view"] })}>
             Tentar novamente
           </Button>

@@ -28,18 +28,6 @@ export default function VisaoGeralPage() {
     refetchInterval: 120_000,
   });
 
-  if (isLoading || !data) {
-    return (
-      <ModuleShell
-        title="Visão Geral"
-        subtitle="Centro de comando das suas operações"
-        temporalFilter={false}
-      >
-        <PageLoader />
-      </ModuleShell>
-    );
-  }
-
   if (isError) {
     return (
       <ModuleShell
@@ -52,6 +40,18 @@ export default function VisaoGeralPage() {
             {error instanceof Error ? error.message : "Não foi possível carregar a visão geral."}
           </p>
         </div>
+      </ModuleShell>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <ModuleShell
+        title="Visão Geral"
+        subtitle="Centro de comando das suas operações"
+        temporalFilter={false}
+      >
+        <PageLoader />
       </ModuleShell>
     );
   }

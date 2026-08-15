@@ -24,11 +24,13 @@ export async function GET(request: NextRequest) {
       async (scope) => {
         const monthKey = parseMonthKey(request.nextUrl.searchParams.get("month"));
         const view = await getMonthCloseView(scope.businessId, monthKey);
+        // Conta nova / sem histórico: payload vazio (200), não 404 — o módulo deve abrir zerado.
         if (!view) {
-          return apiError(
-            "Ainda não há um mês com dias registrados para fechar. Registre alguns dias e volte aqui.",
-            404,
-          );
+          return NextResponse.json({
+            empty: true as const,
+            message:
+              "Ainda não há um mês com dias registrados para fechar. Registre alguns dias e volte aqui.",
+          });
         }
         return NextResponse.json(view);
       },

@@ -8,6 +8,7 @@ import { ChartCard } from "@/components/charts/chart-card";
 import { ExecutiveSummary } from "@/components/executive/executive-summary";
 import { SectionPanel } from "@/components/executive/section-panel";
 import { Input } from "@/components/ui/input";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { formatCurrency } from "@/lib/utils";
 import type { ProfitBankView } from "@/lib/profit-bank-service";
@@ -59,15 +60,7 @@ export default function BancoLucroPage() {
     return { points, summary: simulationSummary(points) };
   }, [data, saveRate, monthlyWithdrawal, horizonDays, context, scopedBalance, scopedAvg]);
 
-  if (isLoading || !data) {
-    return (
-      <ModuleShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
-        <PageLoader />
-      </ModuleShell>
-    );
-  }
-
-  if (isError || !data) {
+  if (isError) {
     return (
       <ModuleShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
         <p className="text-text-muted mb-3">
@@ -76,6 +69,14 @@ export default function BancoLucroPage() {
         <button type="button" className="text-sm text-brand-orange underline" onClick={() => void refetch()}>
           Tentar novamente
         </button>
+      </ModuleShell>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <ModuleShell title="Banco de Lucro" subtitle="Acumulação e simulação de reserva">
+        <PageLoader />
       </ModuleShell>
     );
   }
@@ -97,6 +98,16 @@ export default function BancoLucroPage() {
   return (
     <ModuleShell title="Banco de Lucro" subtitle="Quanto você teria guardando o lucro operacional">
       <div className="space-y-6">
+        {scopedDays === 0 ? (
+          <EmptyModuleState
+            icon={PiggyBank}
+            title="Banco zerado"
+            description="Sem dias operacionais ainda. O saldo acumulado e o gráfico aparecem após o primeiro lucro registrado."
+            actionHref="/registro-dia"
+            actionLabel="Registrar dia"
+            compact
+          />
+        ) : null}
 
         <ExecutiveSummary
           theme="finance"
@@ -106,9 +117,11 @@ export default function BancoLucroPage() {
               : "Acumulado até o dia selecionado"
           }
           conclusion={
-            isViewingGeneral(context)
-              ? `Se você guardasse todo o lucro operacional desde o início, hoje teria ${formatCurrency(data.currentBalance)} reservados em ${data.operationalDays} dias de operação.`
-              : `Até a data selecionada: ${formatCurrency(scopedBalance)} acumulados (${scopedDays} dias · lucro ${formatCurrency(scopedProfit)}).`
+            scopedDays === 0
+              ? "Nenhum lucro acumulado ainda — o banco começa em R$ 0,00."
+              : isViewingGeneral(context)
+                ? `Se você guardasse todo o lucro operacional desde o início, hoje teria ${formatCurrency(data.currentBalance)} reservados em ${data.operationalDays} dias de operação.`
+                : `Até a data selecionada: ${formatCurrency(scopedBalance)} acumulados (${scopedDays} dias · lucro ${formatCurrency(scopedProfit)}).`
           }
           items={[
             {

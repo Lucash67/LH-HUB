@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { ChartCard } from "@/components/charts/chart-card";
 import { ExecutiveSummary } from "@/components/executive/executive-summary";
 import { SectionPanel } from "@/components/executive/section-panel";
@@ -20,7 +21,7 @@ export default function DesempenhoPage() {
   const [period, setPeriod] = useState<"weekly" | "monthly">("weekly");
   const [offset, setOffset] = useState(0);
 
-  const { data, isLoading } = useQuery<PerformanceView>({
+  const { data, isLoading, isError, error, refetch } = useQuery<PerformanceView>({
     queryKey: ["performance", activeBusinessId, period, offset],
     queryFn: async () => {
       const r = await fetch(withQuery(`/api/performance?period=${period}&offset=${offset}`));
@@ -33,18 +34,22 @@ export default function DesempenhoPage() {
     staleTime: 120_000,
   });
 
-  if (isLoading || !data) {
+  if (isError) {
     return (
       <ModuleShell title="Desempenho" subtitle="Receita, lucro e custos por período">
-        <PageLoader />
+        <EmptyModuleState
+          title="Não foi possível carregar o desempenho"
+          description={error instanceof Error ? error.message : "Tente novamente em instantes."}
+          onRetry={() => void refetch()}
+        />
       </ModuleShell>
     );
   }
 
-  if (!data) {
+  if (isLoading || !data) {
     return (
       <ModuleShell title="Desempenho" subtitle="Receita, lucro e custos por período">
-        <p className="text-text-muted">Não foi possível carregar o desempenho.</p>
+        <PageLoader />
       </ModuleShell>
     );
   }
@@ -54,6 +59,7 @@ export default function DesempenhoPage() {
 
   const RevenueGrowthIcon = growthIcon(data.comparison.revenueGrowth);
   const ProfitGrowthIcon = growthIcon(data.comparison.profitGrowth);
+  const isEmptyPeriod = data.metrics.revenue === 0 && data.metrics.salesCount === 0;
 
   return (
     <ModuleShell title="Desempenho" subtitle="Visão semanal e mensal da operação">
@@ -98,10 +104,24 @@ export default function DesempenhoPage() {
           </div>
         </div>
 
+        {isEmptyPeriod ? (
+          <EmptyModuleState
+            title="Período sem movimentação"
+            description="Quando houver vendas ou diário neste intervalo, receita, lucro e gráficos aparecem aqui."
+            actionHref="/vendas"
+            actionLabel="Registrar venda"
+            compact
+          />
+        ) : null}
+
         <ExecutiveSummary
           theme="performance"
           title="Resumo do período"
-          conclusion={`Comparado a ${data.comparison.previousLabel}: receita ${formatPercent(data.comparison.revenueGrowth)} · lucro ${formatPercent(data.comparison.profitGrowth)}.`}
+          conclusion={
+            isEmptyPeriod
+              ? "Nenhuma venda no período — números zerados até o primeiro registro."
+              : `Comparado a ${data.comparison.previousLabel}: receita ${formatPercent(data.comparison.revenueGrowth)} · lucro ${formatPercent(data.comparison.profitGrowth)}.`
+          }
           items={[
             { label: "Receita", value: formatCurrency(data.metrics.revenue), highlight: true },
             { label: "Lucro", value: formatCurrency(data.metrics.profit), highlight: true },

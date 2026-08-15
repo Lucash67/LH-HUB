@@ -23,6 +23,7 @@ import { WeeklyPlanTable } from "@/components/month-close/weekly-plan-table";
 import { WeekdayProfileCard } from "@/components/month-close/weekday-profile-card";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { fetchJson } from "@/lib/api/safe-json";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
@@ -37,28 +38,37 @@ const CONFIDENCE_STYLE: Record<string, string> = {
   baixa: "border-brand-red/25 bg-brand-red/5 text-brand-red",
 };
 
+type MonthClosePayload = MonthCloseView | { empty: true; message?: string };
+
+function isEmptyMonthClose(data: MonthClosePayload | undefined): data is { empty: true; message?: string } {
+  return Boolean(data && "empty" in data && data.empty);
+}
+
 export default function FechamentoPage() {
   const { activeBusinessId, canWrite, withQuery, goalsBlockedMessage } = useBusinessScope();
   const queryClient = useQueryClient();
   const [monthKey, setMonthKey] = useState<string | null>(null);
   const [scenarioKey, setScenarioKey] = useState<ForecastScenarioKey | null>(null);
 
-  const { data, isLoading, isError, error, refetch } = useQuery<MonthCloseView>({
+  const { data, isLoading, isError, error, refetch } = useQuery<MonthClosePayload>({
     queryKey: ["month-close", activeBusinessId, monthKey],
     queryFn: async () =>
       (await fetchJson(
         withQuery(`/api/month-close${monthKey ? `?month=${monthKey}` : ""}`),
-      )) as MonthCloseView,
+      )) as MonthClosePayload,
     staleTime: 120_000,
     retry: 1,
   });
 
   const applyGoals = useMutation<AppliedGoalsResult, Error, ForecastScenarioKey>({
     mutationFn: async (scenario) => {
+      if (!data || isEmptyMonthClose(data)) {
+        throw new Error("Registre alguns dias antes de aplicar metas.");
+      }
       const response = await fetch(withQuery("/api/month-close"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario, month: data?.reference.monthKey }),
+        body: JSON.stringify({ scenario, month: data.reference.monthKey }),
       });
       const json = await response.json();
       if (!response.ok || json.error) {
@@ -74,28 +84,44 @@ export default function FechamentoPage() {
     },
   });
 
-  const selected = scenarioKey ?? data?.recommended ?? "realista";
-  const scenario = data?.scenarios.find((s) => s.key === selected) ?? data?.scenarios[1];
-  const weeklyPlan = data?.weeklyPlanByScenario[selected] ?? data?.weeklyPlan ?? [];
-  const derivedGoals = data?.derivedGoalsByScenario[selected] ?? data?.derivedGoals ?? [];
+  const view = data && !isEmptyMonthClose(data) ? data : null;
+  const selected = scenarioKey ?? view?.recommended ?? "realista";
+  const scenario = view?.scenarios.find((s) => s.key === selected) ?? view?.scenarios[1];
+  const weeklyPlan = view?.weeklyPlanByScenario[selected] ?? view?.weeklyPlan ?? [];
+  const derivedGoals = view?.derivedGoalsByScenario[selected] ?? view?.derivedGoals ?? [];
 
   const historyChart = useMemo(() => {
-    if (!data || !scenario) return [];
+    if (!view || !scenario) return [];
     return [
-      ...data.history.map((row) => ({
+      ...view.history.map((row) => ({
         label: row.label,
         value: row.revenue,
         revenue: row.revenue,
         profit: row.profit,
       })),
       {
-        label: `${data.nextMonth.shortLabel} (prev.)`,
+        label: `${view.nextMonth.shortLabel} (prev.)`,
         value: scenario.revenue,
         revenue: scenario.revenue,
         profit: scenario.profit,
       },
     ];
-  }, [data, scenario]);
+  }, [view, scenario]);
+
+  if (isError) {
+    return (
+      <ModuleShell title="Fechamento & Tendência" temporalFilter={false}>
+        <EmptyModuleState
+          icon={CalendarDays}
+          title="Não foi possível carregar o fechamento"
+          description={
+            error instanceof Error ? error.message : "Não foi possível carregar o fechamento do mês."
+          }
+          onRetry={() => void refetch()}
+        />
+      </ModuleShell>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -105,22 +131,24 @@ export default function FechamentoPage() {
     );
   }
 
-  if (isError || !data || !scenario) {
+  if (!view || isEmptyMonthClose(data) || !scenario) {
     return (
       <ModuleShell title="Fechamento & Tendência" temporalFilter={false}>
-        <p className="mb-3 text-text-muted">
-          {error instanceof Error
-            ? error.message
-            : "Não foi possível carregar o fechamento do mês."}
-        </p>
-        <Button variant="outline" size="sm" onClick={() => void refetch()}>
-          Tentar novamente
-        </Button>
+        <EmptyModuleState
+          icon={CalendarDays}
+          title="Ainda sem mês para fechar"
+          description={
+            (data && isEmptyMonthClose(data) && data.message) ||
+            "Registre alguns dias operacionais. Quando houver histórico, o fechamento e as metas do próximo mês aparecem aqui."
+          }
+          actionHref="/registro-dia"
+          actionLabel="Registrar dia"
+        />
       </ModuleShell>
     );
   }
 
-  const { reference, nextMonth, confidence, capitalPlan, milestones, tracking, yearOutlook } = data;
+  const { reference, nextMonth, confidence, capitalPlan, milestones, tracking, yearOutlook } = view;
 
   return (
     <ModuleShell
@@ -131,7 +159,7 @@ export default function FechamentoPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            {data.availableMonths.map((month) => (
+            {view.availableMonths.map((month) => (
               <button
                 key={month.monthKey}
                 type="button"
@@ -159,7 +187,7 @@ export default function FechamentoPage() {
 
         <div className="rounded-2xl border border-brand-orange/25 bg-brand-orange/5 px-4 py-3 text-sm leading-relaxed text-text-secondary">
           <span className="font-medium text-text-primary">Leitura do fechamento: </span>
-          {data.narrative}
+          {view.narrative}
         </div>
 
         <SectionPanel
@@ -211,12 +239,12 @@ export default function FechamentoPage() {
           subtitle={`${nextMonth.daysAvailable} dias úteis disponíveis (${nextMonth.daysGrowthPercent > 0 ? "+" : ""}${nextMonth.daysGrowthPercent.toFixed(0)}% vs os ${reference.daysOperated} dias operados em ${reference.shortLabel}) · escolha o cenário que vira meta`}
         >
           <div className="grid gap-4 lg:grid-cols-3">
-            {data.scenarios.map((row, index) => (
+            {view.scenarios.map((row, index) => (
               <ScenarioCard
                 key={row.key}
                 scenario={row}
                 selected={row.key === selected}
-                recommended={row.key === data.recommended}
+                recommended={row.key === view.recommended}
                 onSelect={setScenarioKey}
                 delay={index * 0.06}
               />
@@ -299,7 +327,7 @@ export default function FechamentoPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <WeeklyPlanTable rows={weeklyPlan} monthLabel={nextMonth.label} />
           <div className="space-y-6">
-            <WeekdayProfileCard rows={data.weekdayProfile} />
+            <WeekdayProfileCard rows={view.weekdayProfile} />
             {capitalPlan && (
               <div className="card-surface p-4 sm:p-6">
                 <div className="mb-4 flex items-center gap-2">
@@ -424,7 +452,7 @@ export default function FechamentoPage() {
           subtitle={confidence.reason}
         >
           <div className="space-y-2">
-            {data.insights.map((insight, index) => (
+            {view.insights.map((insight, index) => (
               <motion.div
                 key={insight}
                 initial={{ opacity: 0, x: -8 }}

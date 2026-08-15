@@ -515,10 +515,17 @@ export function buildRecommendations(
     });
   }
 
-  recs.push({
-    id: "peak-hour",
-    message: "Priorize o refeitório entre 9h30 e 10h30 — pico histórico de vendas.",
-  });
+  if (input.sales.length > 0) {
+    recs.push({
+      id: "peak-hour",
+      message: "Priorize o refeitório entre 9h30 e 10h30 — pico histórico de vendas.",
+    });
+  } else {
+    recs.push({
+      id: "start-history",
+      message: "Sem histórico ainda — registre as primeiras vendas para calibrar horários e metas.",
+    });
+  }
 
   if (input.pendingRevenue > 0) {
     recs.push({
