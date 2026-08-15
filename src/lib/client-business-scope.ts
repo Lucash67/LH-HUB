@@ -21,11 +21,12 @@ export async function buildClientSaleBusinessMap(): Promise<Map<string, Set<stri
 }
 
 export function clientBelongsToBusiness(
-  client: { id: string; businessId?: string },
+  client: { id: string; businessId?: string | null },
   businessId: string,
   saleBusinessMap: Map<string, Set<string>>,
 ): boolean {
   if (isAllBusinesses(businessId)) return true;
+  if (client.businessId && client.businessId === businessId) return true;
   return saleBusinessMap.get(client.id)?.has(businessId) ?? false;
 }
 

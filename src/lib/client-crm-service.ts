@@ -180,7 +180,6 @@ export async function getClientCrmList(
   const reference = new Date();
 
   return clientRows
-    .filter((client) => aggregates.has(client.id))
     .map((client) => {
       const aggregate = aggregates.get(client.id);
       const stats = aggregate?.stats;
@@ -201,6 +200,11 @@ export async function getClientCrmList(
         favoriteProduct: stats?.favoriteProduct ?? "Sem histórico",
         badge,
       };
+    })
+    .sort((a, b) => {
+      if (b.purchaseCount !== a.purchaseCount) return b.purchaseCount - a.purchaseCount;
+      if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent;
+      return a.name.localeCompare(b.name, "pt-BR");
     });
 }
 

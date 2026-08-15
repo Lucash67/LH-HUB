@@ -173,7 +173,12 @@ export function ensureWeekColumn(columns: WeekColumn[], weekStart: string): Week
     label: weekLabel(start, end),
     notes: [],
   };
-  return [columns[0]!, column, ...columns.slice(1)];
+  if (columns.length === 0) return [column];
+  // Mantém a coluna "sem data" (índice 0) à esquerda quando existir.
+  if (columns[0]?.id === UNDATED_COLUMN_ID) {
+    return [columns[0], column, ...columns.slice(1)];
+  }
+  return [column, ...columns];
 }
 
 export function ensureCurrentWeekColumn(columns: WeekColumn[]): WeekColumn[] {

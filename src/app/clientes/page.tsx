@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useBusinessScope } from "@/hooks/use-business-scope";
-import { fetchJsonArray } from "@/lib/api/safe-json";
+import { fetchJson, fetchJsonArray } from "@/lib/api/safe-json";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { SectionPanel } from "@/components/executive/section-panel";
 import { ClientListPanel } from "@/components/clients/client-list-panel";
 import { ClientProfilePanel } from "@/components/clients/client-profile-panel";
@@ -41,14 +42,19 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ name: "", sector: "", company: "", phone: "", notes: "" });
 
-  const { data: clients = [], isLoading } = useQuery<ClientCrmListItem[]>({
+  const { data: clients = [], isLoading, isError, error, refetch } = useQuery<ClientCrmListItem[]>({
     queryKey: ["clients", activeBusinessId],
     queryFn: () => fetchJsonArray<ClientCrmListItem>(withQuery("/api/clients")),
   });
 
-  const { data: profile } = useQuery<ClientCrmProfile>({
+  const {
+    data: profile,
+    isError: isProfileError,
+    error: profileError,
+  } = useQuery<ClientCrmProfile>({
     queryKey: ["client-details", selectedId, activeBusinessId],
-    queryFn: () => fetch(withQuery(`/api/clients?id=${selectedId}`)).then((r) => r.json()),
+    queryFn: async () =>
+      (await fetchJson(withQuery(`/api/clients?id=${selectedId}`))) as ClientCrmProfile,
     enabled: !!selectedId,
   });
 
@@ -62,6 +68,19 @@ export default function ClientesPage() {
     },
     onError: (error: Error) => setFormError(error.message),
   });
+
+  if (isError) {
+    return (
+      <ModuleShell title="Clientes">
+        <EmptyModuleState
+          icon={User}
+          title="Não foi possível carregar os clientes"
+          description={error instanceof Error ? error.message : "Tente novamente em instantes."}
+          onRetry={() => void refetch()}
+        />
+      </ModuleShell>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -209,11 +228,24 @@ export default function ClientesPage() {
                 Voltar aos clientes
               </Button>
             )}
-            {profile ? (
+            {selectedId && isProfileError ? (
+              <EmptyModuleState
+                icon={User}
+                title="Não foi possível carregar o perfil"
+                description={
+                  profileError instanceof Error
+                    ? profileError.message
+                    : "Tente selecionar o cliente novamente."
+                }
+                compact
+              />
+            ) : profile?.client ? (
               <ClientProfilePanel profile={profile} />
             ) : (
               <Card className="flex h-64 items-center justify-center border-dashed">
-                <p className="text-text-muted">Selecione um cliente para ver o perfil CRM</p>
+                <p className="text-text-muted">
+                  {selectedId ? "Carregando perfil…" : "Selecione um cliente para ver o perfil CRM"}
+                </p>
               </Card>
             )}
           </div>

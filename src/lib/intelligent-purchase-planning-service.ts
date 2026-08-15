@@ -14,6 +14,20 @@ import {
 } from "@/lib/intelligent-purchase-planning-view";
 import { isAllBusinesses } from "@/lib/business-units";
 
+const FALLBACK_AVG_UNIT_COST = 3.67;
+
+/** Média segura de custo/unidade a partir de compras do diário (ignora totalUnits <= 0). */
+function averageUnitCostFromPurchases(
+  diaries: Array<{ purchase?: { investment: number; totalUnits: number } | null }>,
+): number {
+  const costs = diaries
+    .map((d) => d.purchase)
+    .filter((p): p is { investment: number; totalUnits: number } => Boolean(p && p.totalUnits > 0))
+    .map((p) => p.investment / p.totalUnits);
+  if (costs.length === 0) return FALLBACK_AVG_UNIT_COST;
+  return costs.reduce((s, c) => s + c, 0) / costs.length;
+}
+
 export interface PurchasePlanningResult {
   businessId: string;
   referenceDate: string;
@@ -43,11 +57,7 @@ export async function getPurchasePlanSuggestion(
     .map((d) => `${d.manualInsights ?? ""} ${d.lessonsLearned ?? ""}`)
     .join(" ");
 
-  const purchases = diaries.filter((d) => d.purchase?.investment);
-  const avgUnitCost =
-    purchases.length > 0
-      ? purchases.reduce((s, d) => s + (d.purchase!.investment / d.purchase!.totalUnits), 0) / purchases.length
-      : 3.67;
+  const avgUnitCost = averageUnitCostFromPurchases(diaries);
 
   const input = {
     businessId,
@@ -106,11 +116,7 @@ export async function getPurchasePlanFromTotal(
   const productMap = new Map(products.map((p) => [p.id, p.name]));
   const diaries = await listDiaryEntries(businessId, from, ref);
   const combinedInsights = diaries.map((d) => `${d.manualInsights ?? ""} ${d.lessonsLearned ?? ""}`).join(" ");
-  const purchases = diaries.filter((d) => d.purchase?.investment);
-  const avgUnitCost =
-    purchases.length > 0
-      ? purchases.reduce((s, d) => s + (d.purchase!.investment / d.purchase!.totalUnits), 0) / purchases.length
-      : 3.67;
+  const avgUnitCost = averageUnitCostFromPurchases(diaries);
 
   const input = {
     businessId,
@@ -146,11 +152,7 @@ export async function getPurchasePlanFromDistribution(
   const productMap = new Map(products.map((p) => [p.id, p.name]));
   const diaries = await listDiaryEntries(businessId, from, ref);
   const combinedInsights = diaries.map((d) => `${d.manualInsights ?? ""} ${d.lessonsLearned ?? ""}`).join(" ");
-  const purchases = diaries.filter((d) => d.purchase?.investment);
-  const avgUnitCost =
-    purchases.length > 0
-      ? purchases.reduce((s, d) => s + (d.purchase!.investment / d.purchase!.totalUnits), 0) / purchases.length
-      : 3.67;
+  const avgUnitCost = averageUnitCostFromPurchases(diaries);
 
   const input = {
     businessId,
