@@ -6,7 +6,7 @@ interface ComposeBarProps {
   onCreate: (seed?: { title?: string; body?: string }) => Promise<unknown> | unknown;
 }
 
-/** Composer central estilo Keep. */
+/** Composer central estilo Keep, com chrome OMNI. */
 export function ComposeBar({ onCreate }: ComposeBarProps) {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
@@ -38,7 +38,7 @@ export function ComposeBar({ onCreate }: ComposeBarProps) {
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="mx-auto flex w-full max-w-[600px] items-center rounded-lg border border-[#5f6368]/45 bg-[#202124] px-4 py-3.5 text-left text-[15px] text-[#e8eaed]/55 shadow-[0_1px_3px_rgba(0,0,0,0.45)] transition hover:bg-[#28292c]"
+        className="mx-auto flex w-full max-w-[600px] items-center rounded-xl border border-[#7C3CFF]/25 bg-[#1a1c24] px-4 py-3.5 text-left text-[15px] text-[#e8eaed]/55 shadow-[0_1px_3px_rgba(0,0,0,0.45)] transition hover:border-[#7C3CFF]/40 hover:bg-[#1f2230]"
       >
         Tirar uma nota...
       </button>
@@ -46,7 +46,7 @@ export function ComposeBar({ onCreate }: ComposeBarProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[600px] overflow-hidden rounded-lg border border-[#5f6368]/45 bg-[#202124] shadow-[0_4px_16px_rgba(0,0,0,0.45)]">
+    <div className="mx-auto w-full max-w-[600px] overflow-hidden rounded-xl border border-[#7C3CFF]/35 bg-[#1a1c24] shadow-[0_4px_20px_rgba(124,60,255,0.18)]">
       <input
         autoFocus
         value={title}
@@ -69,7 +69,7 @@ export function ComposeBar({ onCreate }: ComposeBarProps) {
           disabled={busy}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => void submit()}
-          className="rounded-md px-3 py-1.5 text-sm font-medium text-[#e8eaed]/85 hover:bg-white/10 disabled:opacity-50"
+          className="rounded-lg bg-brand-gradient px-3 py-1.5 text-sm font-medium text-white shadow-[0_2px_10px_rgba(124,60,255,0.3)] hover:brightness-110 disabled:opacity-50"
         >
           Fechar
         </button>

@@ -9,8 +9,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageLoader } from "@/components/ui/loading";
-import { Settings, Moon, Sun, Download, Database } from "lucide-react";
+import { Settings, Download, Database, Sparkles } from "lucide-react";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { OmniRing } from "@/components/hub/lh-monogram";
+import { THEME_META, resolveTheme } from "@/lib/theme-config";
+import type { AppTheme } from "@/components/providers";
+import { cn } from "@/lib/utils";
 
 interface GoalRow {
   id: string;
@@ -100,24 +104,27 @@ export default function ConfiguracoesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `lucas-business-os-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `omni-business-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
   };
 
   if (goalsLoading) {
     return (
-      <AppShell title="Configurações" subtitle="Personalize seu sistema">
+      <AppShell title="Configurações" subtitle="Personalize o OMNI Business">
         <PageLoader />
       </AppShell>
     );
   }
 
   return (
-    <AppShell title="Configurações" subtitle="Personalize seu sistema">
+    <AppShell title="Configurações" subtitle="Personalize o OMNI Business">
       <div className="grid max-w-4xl gap-4 sm:gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" />Metas</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-[#7C3CFF]" />
+              Metas
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!canWrite && <BusinessWriteNotice message={goalsBlockedMessage} />}
@@ -207,35 +214,41 @@ export default function ConfiguracoesPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              <Sparkles className="h-5 w-5 text-[#7C3CFF]" />
               Tema
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant={theme === "light" ? "default" : "secondary"}
-                onClick={() => setTheme("light")}
-                className="h-20 flex-col gap-2"
-              >
-                <Sun className="h-6 w-6" />
-                Light Mode
-              </Button>
-              <Button
-                variant={theme === "dark" ? "default" : "secondary"}
-                onClick={() => setTheme("dark")}
-                className="h-20 flex-col gap-2"
-              >
-                <Moon className="h-6 w-6" />
-                Dark Mode
-              </Button>
+            <div className="grid grid-cols-3 gap-3">
+              {(["light", "dark", "brand"] as const).map((id) => {
+                const meta = THEME_META[id];
+                const Icon = meta.icon;
+                const active = resolveTheme(theme) === id;
+                return (
+                  <Button
+                    key={id}
+                    variant={active ? "default" : "secondary"}
+                    onClick={() => setTheme(id as AppTheme)}
+                    className={cn(
+                      "h-24 flex-col gap-2",
+                      active && id === "brand" && "bg-brand-gradient text-white hover:brightness-110",
+                    )}
+                  >
+                    <Icon className="h-6 w-6" />
+                    {meta.label}
+                  </Button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />Backup & Exportação</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-[#0CD4FF]" />
+              Backup & Exportação
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-text-secondary">
@@ -250,14 +263,20 @@ export default function ConfiguracoesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sobre</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <OmniRing size={22} />
+              Sobre
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm text-text-secondary">
-              <p><strong className="text-text-primary">OMNI Business</strong></p>
+              <p>
+                <strong className="text-text-primary">OMNI Business</strong>
+              </p>
               <p>Produto de gestão do ecossistema OMNI</p>
+              <p className="text-xs text-[#7C3CFF]">OMNI · marca-mãe · Business · Schedule (em breve)</p>
               <p>Versão 1.0.0</p>
-              <p className="text-xs text-text-muted mt-4">
+              <p className="mt-4 text-xs text-text-muted">
                 Sistema escalável para crescer do primeiro salgado vendido até uma operação completa.
               </p>
             </div>

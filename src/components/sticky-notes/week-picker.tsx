@@ -52,8 +52,8 @@ function WeekNavButton({
       onClick={onNavigate}
       className={cn(
         "flex h-full items-center px-2.5 text-[#e8eaed]/70 transition hover:bg-white/5 hover:text-[#e8eaed]",
-        dropActive && "ring-1 ring-inset ring-brand-yellow/35",
-        isOver && "bg-brand-yellow/25 text-brand-yellow",
+        dropActive && "ring-1 ring-inset ring-[#7C3CFF]/40",
+        isOver && "bg-[#7C3CFF]/25 text-[#7C3CFF]",
       )}
     >
       {children}
@@ -78,8 +78,8 @@ export function WeekPicker({
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
       <div
         className={cn(
-          "inline-flex h-11 items-center rounded-lg border bg-[#202124]",
-          weekDropActive ? "border-brand-yellow/45" : "border-[#5f6368]/40",
+          "inline-flex h-11 items-center rounded-lg border bg-[#1a1c24]",
+          weekDropActive ? "border-[#7C3CFF]/50" : "border-[#7C3CFF]/20",
         )}
       >
         <WeekNavButton
@@ -97,7 +97,7 @@ export function WeekPicker({
           className="flex min-w-0 max-w-[min(52vw,220px)] items-center gap-1.5 px-2 text-sm font-medium text-[#e8eaed] sm:max-w-none sm:gap-2"
           title="Escolher semana"
         >
-          <CalendarDays className="h-4 w-4 shrink-0 text-brand-yellow" />
+          <CalendarDays className="h-4 w-4 shrink-0 text-[#7C3CFF]" />
           <span className="truncate">{label}</span>
         </button>
 
@@ -115,7 +115,7 @@ export function WeekPicker({
         <button
           type="button"
           onClick={() => onChange(currentWeekStart())}
-          className="h-11 rounded-lg border border-[#5f6368]/40 bg-[#202124] px-3 text-sm text-[#e8eaed]/75 transition hover:bg-[#28292c] hover:text-[#e8eaed]"
+          className="h-11 rounded-lg border border-[#7C3CFF]/20 bg-[#1a1c24] px-3 text-sm text-[#e8eaed]/75 transition hover:border-[#7C3CFF]/40 hover:bg-[#1f2230] hover:text-[#e8eaed]"
         >
           Esta semana
         </button>
@@ -123,7 +123,7 @@ export function WeekPicker({
 
       {pickerOpen && (
         <div className="relative">
-          <div className="absolute left-0 top-0 z-30 w-[260px] rounded-xl border border-[#5f6368]/45 bg-[#2d2e30] p-3 shadow-2xl sm:left-auto sm:right-0">
+          <div className="absolute left-0 top-0 z-30 w-[260px] rounded-xl border border-[#7C3CFF]/25 bg-[#1F2430] p-3 shadow-2xl sm:left-auto sm:right-0">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#e8eaed]/45">
               Ir para a semana de
             </p>
@@ -136,7 +136,7 @@ export function WeekPicker({
                 onChange(weekRangeFromStart(value).start);
                 setPickerOpen(false);
               }}
-              className="h-10 w-full rounded-lg border border-[#5f6368]/50 bg-[#202124] px-2 text-sm text-[#e8eaed] focus:border-brand-yellow/50 focus:outline-none"
+              className="h-10 w-full rounded-lg border border-[#7C3CFF]/30 bg-[#1a1c24] px-2 text-sm text-[#e8eaed] focus:border-[#7C3CFF]/60 focus:outline-none"
             />
             <p className="mt-2 text-[11px] leading-relaxed text-[#e8eaed]/45">
               Escolha qualquer dia — o board abre a semana completa (segunda a domingo), ex.:{" "}

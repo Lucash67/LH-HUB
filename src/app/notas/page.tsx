@@ -97,8 +97,8 @@ export default function NotasPage() {
         ) : (
           <>
             {filtered.length === 0 && (
-              <div className="rounded-xl border border-[#5f6368]/30 bg-[#202124]/60 px-4 py-3 text-sm text-[#e8eaed]/55">
-                <NotebookPen className="mr-2 inline h-4 w-4 align-text-bottom text-[#e8eaed]/35" />
+              <div className="rounded-xl border border-[#7C3CFF]/25 bg-gradient-to-r from-[#7C3CFF]/10 to-[#0CD4FF]/5 px-4 py-3 text-sm text-text-secondary">
+                <NotebookPen className="mr-2 inline h-4 w-4 align-text-bottom text-[#7C3CFF]" />
                 Nenhuma nota neste filtro — você ainda pode trocar a semana ou criar uma nota nova.
               </div>
             )}
@@ -114,12 +114,12 @@ export default function NotasPage() {
               }}
               toolbarStart={
                 <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e8eaed]/40" />
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7C3CFF]/70" />
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Pesquisar notas"
-                    className="h-11 w-full rounded-lg border border-[#5f6368]/40 bg-[#202124] pl-10 pr-3 text-sm text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:border-[#5f6368] focus:outline-none"
+                    className="h-11 w-full rounded-xl border border-[#7C3CFF]/20 bg-[#1a1c24] pl-10 pr-3 text-sm text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:border-[#7C3CFF]/50 focus:outline-none focus:ring-2 focus:ring-[#7C3CFF]/15"
                   />
                 </div>
               }

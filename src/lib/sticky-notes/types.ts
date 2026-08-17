@@ -54,9 +54,9 @@ export const STICKY_NOTE_COLOR_STYLES: Record<
   { card: string; border: string; swatch: string }
 > = {
   default: {
-    card: "bg-[#202124]",
-    border: "border-[#5f6368]/40",
-    swatch: "bg-[#202124] ring-1 ring-[#5f6368]",
+    card: "bg-[#1a1c24]",
+    border: "border-[#7C3CFF]/25",
+    swatch: "bg-[#1a1c24] ring-1 ring-[#7C3CFF]/40",
   },
   coral: {
     card: "bg-[#5c2b29]",
@@ -79,19 +79,19 @@ export const STICKY_NOTE_COLOR_STYLES: Record<
     swatch: "bg-[#345920]",
   },
   fog: {
-    card: "bg-[#16504b]",
-    border: "border-[#16504b]",
-    swatch: "bg-[#16504b]",
+    card: "bg-[#0d3d42]",
+    border: "border-[#0CD4FF]/30",
+    swatch: "bg-[#0CD4FF]/80",
   },
   dusk: {
-    card: "bg-[#2d555e]",
-    border: "border-[#2d555e]",
-    swatch: "bg-[#2d555e]",
+    card: "bg-[#1a3550]",
+    border: "border-[#3882F6]/35",
+    swatch: "bg-[#3882F6]",
   },
   lilac: {
-    card: "bg-[#42275e]",
-    border: "border-[#42275e]",
-    swatch: "bg-[#42275e]",
+    card: "bg-[#2a1a45]",
+    border: "border-[#7C3CFF]/35",
+    swatch: "bg-[#7C3CFF]",
   },
   rose: {
     card: "bg-[#5b2245]",
@@ -99,8 +99,8 @@ export const STICKY_NOTE_COLOR_STYLES: Record<
     swatch: "bg-[#5b2245]",
   },
   slate: {
-    card: "bg-[#3c3f43]",
-    border: "border-[#3c3f43]",
-    swatch: "bg-[#3c3f43]",
+    card: "bg-[#1F2430]",
+    border: "border-[#3882F6]/30",
+    swatch: "bg-[#1F2430] ring-1 ring-[#3882F6]/40",
   },
 };

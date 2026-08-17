@@ -409,7 +409,7 @@ export function NoteEditor({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setShowDate(false)}
-                  className="ml-auto rounded-md px-2.5 py-1.5 text-xs font-medium text-brand-yellow hover:bg-brand-yellow/10"
+                  className="ml-auto rounded-md px-2.5 py-1.5 text-xs font-medium text-[#0CD4FF] hover:bg-[#7C3CFF]/10"
                 >
                   Salvar
                 </button>
