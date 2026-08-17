@@ -44,7 +44,11 @@ export default function RetratoPage() {
 
   if (isError) {
     return (
-      <ModuleShell title="Retrato" subtitle="Leitura da semana e do mês" temporalFilter={false}>
+      <ModuleShell
+        title="Retrato"
+        subtitle="Análise da operação — veredito, causas e plano"
+        temporalFilter={false}
+      >
         <EmptyModuleState
           icon={ScrollText}
           title="Não foi possível carregar o Retrato"
@@ -57,7 +61,11 @@ export default function RetratoPage() {
 
   if (isLoading || !data) {
     return (
-      <ModuleShell title="Retrato" subtitle="Leitura da semana e do mês" temporalFilter={false}>
+      <ModuleShell
+        title="Retrato"
+        subtitle="Análise da operação — veredito, causas e plano"
+        temporalFilter={false}
+      >
         <PageLoader />
       </ModuleShell>
     );
@@ -68,10 +76,17 @@ export default function RetratoPage() {
   return (
     <ModuleShell
       title="Retrato"
-      subtitle="Por que a semana foi assim — e o que fazer"
+      subtitle="Análise da operação — veredito, causas e plano"
       temporalFilter={false}
     >
       <div className="space-y-6">
+        <div className="rounded-2xl border border-surface-border bg-surface-card/60 px-4 py-3 text-sm text-text-secondary">
+          Módulo novo: não é Metas, não é gráfico solto. É a{" "}
+          <span className="font-medium text-text-primary">leitura interpretativa</span> da semana ou
+          do mês — igual ao canvas de análise. No fim do período você pede no Cursor; eu monto e
+          publico aqui, no mesmo fluxo dos registros de salgados.
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="flex w-full rounded-xl border border-surface-border bg-surface-card p-1 sm:w-auto">
             {(["weekly", "monthly"] as const).map((p) => (
@@ -80,7 +95,7 @@ export default function RetratoPage() {
                 type="button"
                 onClick={() => {
                   setPeriod(p);
-                  setOffset(p === "weekly" ? -1 : -1);
+                  setOffset(-1);
                 }}
                 className={cn(
                   "flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors sm:flex-none sm:py-2",
@@ -123,8 +138,8 @@ export default function RetratoPage() {
         ) : (
           <EmptyModuleState
             icon={ScrollText}
-            title="Ainda sem Retrato deste período"
-            description="Quando a semana (ou o mês) fechar, peça a análise no Cursor — eu monto a leitura (veredito, causas, gráficos e plano) e publico aqui, no mesmo fluxo dos registros de salgados."
+            title="Ainda sem análise deste período"
+            description="Feche a semana (ou o mês), peça a análise no Cursor com a mesma lógica do canvas (veredito, gráficos, causas, plano). Eu subo aqui — você só lê e executa."
             compact
           />
         )}

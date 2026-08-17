@@ -136,7 +136,7 @@ export const SIDEBAR_WIDTH = 240;
 export const MOBILE_NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Hoje", icon: LayoutDashboard },
   { href: "/registro-dia", label: "Registrar", icon: ClipboardPaste },
-  { href: "/desempenho", label: "Semana", icon: TrendingUp },
+  { href: "/retrato", label: "Retrato", icon: ScrollText },
   { href: "/notas", label: "Notas", icon: NotebookPen },
 ];
 
