@@ -520,4 +520,46 @@ export const stickyNotes = pgTable(
   }),
 );
 
+/** Leitura interpretativa semanal/mensal (Retrato). */
+export const periodReviews = pgTable(
+  "period_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    periodType: text("period_type", { enum: ["weekly", "monthly"] }).notNull(),
+    periodKey: text("period_key").notNull(),
+    rangeStart: date("range_start").notNull(),
+    rangeEnd: date("range_end").notNull(),
+    status: text("status", { enum: ["draft", "published"] }).notNull().default("draft"),
+    title: text("title").notNull().default(""),
+    headline: text("headline").notNull().default(""),
+    summary: text("summary").notNull().default(""),
+    causes: jsonb("causes").$type<unknown[]>().notNull().default([]),
+    actions: jsonb("actions").$type<unknown[]>().notNull().default([]),
+    channelNotes: jsonb("channel_notes").$type<unknown[]>().notNull().default([]),
+    metricsSnapshot: jsonb("metrics_snapshot").$type<Record<string, unknown>>().notNull().default({}),
+    bodyMd: text("body_md").notNull().default(""),
+    fairReading: text("fair_reading").notNull().default(""),
+    nextGoals: text("next_goals").notNull().default(""),
+    schemaVersion: integer("schema_version").notNull().default(1),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    businessPeriodUnique: unique("period_reviews_business_period_unique").on(
+      table.businessId,
+      table.periodType,
+      table.periodKey,
+    ),
+    businessTypeStartIdx: index("idx_period_reviews_business_type_start").on(
+      table.businessId,
+      table.periodType,
+      table.rangeStart,
+    ),
+  }),
+);
+
 export * from "./schema-engine";

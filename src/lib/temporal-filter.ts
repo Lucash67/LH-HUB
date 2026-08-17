@@ -55,6 +55,7 @@ export const TEMPORAL_FILTER_EXCLUDED_PATHS = [
   "/configuracoes",
   "/registro-dia",
   "/fechamento",
+  "/retrato",
   "/visao-geral",
   "/notas",
   "/dev",

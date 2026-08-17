@@ -18,6 +18,7 @@ import {
   LineChart,
   PiggyBank,
   ClipboardPaste,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,6 +56,7 @@ const NAV_BY_HREF = {
   clientes: { href: "/clientes", label: "Clientes", icon: Users },
   financeiro: { href: "/financeiro", label: "Financeiro", icon: Wallet, paused: true },
   desempenho: { href: "/desempenho", label: "Semana", icon: TrendingUp },
+  retrato: { href: "/retrato", label: "Retrato", icon: ScrollText },
   projecoes: { href: "/projecoes", label: "Projeções", icon: LineChart, paused: true },
   fechamento: {
     href: "/fechamento",
@@ -101,6 +103,7 @@ export const NAV_SECTORS: NavSector[] = [
     label: "Revisão",
     items: [
       NAV_BY_HREF.desempenho,
+      NAV_BY_HREF.retrato,
       NAV_BY_HREF.fechamento,
       NAV_BY_HREF.bancoLucro,
       NAV_BY_HREF.financeiro,

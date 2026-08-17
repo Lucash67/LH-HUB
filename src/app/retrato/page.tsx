@@ -1,0 +1,134 @@
+"use client";
+
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, ScrollText } from "lucide-react";
+import { ModuleShell } from "@/components/layout/module-shell";
+import { PageLoader } from "@/components/ui/loading";
+import { EmptyModuleState } from "@/components/ui/empty-module-state";
+import { Button } from "@/components/ui/button";
+import { RetratoReader } from "@/components/period-reviews/retrato-reader";
+import { useBusinessScope } from "@/hooks/use-business-scope";
+import { cn } from "@/lib/utils";
+import type { PeriodReview, PeriodType } from "@/lib/period-reviews/types";
+
+interface PeriodReviewResponse {
+  review: PeriodReview | null;
+  window: {
+    periodType: PeriodType;
+    periodKey: string;
+    rangeStart: string;
+    rangeEnd: string;
+    label: string;
+    offset: number;
+  };
+}
+
+export default function RetratoPage() {
+  const { activeBusinessId, withQuery } = useBusinessScope();
+  const [period, setPeriod] = useState<PeriodType>("weekly");
+  const [offset, setOffset] = useState(-1);
+
+  const { data, isLoading, isError, error, refetch } = useQuery<PeriodReviewResponse>({
+    queryKey: ["period-reviews", activeBusinessId, period, offset],
+    queryFn: async () => {
+      const r = await fetch(withQuery(`/api/period-reviews?period=${period}&offset=${offset}`));
+      const json = await r.json();
+      if (!r.ok || json.error) {
+        throw new Error(json.error || "Não foi possível carregar o Retrato.");
+      }
+      return json;
+    },
+    staleTime: 60_000,
+  });
+
+  if (isError) {
+    return (
+      <ModuleShell title="Retrato" subtitle="Leitura da semana e do mês" temporalFilter={false}>
+        <EmptyModuleState
+          icon={ScrollText}
+          title="Não foi possível carregar o Retrato"
+          description={error instanceof Error ? error.message : "Tente novamente."}
+          onRetry={() => void refetch()}
+        />
+      </ModuleShell>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <ModuleShell title="Retrato" subtitle="Leitura da semana e do mês" temporalFilter={false}>
+        <PageLoader />
+      </ModuleShell>
+    );
+  }
+
+  const { review, window } = data;
+
+  return (
+    <ModuleShell
+      title="Retrato"
+      subtitle="Por que a semana foi assim — e o que fazer"
+      temporalFilter={false}
+    >
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="flex w-full rounded-xl border border-surface-border bg-surface-card p-1 sm:w-auto">
+            {(["weekly", "monthly"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  setPeriod(p);
+                  setOffset(p === "weekly" ? -1 : -1);
+                }}
+                className={cn(
+                  "flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors sm:flex-none sm:py-2",
+                  period === p
+                    ? "bg-brand-orange text-brand-on"
+                    : "text-text-secondary hover:text-text-primary",
+                )}
+              >
+                {p === "weekly" ? "Semana" : "Mês"}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              onClick={() => setOffset((o) => o - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-0 flex-1 text-center text-sm font-medium capitalize text-text-primary sm:min-w-[180px] sm:flex-none">
+              {window.label}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              onClick={() => setOffset((o) => o + 1)}
+              disabled={offset >= 0}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {review ? (
+          <RetratoReader review={review} />
+        ) : (
+          <EmptyModuleState
+            icon={ScrollText}
+            title="Ainda sem Retrato deste período"
+            description="Quando a semana (ou o mês) fechar, peça a análise no Cursor — eu monto a leitura (veredito, causas, gráficos e plano) e publico aqui, no mesmo fluxo dos registros de salgados."
+            compact
+          />
+        )}
+      </div>
+    </ModuleShell>
+  );
+}
