@@ -1,12 +1,13 @@
 import { cn } from "@/components/ui/utils";
 
-interface LhMonogramProps {
-  className?: string;
+interface OmniRingProps {
   size?: number;
+  className?: string;
 }
 
-/** Monograma LH — barras arquitetônicas da identidade LH Empreendimentos. */
-export function LhMonogram({ className, size = 48 }: LhMonogramProps) {
+/** Anel OMNI — gradiente roxo → ciano (marca-mãe). */
+export function OmniRing({ size = 32, className }: OmniRingProps) {
+  const id = `omni-ring-${size}`;
   return (
     <svg
       width={size}
@@ -18,51 +19,57 @@ export function LhMonogram({ className, size = 48 }: LhMonogramProps) {
       aria-hidden
     >
       <defs>
-        <linearGradient id="lh-mint" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5EEAD4" />
-          <stop offset="100%" stopColor="#00D4A8" />
+        <linearGradient id={id} x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#7C3CFF" />
+          <stop offset="0.5" stopColor="#3882F6" />
+          <stop offset="1" stopColor="#0CD4FF" />
         </linearGradient>
       </defs>
-      {/* L — barra esquerda + base */}
-      <rect x="4" y="8" width="10" height="32" rx="1" fill="url(#lh-mint)" />
-      <rect x="4" y="34" width="22" height="6" rx="1" fill="url(#lh-mint)" />
-      {/* H — duas colunas + travessa */}
-      <rect x="22" y="8" width="8" height="32" rx="1" fill="url(#lh-mint)" />
-      <rect x="36" y="8" width="8" height="32" rx="1" fill="url(#lh-mint)" />
-      <rect x="22" y="20" width="22" height="6" rx="1" fill="url(#lh-mint)" />
+      <circle
+        cx="24"
+        cy="24"
+        r="16"
+        stroke={`url(#${id})`}
+        strokeWidth="5"
+        strokeLinecap="round"
+        fill="none"
+      />
     </svg>
   );
 }
 
-interface LhMonogramOutlineProps {
-  className?: string;
+/** @deprecated use OmniRing — alias para compat. */
+export function LhMonogram({ size = 32, className }: OmniRingProps) {
+  return <OmniRing size={size} className={className} />;
 }
 
-/**
- * Outline geométrico do monograma oficial LH Empreendimentos (skyline).
- * Quatro pilares em stroke fino + filetes internos (wireframe).
- */
-export function LhMonogramOutline({ className }: LhMonogramOutlineProps) {
+/** Anel outline grande — watermark no fundo do login (sem fill). */
+export function LhMonogramOutline({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 220 140"
+      viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={cn(className)}
       aria-hidden
     >
-      <g stroke="#00D4A8" strokeLinejoin="miter" vectorEffect="non-scaling-stroke">
-        {/* Contornos principais */}
-        <path d="M18 122V68L62 46V122H18Z" strokeWidth="1.25" />
-        <path d="M74 122V32H80V122H74Z" strokeWidth="1.25" />
-        <path d="M92 122V36L138 14V122H92Z" strokeWidth="1.25" />
-        <path d="M138 122V14L192 42V122H138Z" strokeWidth="1.25" />
-        {/* Filetes internos — profundidade wireframe */}
-        <path d="M30 118V72L54 58" strokeWidth="0.7" opacity="0.45" />
-        <path d="M104 118V40L130 26" strokeWidth="0.7" opacity="0.4" />
-        <path d="M150 118V28L178 48" strokeWidth="0.7" opacity="0.4" />
-        <path d="M18 122H192" strokeWidth="0.8" opacity="0.35" />
-      </g>
+      <defs>
+        <linearGradient id="omni-outline-grad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#7C3CFF" />
+          <stop offset="0.5" stopColor="#3882F6" />
+          <stop offset="1" stopColor="#0CD4FF" />
+        </linearGradient>
+      </defs>
+      <circle
+        cx="24"
+        cy="24"
+        r="16"
+        stroke="url(#omni-outline-grad)"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.35"
+      />
     </svg>
   );
 }

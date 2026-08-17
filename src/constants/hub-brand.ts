@@ -1,35 +1,32 @@
 import { BRIGADEIROS_BUSINESS_ID, SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 
-/** Assets de marca — PNGs amarelos removidos; aguardando pacote teal. */
+/** Assets de marca OMNI. */
 export const HUB_BRAND_ASSETS = {
-  /** Favicon temporário (SVG monograma mint). */
   favicon: "/icons/hub-favicon.svg",
-  /**
-   * Slots para quando você enviar os novos arquivos (sugestão de nomes):
-   * - /brand/lh-empreendimentos.png
-   * - /brand/lh-empreendimentos-icon.png
-   * - /brand/lh-empreendimentos-favicon.png
-   * - /brand/lh-hub-horizontal.png
-   * - /brand/lh-hub-horizontal-compact.png
-   * - /brand/lh-hub-icon.png
-   * - /brand/lh-hub-favicon.png
-   */
 } as const;
 
-/** Tokens visuais LH Empreendimentos / LH Hub — paleta mint/teal (refs dash). */
+/**
+ * Tokens visuais OMNI — paleta oficial.
+ * `yellow` / `secondary` mantêm nomes legacy usados em charts/componentes.
+ */
 export const HUB_COLORS = {
-  black: "#121212",
-  yellow: "#00D4A8",
-  secondary: "#14B8A6",
-  mintLight: "#5EEAD4",
-  white: "#FFFFFF",
+  black: "#0D0F17",
+  /** Accent principal (roxo OMNI) — alias legacy `yellow`. */
+  yellow: "#7C3CFF",
+  secondary: "#0CD4FF",
+  purple: "#7C3CFF",
+  blue: "#3882F6",
+  cyan: "#0CD4FF",
+  mintLight: "#0CD4FF",
+  white: "#F5F6FA",
+  surface: "#1F2430",
   gray: {
     400: "#A0A0A0",
     500: "#8E8E93",
     600: "#525252",
     700: "#2A2A2A",
-    800: "#1C1C1C",
-    900: "#121212",
+    800: "#1F2430",
+    900: "#0D0F17",
   },
 } as const;
 
@@ -48,14 +45,14 @@ export const HUB_ENTERPRISES: HubEnterprise[] = [
   {
     id: SALGADOS_BUSINESS_ID,
     index: "01",
-    name: "LH Salty",
+    name: "Salgados",
     description: "Operação de salgados",
     status: "active",
   },
   {
     id: BRIGADEIROS_BUSINESS_ID,
     index: "02",
-    name: "LH Candy",
+    name: "Brigadeiros",
     description: "Doces e confeitaria",
     status: "active",
   },
@@ -63,33 +60,43 @@ export const HUB_ENTERPRISES: HubEnterprise[] = [
 
 export const HUB_VALUE_PROPS = [
   {
-    title: "Operação em tempo real",
-    description: "Indicadores e vendas atualizados conforme sua operação evolui.",
+    title: "Visão completa",
+    description: "Tudo conectado em um só lugar para você enxergar a operação.",
   },
   {
-    title: "Dados protegidos",
-    description: "Informações centralizadas com controle por empreendimento.",
+    title: "Mais controle",
+    description: "Indicadores e registros em tempo real da sua operação.",
   },
   {
-    title: "Arquitetura escalável",
-    description: "Pronto para novos negócios sem reestruturar a plataforma.",
+    title: "Inteligência",
+    description: "Dados claros para decidir com segurança.",
+  },
+  {
+    title: "Crescimento",
+    description: "Organização que escala com o seu negócio.",
   },
 ] as const;
 
+/**
+ * Arquitetura de marca:
+ * OMNI = marca-mãe / ecossistema
+ * OMNI Business = produto atual (este sistema)
+ * OMNI Schedule = produto futuro (não implementar)
+ */
 export const HUB_COPY = {
-  holdingName: "LH Empreendimentos",
-  holdingTagline: "Holding de negócios",
-  productName: "LH Hub",
-  productTagline: "Centro operacional",
-  heroTitle: "Vender no feeling cansa.",
-  heroHighlight: "Controlar, escala.",
-  heroTagline: "LH Hub · LH Empreendimentos",
+  holdingName: "OMNI",
+  holdingTagline: "Seu sistema operacional de negócios",
+  productName: "OMNI Business",
+  productTagline: "Gestão da operação",
+  brandName: "OMNI",
+  heroTitle: "Seu sistema operacional",
+  heroHighlight: "de negócios.",
+  heroTagline: "OMNI · Ecossistema",
   heroDescription:
-    "LH Hub é o centro de gestão da LH Empreendimentos. Integramos dados, equipes e operações em um único painel inteligente.",
-  enterprisesHeading: "Operação ao vivo",
-  footerSlogan: "Construindo hoje o amanhã que inspira.",
-  footerLegacy:
-    "Tecnologia e gestão que impulsionam o presente, preparam o futuro e constroem legado.",
-  authWelcome: "Bem-vindo ao",
-  authSubtitle: "Sua central. Seu império. Seu comando.",
+    "Um sistema completo para você entender, controlar e fazer sua operação crescer.",
+  enterprisesHeading: "Operações ativas",
+  footerSlogan: "Um sistema. Toda a sua operação. Resultados reais.",
+  footerLegacy: "Conexão, organização e inteligência para o seu negócio evoluir.",
+  authWelcome: "Bem-vindo de volta",
+  authSubtitle: "Faça login para continuar no OMNI Business.",
 } as const;

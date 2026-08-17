@@ -35,7 +35,7 @@ export function resolveVisaoGeralGreeting(
   const greeting = getTimeGreeting(tz, now);
   return {
     greeting,
-    subtitle: "Escolha uma operação abaixo ou navegue pelo mapa completo do LH Hub.",
+    subtitle: "Escolha uma operação abaixo ou navegue pelo mapa completo do OMNI Business.",
   };
 }
 

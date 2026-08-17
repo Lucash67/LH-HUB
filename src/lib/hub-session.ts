@@ -1,5 +1,5 @@
 /**
- * Sessão local do LH Hub — preparação para auth futura.
+ * Sessão local do OMNI — preparação para auth futura.
  * Não altera banco nem autenticação de servidor; apenas sessionStorage no cliente.
  */
 

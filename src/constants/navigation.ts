@@ -140,5 +140,5 @@ export const MOBILE_NAV_ITEMS: NavItem[] = [
   { href: "/notas", label: "Notas", icon: NotebookPen },
 ];
 
-export const APP_NAME = "LH Hub";
-export const APP_TAGLINE = "Operação salgados";
+export const APP_NAME = "OMNI Business";
+export const APP_TAGLINE = "OMNI Business";

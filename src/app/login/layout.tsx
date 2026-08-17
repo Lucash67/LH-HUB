@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Sora } from "next/font/google";
 import "./hub-login.css";
 
-const manrope = Manrope({
+const sora = Sora({
   subsets: ["latin"],
-  variable: "--font-manrope",
+  variable: "--font-sora",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "LH Hub — Centro Operacional | LH Empreendimentos",
+  title: "OMNI — Entrar",
   description:
-    "Administre todos os empreendimentos da LH Empreendimentos em um único lugar. Vendas, estoque, clientes, financeiro e indicadores.",
+    "Acesse o ecossistema OMNI. Conexão, organização e inteligência para o seu negócio.",
   icons: {
     icon: "/icons/hub-favicon.svg",
   },
@@ -20,8 +20,8 @@ export const metadata: Metadata = {
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={`hub-login ${manrope.variable} h-full min-h-screen overflow-x-hidden antialiased lg:h-screen lg:overflow-hidden`}
-      style={{ fontFamily: "var(--font-manrope), Inter, system-ui, sans-serif" }}
+      className={`hub-login ${sora.variable} h-full min-h-screen overflow-x-hidden antialiased lg:h-screen lg:overflow-hidden`}
+      style={{ fontFamily: "var(--font-sora), system-ui, sans-serif" }}
     >
       {children}
     </div>
