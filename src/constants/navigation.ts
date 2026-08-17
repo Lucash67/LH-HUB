@@ -32,52 +32,55 @@ export interface NavItem {
 /** Setor/departamento do menu — agrupa módulos na sidebar. */
 export type NavSectorId =
   | "operate"
-  | "money"
-  | "performance"
-  | "intelligence"
-  | "catalog";
+  | "review"
+  | "catalog"
+  | "paused_ops"
+  | "paused_money"
+  | "paused_perf"
+  | "paused_intel";
 
 export interface NavSector {
   id: NavSectorId;
   label: string;
   items: NavItem[];
+  /** Setor inteiro oculto se todos os itens estiverem paused (sidebar filtra item a item). */
 }
 
 const NAV_BY_HREF = {
-  visaoGeral: { href: "/visao-geral", label: "Visão Geral", icon: LayoutGrid },
+  visaoGeral: { href: "/visao-geral", label: "Visão Geral", icon: LayoutGrid, paused: true },
   dashboard: { href: "/", label: "Dashboard", icon: LayoutDashboard },
   vendas: { href: "/vendas", label: "Vendas", icon: ShoppingCart, paused: true },
   produtos: { href: "/produtos", label: "Produtos", icon: Package },
   estoque: { href: "/estoque", label: "Estoque", icon: Warehouse, paused: true },
   clientes: { href: "/clientes", label: "Clientes", icon: Users },
-  financeiro: { href: "/financeiro", label: "Financeiro", icon: Wallet },
-  desempenho: { href: "/desempenho", label: "Desempenho", icon: TrendingUp },
-  projecoes: { href: "/projecoes", label: "Projeções", icon: LineChart },
+  financeiro: { href: "/financeiro", label: "Financeiro", icon: Wallet, paused: true },
+  desempenho: { href: "/desempenho", label: "Semana", icon: TrendingUp },
+  projecoes: { href: "/projecoes", label: "Projeções", icon: LineChart, paused: true },
   fechamento: {
     href: "/fechamento",
-    label: "Fechamento & Tendência",
+    label: "Mês",
     icon: CalendarClock,
   },
-  bancoLucro: { href: "/banco-lucro", label: "Banco de Lucro", icon: PiggyBank },
-  metas: { href: "/metas", label: "Metas", icon: Target },
-  insights: { href: "/insights", label: "Insights", icon: Sparkles },
-  relatorios: { href: "/relatorios", label: "Relatórios", icon: FileText },
-  diario: { href: "/diario", label: "Diário Operacional", icon: BookOpen },
+  bancoLucro: { href: "/banco-lucro", label: "Cofrinho", icon: PiggyBank },
+  metas: { href: "/metas", label: "Metas", icon: Target, paused: true },
+  insights: { href: "/insights", label: "Insights", icon: Sparkles, paused: true },
+  relatorios: { href: "/relatorios", label: "Relatórios", icon: FileText, paused: true },
+  diario: { href: "/diario", label: "Diário Operacional", icon: BookOpen, paused: true },
   notas: { href: "/notas", label: "Notas", icon: NotebookPen },
   registroDia: { href: "/registro-dia", label: "Registro do Dia", icon: ClipboardPaste },
-  calendario: { href: "/calendario", label: "Calendário", icon: Calendar },
+  calendario: { href: "/calendario", label: "Calendário", icon: Calendar, paused: true },
   configuracoes: { href: "/configuracoes", label: "Configurações", icon: Settings },
 } as const satisfies Record<string, NavItem>;
 
-/** Hub sempre no topo, fora dos setores. */
-export const NAV_PINNED_TOP: NavItem[] = [NAV_BY_HREF.visaoGeral];
+/** Sem hub de holding — Dashboard é a home. */
+export const NAV_PINNED_TOP: NavItem[] = [];
 
 /** Sistema / ajustes — sempre no fim da lista de módulos. */
 export const NAV_PINNED_BOTTOM: NavItem[] = [NAV_BY_HREF.configuracoes];
 
 /**
- * Módulos agrupados por setor (mesma lógica do mapa da Visão Geral).
- * Pausados entram aqui, mas a sidebar filtra `paused`.
+ * Menu pé no chão (Salgados): Operação → Revisão → Cadastros.
+ * Pausados ficam no array para reativar sem perder a rota.
  */
 export const NAV_SECTORS: NavSector[] = [
   {
@@ -86,36 +89,34 @@ export const NAV_SECTORS: NavSector[] = [
     items: [
       NAV_BY_HREF.dashboard,
       NAV_BY_HREF.registroDia,
-      NAV_BY_HREF.diario,
       NAV_BY_HREF.notas,
+      NAV_BY_HREF.diario,
       NAV_BY_HREF.calendario,
       NAV_BY_HREF.vendas,
+      NAV_BY_HREF.visaoGeral,
     ],
   },
   {
-    id: "money",
-    label: "Dinheiro",
-    items: [NAV_BY_HREF.financeiro, NAV_BY_HREF.bancoLucro],
-  },
-  {
-    id: "performance",
-    label: "Performance",
+    id: "review",
+    label: "Revisão",
     items: [
       NAV_BY_HREF.desempenho,
       NAV_BY_HREF.fechamento,
+      NAV_BY_HREF.bancoLucro,
+      NAV_BY_HREF.financeiro,
       NAV_BY_HREF.projecoes,
       NAV_BY_HREF.metas,
     ],
   },
   {
-    id: "intelligence",
-    label: "Inteligência",
-    items: [NAV_BY_HREF.insights, NAV_BY_HREF.relatorios],
-  },
-  {
     id: "catalog",
     label: "Cadastros",
     items: [NAV_BY_HREF.produtos, NAV_BY_HREF.clientes, NAV_BY_HREF.estoque],
+  },
+  {
+    id: "paused_intel",
+    label: "Inteligência",
+    items: [NAV_BY_HREF.insights, NAV_BY_HREF.relatorios],
   },
 ];
 
@@ -128,13 +129,13 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const SIDEBAR_WIDTH = 240;
 
-/** Destinos da barra inferior no celular — o resto fica no menu lateral. */
+/** Destinos da barra inferior no celular — operação no chão. */
 export const MOBILE_NAV_ITEMS: NavItem[] = [
-  { href: "/visao-geral", label: "Hub", icon: LayoutGrid },
+  { href: "/", label: "Hoje", icon: LayoutDashboard },
   { href: "/registro-dia", label: "Registrar", icon: ClipboardPaste },
   { href: "/desempenho", label: "Semana", icon: TrendingUp },
-  { href: "/fechamento", label: "Tendência", icon: CalendarClock },
+  { href: "/notas", label: "Notas", icon: NotebookPen },
 ];
 
 export const APP_NAME = "LH Hub";
-export const APP_TAGLINE = "Centro operacional";
+export const APP_TAGLINE = "Operação salgados";

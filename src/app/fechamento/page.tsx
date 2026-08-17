@@ -2,34 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  BadgeCheck,
-  CalendarDays,
-  Flag,
-  PiggyBank,
-  Sparkles,
-  Target,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
-import { motion } from "framer-motion";
+import { BadgeCheck, CalendarDays, Target, TrendingUp, Wallet } from "lucide-react";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { ChartCard } from "@/components/charts/chart-card";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { SectionPanel } from "@/components/executive/section-panel";
-import { ScenarioCard } from "@/components/month-close/scenario-card";
-import { WeeklyPlanTable } from "@/components/month-close/weekly-plan-table";
-import { WeekdayProfileCard } from "@/components/month-close/weekday-profile-card";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loading";
 import { EmptyModuleState } from "@/components/ui/empty-module-state";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { fetchJson } from "@/lib/api/safe-json";
-import { cn, formatCurrency, formatNumber } from "@/lib/utils";
-import type {
-  AppliedGoalsResult,
-} from "@/lib/month-close-service";
+import { cn, formatCurrency } from "@/lib/utils";
+import type { AppliedGoalsResult } from "@/lib/month-close-service";
 import type { ForecastScenarioKey, MonthCloseView } from "@/lib/month-close-view";
 
 const CONFIDENCE_STYLE: Record<string, string> = {
@@ -87,7 +71,6 @@ export default function FechamentoPage() {
   const view = data && !isEmptyMonthClose(data) ? data : null;
   const selected = scenarioKey ?? view?.recommended ?? "realista";
   const scenario = view?.scenarios.find((s) => s.key === selected) ?? view?.scenarios[1];
-  const weeklyPlan = view?.weeklyPlanByScenario[selected] ?? view?.weeklyPlan ?? [];
   const derivedGoals = view?.derivedGoalsByScenario[selected] ?? view?.derivedGoals ?? [];
 
   const historyChart = useMemo(() => {
@@ -110,7 +93,7 @@ export default function FechamentoPage() {
 
   if (isError) {
     return (
-      <ModuleShell title="Fechamento & Tendência" temporalFilter={false}>
+      <ModuleShell title="Mês" temporalFilter={false}>
         <EmptyModuleState
           icon={CalendarDays}
           title="Não foi possível carregar o fechamento"
@@ -125,7 +108,7 @@ export default function FechamentoPage() {
 
   if (isLoading) {
     return (
-      <ModuleShell title="Fechamento & Tendência" temporalFilter={false}>
+      <ModuleShell title="Mês" temporalFilter={false}>
         <PageLoader />
       </ModuleShell>
     );
@@ -133,7 +116,7 @@ export default function FechamentoPage() {
 
   if (!view || isEmptyMonthClose(data) || !scenario) {
     return (
-      <ModuleShell title="Fechamento & Tendência" temporalFilter={false}>
+      <ModuleShell title="Mês" temporalFilter={false}>
         <EmptyModuleState
           icon={CalendarDays}
           title="Ainda sem mês para fechar"
@@ -148,12 +131,12 @@ export default function FechamentoPage() {
     );
   }
 
-  const { reference, nextMonth, confidence, capitalPlan, milestones, tracking, yearOutlook } = view;
+  const { reference, nextMonth, confidence } = view;
 
   return (
     <ModuleShell
-      title="Fechamento & Tendência"
-      subtitle={`${reference.label} fechado · previsão e metas para ${nextMonth.label}`}
+      title="Mês"
+      subtitle={`${reference.label} · previsão para ${nextMonth.label}`}
       temporalFilter={false}
     >
       <div className="space-y-6">
@@ -235,237 +218,69 @@ export default function FechamentoPage() {
 
         <SectionPanel
           theme="goals"
-          title={`Tendência para ${nextMonth.label}`}
-          subtitle={`${nextMonth.daysAvailable} dias úteis disponíveis (${nextMonth.daysGrowthPercent > 0 ? "+" : ""}${nextMonth.daysGrowthPercent.toFixed(0)}% vs os ${reference.daysOperated} dias operados em ${reference.shortLabel}) · escolha o cenário que vira meta`}
+          title={`Próximo mês · ${nextMonth.label}`}
+          subtitle="Escolha um cenário e aplique como meta (opcional)"
         >
-          <div className="grid gap-4 lg:grid-cols-3">
-            {view.scenarios.map((row, index) => (
-              <ScenarioCard
+          <div className="grid gap-3 sm:grid-cols-3">
+            {view.scenarios.map((row) => (
+              <button
                 key={row.key}
-                scenario={row}
-                selected={row.key === selected}
-                recommended={row.key === view.recommended}
-                onSelect={setScenarioKey}
-                delay={index * 0.06}
-              />
+                type="button"
+                onClick={() => setScenarioKey(row.key)}
+                className={cn(
+                  "rounded-xl border px-3 py-3 text-left transition-colors",
+                  row.key === selected
+                    ? "border-brand-orange/50 bg-brand-orange/10"
+                    : "border-surface-border hover:border-brand-orange/30",
+                )}
+              >
+                <p className="text-xs font-semibold capitalize text-text-primary">{row.label}</p>
+                <p className="mt-1 text-sm font-bold text-text-primary">
+                  {formatCurrency(row.revenue)}
+                </p>
+                <p className="text-xs text-brand-green">{formatCurrency(row.profit)} lucro</p>
+              </button>
             ))}
           </div>
-        </SectionPanel>
 
-        <div className="card-surface p-4 sm:p-6">
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-text-primary">
-                Metas que saem deste cenário
-              </h3>
-              <p className="mt-0.5 text-xs text-text-muted">
-                Aplicar grava estes valores nas metas oficiais (Dashboard, Metas, Projeções e
-                Relatórios passam a medir por eles)
-              </p>
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-              <Button
-                disabled={!canWrite || applyGoals.isPending}
-                onClick={() => applyGoals.mutate(selected)}
-              >
-                <Target className="h-4 w-4" />
-                {applyGoals.isPending ? "Aplicando..." : `Aplicar metas de ${nextMonth.shortLabel}`}
-              </Button>
-              {!canWrite && <p className="text-xs text-text-muted">{goalsBlockedMessage}</p>}
-              {applyGoals.isSuccess && (
-                <p className="text-xs text-brand-green">
-                  Metas de {applyGoals.data.monthLabel} aplicadas com o cenário{" "}
-                  {applyGoals.data.scenario}.
-                </p>
-              )}
-              {applyGoals.isError && (
-                <p className="text-xs text-brand-red">{applyGoals.error.message}</p>
-              )}
-            </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Button
+              disabled={!canWrite || applyGoals.isPending}
+              onClick={() => applyGoals.mutate(selected)}
+            >
+              <Target className="h-4 w-4" />
+              {applyGoals.isPending ? "Aplicando..." : `Aplicar metas · ${nextMonth.shortLabel}`}
+            </Button>
+            {!canWrite && <p className="text-xs text-text-muted">{goalsBlockedMessage}</p>}
+            {applyGoals.isSuccess && (
+              <p className="text-xs text-brand-green">Metas aplicadas.</p>
+            )}
+            {applyGoals.isError && (
+              <p className="text-xs text-brand-red">{applyGoals.error.message}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {derivedGoals.map((goal) => (
               <div
                 key={goal.type}
-                className="rounded-xl border border-surface-border bg-surface-elevated/40 p-4"
+                className="rounded-lg border border-surface-border bg-surface-elevated/40 px-3 py-2"
               >
-                <p className="text-xs font-medium capitalize text-text-secondary">{goal.label}</p>
-                <p className="mt-1 text-lg font-bold text-text-primary">
-                  {formatCurrency(goal.targetRevenue)}
-                </p>
-                <p className="text-xs text-brand-green">
-                  {formatCurrency(goal.targetProfit)} de lucro
-                  {goal.targetUnits > 0 ? ` · ${formatNumber(goal.targetUnits)} un.` : ""}
-                </p>
-                <p className="mt-2 text-[11px] leading-relaxed text-text-muted">{goal.basis}</p>
+                <p className="text-[10px] uppercase text-text-muted">{goal.label}</p>
+                <p className="text-sm font-bold">{formatCurrency(goal.targetRevenue)}</p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {tracking && (
-          <div
-            className={cn(
-              "rounded-2xl border px-4 py-3 text-sm",
-              tracking.status === "acima"
-                ? "border-brand-green/25 bg-brand-green/5"
-                : tracking.status === "abaixo"
-                  ? "border-brand-red/25 bg-brand-red/5"
-                  : "border-surface-border bg-surface-card",
-            )}
-          >
-            <p className="font-medium text-text-primary">Previsão × realizado</p>
-            <p className="mt-0.5 text-text-secondary">
-              {tracking.message} Realizado {formatCurrency(tracking.realizedProfit)} contra{" "}
-              {formatCurrency(tracking.expectedProfitSoFar)} previstos para{" "}
-              {tracking.daysOperated} dia(s).
-            </p>
-          </div>
-        )}
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <WeeklyPlanTable rows={weeklyPlan} monthLabel={nextMonth.label} />
-          <div className="space-y-6">
-            <WeekdayProfileCard rows={view.weekdayProfile} />
-            {capitalPlan && (
-              <div className="card-surface p-4 sm:p-6">
-                <div className="mb-4 flex items-center gap-2">
-                  <PiggyBank className="h-4 w-4 text-brand-green" />
-                  <h3 className="text-sm font-semibold text-text-primary">
-                    Capital para {nextMonth.shortLabel}
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-text-muted">Custo total previsto</p>
-                    <p className="font-bold text-text-primary">
-                      {formatCurrency(scenario.costs)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-muted">Do seu bolso</p>
-                    <p className="font-bold text-brand-orange">
-                      {formatCurrency(capitalPlan.forecastOwnCapital)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-muted">De terceiros</p>
-                    <p className="font-bold text-text-primary">
-                      {formatCurrency(capitalPlan.forecastThirdPartyCapital)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-muted">Por dia útil</p>
-                    <p className="font-bold text-text-primary">
-                      {formatCurrency(capitalPlan.ownCapitalPerDay)}
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-4 text-xs leading-relaxed text-text-muted">
-                  {capitalPlan.note} O lucro de {reference.shortLabel} cobre o capital próprio
-                  previsto {capitalPlan.selfFundingRatio.toFixed(1)}×.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ChartCard
-            data={historyChart}
-            title="Histórico e previsão"
-            subtitle="Faturamento e lucro por mês, com o mês seguinte projetado"
-            type="area"
-            height={280}
-            showLegend
-          />
-
-          <div className="space-y-6">
-            {milestones.length > 0 && (
-              <div className="card-surface p-4 sm:p-6">
-                <div className="mb-4 flex items-center gap-2">
-                  <Flag className="h-4 w-4 text-brand-orange" />
-                  <h3 className="text-sm font-semibold text-text-primary">
-                    Próximos marcos de lucro acumulado
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  {milestones.map((milestone) => (
-                    <div
-                      key={milestone.amount}
-                      className="flex items-center justify-between rounded-xl border border-surface-border bg-surface-elevated/40 px-4 py-3"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-text-primary">
-                          {formatCurrency(milestone.amount)}
-                        </p>
-                        <p className="text-xs text-text-muted">
-                          {milestone.operationalDaysAway}º dia útil do mês
-                        </p>
-                      </div>
-                      <span className="text-sm font-semibold text-brand-orange">
-                        {milestone.dateLabel}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="card-surface p-4 sm:p-6">
-              <div className="mb-3 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                <h3 className="text-sm font-semibold text-text-primary">
-                  Horizonte de {yearOutlook.year}
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-text-muted">Realizado até agora</p>
-                  <p className="font-bold text-text-primary">
-                    {formatCurrency(yearOutlook.realizedProfit)}
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    de lucro · {formatCurrency(yearOutlook.realizedRevenue)} faturados
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-muted">
-                    Fechamento projetado ({yearOutlook.monthsRemaining} meses restantes)
-                  </p>
-                  <p className="font-bold text-brand-green">
-                    {formatCurrency(yearOutlook.projectedProfit)}
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    de lucro · {formatCurrency(yearOutlook.projectedRevenue)} faturados
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <SectionPanel
-          theme="alerts"
-          title="O que os números estão dizendo"
-          subtitle={confidence.reason}
-        >
-          <div className="space-y-2">
-            {view.insights.map((insight, index) => (
-              <motion.div
-                key={insight}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.04 }}
-                className="flex items-start gap-3 rounded-xl border border-surface-border bg-surface-card px-4 py-3 text-sm text-text-secondary"
-              >
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-brand-orange" />
-                <p className="leading-relaxed">{insight}</p>
-              </motion.div>
             ))}
           </div>
         </SectionPanel>
+
+        <ChartCard
+          data={historyChart}
+          title="Histórico recente"
+          subtitle="Faturamento por mês (+ previsão do próximo)"
+          type="area"
+          height={240}
+          showLegend
+        />
       </div>
     </ModuleShell>
   );
