@@ -30,18 +30,28 @@ export function DashboardGeneralView({
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-surface-card to-purple-500/10 p-4 sm:p-8"
+        className="relative overflow-hidden rounded-3xl border border-[#7C3CFF]/25 bg-gradient-to-br from-[#7C3CFF]/12 via-surface-card to-[#0CD4FF]/10 p-4 sm:p-8"
       >
-        <p className="mb-1 text-sm text-text-secondary">Visão executiva · histórico completo</p>
-        <p className="text-[2rem] font-black tracking-tight text-blue-400 sm:text-4xl lg:text-5xl">
-          {formatCurrency(revenue)}
-        </p>
-        <p className="mt-2 text-sm text-text-secondary sm:text-base">
-          Lucro acumulado{" "}
-          <span className="text-emerald-400 font-bold">{formatCurrency(profit)}</span>
-          {" · "}
-          {itemsSold} unidades · {uniqueBuyers} compradores
-        </p>
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#7C3CFF]/20 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-[#0CD4FF]/15 blur-3xl"
+          aria-hidden
+        />
+        <div className="relative">
+          <p className="mb-1 text-sm text-text-secondary">Visão executiva · histórico completo</p>
+          <p className="text-[2rem] font-black tracking-tight text-brand-gradient sm:text-4xl lg:text-5xl">
+            {formatCurrency(revenue)}
+          </p>
+          <p className="mt-2 text-sm text-text-secondary sm:text-base">
+            Lucro acumulado{" "}
+            <span className="font-bold text-brand-green">{formatCurrency(profit)}</span>
+            {" · "}
+            {itemsSold} unidades · {uniqueBuyers} compradores
+          </p>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">

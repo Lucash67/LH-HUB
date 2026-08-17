@@ -82,13 +82,13 @@ export default function BancoLucroPage() {
         ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-brand-green/25 bg-brand-green/5 p-5">
+          <div className="relative overflow-hidden rounded-2xl border border-brand-green/25 bg-gradient-to-br from-brand-green/10 via-surface-card to-[#7C3CFF]/5 p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Saldo acumulado</p>
             <p className="mt-1 text-3xl font-black text-brand-green">{formatCurrency(balance)}</p>
           </div>
-          <div className="rounded-2xl border border-surface-border bg-surface-card p-5">
+          <div className="relative overflow-hidden rounded-2xl border border-[#7C3CFF]/20 bg-gradient-to-br from-[#7C3CFF]/8 via-surface-card to-surface-card p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Lucro total</p>
-            <p className="mt-1 text-3xl font-black text-text-primary">{formatCurrency(profit)}</p>
+            <p className="mt-1 text-3xl font-black text-brand-gradient">{formatCurrency(profit)}</p>
             <p className="mt-1 text-xs text-text-muted">
               {isViewingGeneral(context) ? data.operationalDays : scopedDays} dias operacionais
             </p>

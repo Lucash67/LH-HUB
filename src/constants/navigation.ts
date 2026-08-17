@@ -141,4 +141,4 @@ export const MOBILE_NAV_ITEMS: NavItem[] = [
 ];
 
 export const APP_NAME = "OMNI Business";
-export const APP_TAGLINE = "OMNI Business";
+export const APP_TAGLINE = "Gestão da operação";

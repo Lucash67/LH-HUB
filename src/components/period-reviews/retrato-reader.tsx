@@ -73,8 +73,8 @@ export function RetratoReader({ review }: RetratoReaderProps) {
         </div>
       </header>
 
-      <div className="rounded-2xl border border-brand-orange/30 bg-brand-orange/5 px-4 py-4 sm:px-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-orange">
+      <div className="rounded-2xl border border-[#7C3CFF]/30 bg-gradient-to-br from-[#7C3CFF]/10 via-surface-card to-[#0CD4FF]/5 px-4 py-4 sm:px-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-gradient">
           Veredito em uma frase
         </p>
         <p className="mt-2 text-sm leading-relaxed text-text-primary sm:text-base">{review.summary}</p>

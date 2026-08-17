@@ -12,39 +12,39 @@ const VARIANT_STYLES: Record<
   { ring: string; glow: string; icon: string; value: string; blob: string }
 > = {
   gain: {
-    ring: "border-emerald-400/40",
-    glow: "shadow-[0_0_32px_rgba(34,197,94,0.25)]",
-    icon: "bg-emerald-500/20 text-emerald-400",
-    value: "text-emerald-400",
-    blob: "bg-emerald-500/15",
+    ring: "border-brand-green/35",
+    glow: "shadow-[0_0_28px_rgba(34,197,94,0.18)]",
+    icon: "bg-brand-green/15 text-brand-green",
+    value: "text-brand-green",
+    blob: "bg-brand-green/10",
   },
   loss: {
-    ring: "border-red-400/40",
-    glow: "shadow-[0_0_32px_rgba(239,68,68,0.2)]",
-    icon: "bg-red-500/20 text-red-400",
-    value: "text-red-400",
-    blob: "bg-red-500/15",
+    ring: "border-brand-red/35",
+    glow: "shadow-[0_0_28px_rgba(239,68,68,0.16)]",
+    icon: "bg-brand-red/15 text-brand-red",
+    value: "text-brand-red",
+    blob: "bg-brand-red/10",
   },
   revenue: {
-    ring: "border-blue-400/40",
-    glow: "shadow-[0_0_32px_rgba(59,130,246,0.22)]",
-    icon: "bg-blue-500/20 text-blue-400",
-    value: "text-blue-400",
-    blob: "bg-blue-500/15",
+    ring: "border-[#3882F6]/40",
+    glow: "shadow-[0_0_28px_rgba(56,130,246,0.2)]",
+    icon: "bg-[#3882F6]/15 text-[#3882F6]",
+    value: "text-[#3882F6]",
+    blob: "bg-[#3882F6]/12",
   },
   meta: {
-    ring: "border-purple-400/40",
-    glow: "shadow-[0_0_32px_rgba(168,85,247,0.22)]",
-    icon: "bg-purple-500/20 text-purple-400",
-    value: "text-purple-400",
-    blob: "bg-purple-500/15",
+    ring: "border-[#7C3CFF]/40",
+    glow: "shadow-[0_0_28px_rgba(124,60,255,0.22)]",
+    icon: "bg-[#7C3CFF]/15 text-[#7C3CFF]",
+    value: "text-[#7C3CFF]",
+    blob: "bg-[#7C3CFF]/12",
   },
   info: {
-    ring: "border-[#7C3CFF]/40",
-    glow: "shadow-[0_0_24px_rgba(124, 60, 255,0.18)]",
-    icon: "bg-[#7C3CFF]/20 text-[#7C3CFF]",
-    value: "text-[#7C3CFF]",
-    blob: "bg-[#7C3CFF]/15",
+    ring: "border-[#0CD4FF]/35",
+    glow: "shadow-[0_0_24px_rgba(12,212,255,0.16)]",
+    icon: "bg-[#0CD4FF]/15 text-[#0CD4FF]",
+    value: "text-[#0CD4FF]",
+    blob: "bg-[#0CD4FF]/10",
   },
   neutral: {
     ring: "border-surface-border",
@@ -116,7 +116,7 @@ export function PulseMetric({
             <p
               className={cn(
                 "mt-1.5 flex items-center gap-1 text-xs font-semibold",
-                trend >= 0 ? "text-emerald-400" : "text-red-400",
+                trend >= 0 ? "text-brand-green" : "text-brand-red",
               )}
             >
               {trend >= 0 ? (

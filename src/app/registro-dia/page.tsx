@@ -224,7 +224,7 @@ export default function RegistroDiaPage() {
                   {preview.warnings.map((msg) => (
                     <div
                       key={msg}
-                      className="flex items-start gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-300"
+                      className="flex items-start gap-2 rounded-lg border border-[#7C3CFF]/30 bg-[#7C3CFF]/10 p-3 text-sm text-[#F5F6FA]/90"
                     >
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                       {msg}
@@ -275,7 +275,7 @@ export default function RegistroDiaPage() {
                       {sale.productName}
                       {sale.quantity > 1 ? ` x${sale.quantity}` : ""} · {sale.paymentMethod}
                       {sale.paymentStatus === "pending" && (
-                        <Badge className="ml-2 bg-yellow-500/15 text-yellow-600">pendente</Badge>
+                        <Badge className="ml-2 bg-[#7C3CFF]/15 text-[#0CD4FF]">pendente</Badge>
                       )}
                     </li>
                   ))}

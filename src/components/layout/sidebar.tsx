@@ -168,7 +168,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         <LhHoldingIcon height={36} className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold leading-tight tracking-[0.1em] text-text-primary">
-            OMNI
+            OMNI <span className="font-semibold tracking-normal text-text-secondary">Business</span>
           </p>
           <p className="truncate text-[10px] uppercase tracking-wider text-text-muted">{APP_TAGLINE}</p>
         </div>

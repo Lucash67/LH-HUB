@@ -151,6 +151,17 @@
 
   .card-surface {
     @apply rounded-xl border border-surface-border bg-surface-card;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(245, 246, 250, 0.03);
+  }
+
+  .dark .card-surface {
+    border-color: rgba(124, 60, 255, 0.12);
+    background: linear-gradient(
+      165deg,
+      rgba(124, 60, 255, 0.05) 0%,
+      rgba(31, 36, 48, 0.96) 28%,
+      rgba(18, 21, 31, 1) 100%
+    );
   }
 
   .text-brand-gradient {

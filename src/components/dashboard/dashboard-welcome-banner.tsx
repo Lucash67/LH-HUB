@@ -82,11 +82,20 @@ export function DashboardWelcomeBanner({ className, viewDate }: DashboardWelcome
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
       className={cn(
-        "relative mb-4 overflow-hidden rounded-2xl border border-surface-border bg-surface-card p-4 sm:p-5",
+        "relative mb-4 overflow-hidden rounded-2xl border border-[#7C3CFF]/20 bg-surface-card p-4 sm:p-5",
         className,
       )}
     >
-      <div className="space-y-3">
+      <div
+        className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-[#7C3CFF]/15 blur-3xl"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -bottom-14 left-1/3 h-28 w-28 rounded-full bg-[#0CD4FF]/10 blur-3xl"
+        aria-hidden
+      />
+
+      <div className="relative space-y-3">
         <div>
           <p className="text-sm text-text-secondary">
             {copy.greeting}, <span className="font-semibold text-text-primary">{firstName}</span>
@@ -102,10 +111,10 @@ export function DashboardWelcomeBanner({ className, viewDate }: DashboardWelcome
                 key={action.href}
                 href={action.href}
                 className={cn(
-                  "group inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors",
+                  "group inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-all",
                   action.primary
-                    ? "border-brand-yellow/40 bg-brand-yellow/15 text-brand-yellow hover:bg-brand-yellow/20"
-                    : "border-surface-border bg-surface-base/50 text-text-primary hover:border-brand-yellow/30",
+                    ? "border-transparent bg-brand-gradient text-white shadow-[0_4px_20px_rgba(124,60,255,0.35)] hover:brightness-110"
+                    : "border-surface-border bg-surface-base/50 text-text-primary hover:border-[#7C3CFF]/35",
                 )}
               >
                 <Icon className="h-4 w-4" strokeWidth={2} />

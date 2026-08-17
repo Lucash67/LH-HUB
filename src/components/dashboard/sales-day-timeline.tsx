@@ -28,10 +28,10 @@ const PERIOD_META = {
   afternoon: {
     label: "Tarde",
     icon: Sunset,
-    gradient: "from-orange-500/20 via-amber-500/10 to-transparent",
-    border: "border-orange-500/25",
-    accent: "text-orange-300",
-    dot: "bg-orange-400",
+    gradient: "from-[#3882F6]/20 via-[#0CD4FF]/10 to-transparent",
+    border: "border-[#3882F6]/25",
+    accent: "text-[#0CD4FF]",
+    dot: "bg-[#3882F6]",
   },
 } as const;
 

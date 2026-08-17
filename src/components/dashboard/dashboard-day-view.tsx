@@ -98,8 +98,8 @@ export function DashboardDayView({
           idleDay
             ? "border-surface-border bg-surface-card"
             : profitPositive
-              ? "border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-surface-card to-surface-card"
-              : "border-red-500/25 bg-gradient-to-br from-red-500/10 via-surface-card to-surface-card",
+              ? "border-brand-green/25 bg-gradient-to-br from-brand-green/10 via-surface-card to-[#7C3CFF]/5"
+              : "border-brand-red/25 bg-gradient-to-br from-brand-red/10 via-surface-card to-surface-card",
         )}
       >
         <button
@@ -131,7 +131,7 @@ export function DashboardDayView({
             <p
               className={cn(
                 "text-[2rem] font-black tracking-tight sm:text-4xl",
-                idleDay ? "text-text-secondary" : profitPositive ? "text-emerald-400" : "text-red-400",
+                idleDay ? "text-text-secondary" : profitPositive ? "text-brand-green" : "text-brand-red",
               )}
             >
               {money(profit)}
@@ -145,7 +145,7 @@ export function DashboardDayView({
               <p
                 className={cn(
                   "mt-2 inline-flex items-center gap-1 text-xs font-semibold",
-                  profitTrend >= 0 ? "text-emerald-300" : "text-red-300",
+                  profitTrend >= 0 ? "text-brand-green" : "text-brand-red",
                 )}
               >
                 {profitTrend >= 0 ? (
@@ -188,8 +188,8 @@ export function DashboardDayView({
       </motion.div>
 
       {pendingLoss > 0 && (
-        <div className="flex items-start gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+        <div className="flex items-start gap-2 rounded-2xl border border-[#7C3CFF]/30 bg-[#7C3CFF]/10 px-4 py-3 text-sm text-[#F5F6FA]/90">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#0CD4FF]" />
           <p>
             {daySummary.pendingCount > 0 && (
               <span>
@@ -243,14 +243,14 @@ function KpiMini({
     <div
       className={cn(
         "rounded-2xl border px-3 py-2.5",
-        warn ? "border-amber-500/30 bg-amber-500/5" : "border-surface-border bg-surface-base/40",
+        warn ? "border-[#7C3CFF]/30 bg-[#7C3CFF]/8" : "border-surface-border bg-surface-base/40",
       )}
     >
       <p className="mb-1 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
         {icon}
         {label}
       </p>
-      <p className={cn("text-base font-bold tabular-nums sm:text-lg", warn && "text-amber-300")}>
+      <p className={cn("text-base font-bold tabular-nums sm:text-lg", warn && "text-[#0CD4FF]")}>
         {value}
       </p>
       {subtext && <p className="mt-0.5 text-[10px] text-text-muted">{subtext}</p>}

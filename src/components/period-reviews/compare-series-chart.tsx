@@ -69,7 +69,7 @@ export function CompareSeriesChart({
               type="monotone"
               dataKey="previous"
               name={previousName}
-              stroke="#737373"
+              stroke={HUB_COLORS.cyan}
               strokeWidth={2}
               dot={{ r: 3 }}
             />
@@ -77,7 +77,7 @@ export function CompareSeriesChart({
               type="monotone"
               dataKey="current"
               name={currentName}
-              stroke={HUB_COLORS.yellow}
+              stroke={HUB_COLORS.purple}
               strokeWidth={2.5}
               dot={{ r: 3 }}
             />
@@ -96,8 +96,8 @@ export function CompareSeriesChart({
               }}
             />
             <Legend />
-            <Bar dataKey="previous" name={previousName} fill="#737373" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="current" name={currentName} fill={HUB_COLORS.yellow} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="previous" name={previousName} fill={HUB_COLORS.cyan} fillOpacity={0.45} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="current" name={currentName} fill={HUB_COLORS.purple} radius={[6, 6, 0, 0]} />
           </BarChart>
         )}
       </ResponsiveContainer>

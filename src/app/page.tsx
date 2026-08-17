@@ -139,6 +139,7 @@ export default function DashboardPage() {
     >
       <DashboardWelcomeBanner viewDate={context.mode === "day" ? context.viewDate : null} />
 
+      <div className="dashboard-mesh -mx-1 rounded-3xl px-1 py-1 sm:mx-0 sm:px-0">
       {isGeneralView ? (
         <DashboardGeneralView
           revenue={metrics.revenueToday}
@@ -172,6 +173,7 @@ export default function DashboardPage() {
           />
         )
       )}
+      </div>
     </ModuleShell>
   );
 }

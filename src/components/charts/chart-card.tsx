@@ -18,8 +18,9 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { HUB_COLORS } from "@/constants/hub-brand";
 
-const COLORS = [HUB_COLORS.yellow, "#22C55E", "#737373"];
-const BRAND_PRIMARY = HUB_COLORS.yellow;
+const COLORS = [HUB_COLORS.purple, HUB_COLORS.cyan, HUB_COLORS.blue, "#22C55E"];
+const BRAND_PRIMARY = HUB_COLORS.purple;
+const BRAND_SECONDARY = HUB_COLORS.cyan;
 
 interface ChartCardProps {
   data: Array<{ label: string; value: number; profit?: number; revenue?: number }>;
@@ -87,11 +88,11 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
         {type === "area" && showLegend && (
           <div className="flex items-center gap-3 text-xs text-text-muted sm:gap-4">
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-brand-orange" />
+              <span className="h-2 w-2 rounded-full bg-[#7C3CFF]" />
               Receita
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-brand-green" />
+              <span className="h-2 w-2 rounded-full bg-[#0CD4FF]" />
               Lucro
             </span>
           </div>
@@ -118,8 +119,8 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
                   <stop offset="95%" stopColor={BRAND_PRIMARY} stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22C55E" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                  <stop offset="5%" stopColor={BRAND_SECONDARY} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={BRAND_SECONDARY} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
@@ -143,7 +144,7 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
               <Tooltip content={<ChartTooltip />} />
               <Area type="monotone" dataKey="revenue" stroke={BRAND_PRIMARY} fill="url(#gradRevenue)" strokeWidth={2} name="Receita" />
               {chartData.some((d) => d.profit !== undefined) && (
-                <Area type="monotone" dataKey="profit" stroke="#22C55E" fill="url(#gradProfit)" strokeWidth={2} name="Lucro" />
+                <Area type="monotone" dataKey="profit" stroke={BRAND_SECONDARY} fill="url(#gradProfit)" strokeWidth={2} name="Lucro" />
               )}
             </AreaChart>
           ) : type === "bar" ? (
@@ -235,9 +236,9 @@ export function TopProductsCard({ products, subtitle = "Este mês" }: TopProduct
                 </span>
                 <span className="font-medium text-text-primary">{product.value}</span>
               </div>
-              <div className="h-1 overflow-hidden rounded-full bg-surface-elevated">
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface-elevated">
                 <div
-                  className="h-full rounded-full bg-brand-orange transition-all duration-500"
+                  className="h-full rounded-full bg-brand-gradient transition-all duration-500"
                   style={{ width: `${(product.value / max) * 100}%` }}
                 />
               </div>
