@@ -15,9 +15,13 @@ export function MobileBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-surface-border bg-surface-base/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[#7C3CFF]/15 bg-surface-base/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       aria-label="Navegação principal"
     >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#7C3CFF]/50 to-transparent"
+        aria-hidden
+      />
       <div className="flex items-stretch">
         {MOBILE_NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
@@ -28,11 +32,20 @@ export function MobileBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2 transition-colors",
-                active ? "text-brand-yellow" : "text-text-muted active:bg-surface-hover",
+                "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2 transition-colors",
+                active ? "text-[#7C3CFF]" : "text-text-muted active:bg-surface-hover",
               )}
             >
-              <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+              {active && (
+                <span
+                  className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-brand-gradient"
+                  aria-hidden
+                />
+              )}
+              <Icon
+                className={cn("h-5 w-5 shrink-0", active && "drop-shadow-[0_0_8px_rgba(124,60,255,0.55)]")}
+                strokeWidth={active ? 2.25 : 1.75}
+              />
               <span className="text-[10px] font-semibold leading-none">{item.label}</span>
             </Link>
           );

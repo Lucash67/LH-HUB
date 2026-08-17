@@ -46,7 +46,7 @@ export function WeeklyPlanTable({ rows, monthLabel }: WeeklyPlanTableProps) {
 
             <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
               <div
-                className="h-full rounded-full bg-brand-orange transition-all duration-500"
+                className="h-full rounded-full bg-brand-gradient transition-all duration-500"
                 style={{ width: `${(row.targetUnits / maxUnits) * 100}%` }}
               />
             </div>

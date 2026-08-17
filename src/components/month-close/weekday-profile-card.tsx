@@ -63,7 +63,7 @@ export function WeekdayProfileCard({ rows }: WeekdayProfileCardProps) {
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
-                    delta >= 5 ? "bg-brand-green" : delta <= -5 ? "bg-brand-red/70" : "bg-brand-orange",
+                    delta >= 5 ? "bg-brand-green" : delta <= -5 ? "bg-brand-red/70" : "bg-brand-gradient",
                   )}
                   style={{ width: `${(row.avgProfit / maxProfit) * 100}%` }}
                 />

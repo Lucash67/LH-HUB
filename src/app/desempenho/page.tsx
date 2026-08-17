@@ -142,13 +142,13 @@ export default function DesempenhoPage() {
 
         {!isEmptyPeriod && (
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl border border-surface-border bg-surface-card px-4 py-3">
+            <div className="rounded-xl border border-[#7C3CFF]/15 bg-gradient-to-br from-[#7C3CFF]/8 to-surface-card px-4 py-3">
               <p className="text-xs text-text-muted">Lucro semana anterior</p>
               <p className="font-bold text-brand-green">
                 {formatCurrency(data.comparison.previousProfit)}
               </p>
             </div>
-            <div className="rounded-xl border border-surface-border bg-surface-card px-4 py-3">
+            <div className="rounded-xl border border-[#0CD4FF]/15 bg-gradient-to-br from-[#0CD4FF]/8 to-surface-card px-4 py-3">
               <p className="text-xs text-text-muted">Fat. semana anterior</p>
               <p className="font-bold">{formatCurrency(data.comparison.previousRevenue)}</p>
             </div>
