@@ -62,7 +62,7 @@ const NAV_BY_HREF = {
     icon: CalendarClock,
   },
   bancoLucro: { href: "/banco-lucro", label: "Cofrinho", icon: PiggyBank },
-  metas: { href: "/metas", label: "Metas", icon: Target, paused: true },
+  metas: { href: "/metas", label: "Metas", icon: Target },
   insights: { href: "/insights", label: "Insights", icon: Sparkles, paused: true },
   relatorios: { href: "/relatorios", label: "Relatórios", icon: FileText, paused: true },
   diario: { href: "/diario", label: "Diário Operacional", icon: BookOpen, paused: true },
