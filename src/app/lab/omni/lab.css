@@ -1,0 +1,58 @@
+/* OMNI Design Lab — tokens locais (não alteram globals de produção) */
+.omni-lab {
+  --omni-bg: #05050c;
+  --omni-surface: #12141f;
+  --omni-surface-2: #1a1d2b;
+  --omni-border: rgba(124, 60, 255, 0.22);
+  --omni-purple: #7c3cff;
+  --omni-blue: #3882f6;
+  --omni-cyan: #0cd4ff;
+  --omni-green: #22c55e;
+  --omni-red: #ef4444;
+  --omni-muted: #a0a0b0;
+  --omni-gradient: linear-gradient(90deg, #7c3cff 0%, #3882f6 50%, #0cd4ff 100%);
+  --omni-gradient-soft: linear-gradient(
+    135deg,
+    rgba(124, 60, 255, 0.35) 0%,
+    rgba(56, 130, 246, 0.2) 50%,
+    rgba(12, 212, 255, 0.15) 100%
+  );
+}
+
+.omni-lab .omni-gradient-text {
+  background: var(--omni-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.omni-lab .omni-gradient-bg {
+  background-image: var(--omni-gradient);
+}
+
+.omni-lab .omni-glass {
+  background: linear-gradient(
+    160deg,
+    rgba(124, 60, 255, 0.1) 0%,
+    rgba(18, 20, 31, 0.92) 40%,
+    rgba(10, 11, 18, 0.98) 100%
+  );
+  border: 1px solid rgba(124, 60, 255, 0.2);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(12, 212, 255, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.omni-lab .omni-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.omni-lab .omni-ring-glow {
+  box-shadow:
+    0 0 40px rgba(124, 60, 255, 0.35),
+    0 0 80px rgba(12, 212, 255, 0.15);
+}
