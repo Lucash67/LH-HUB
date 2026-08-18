@@ -129,6 +129,7 @@ export default function OmniLabHubPage() {
           </p>
           <ul className="list-inside list-disc space-y-1 text-xs leading-relaxed">
             <li>Não grava no banco e não altera fluxos de produção.</li>
+            <li>Módulos aprofundados: KPIs, filtros, gráficos mock, glass e motion.</li>
             <li>Navegação lateral funciona entre todos os módulos mock.</li>
             <li>Branch: <code className="text-[#0CD4FF]">feat/omni-design-lab</code></li>
           </ul>

@@ -116,12 +116,12 @@ export default function LabLoginPage() {
             Voltar
           </Link>
 
-          <div className="omni-glass mx-auto w-full max-w-md rounded-3xl p-6 sm:p-8">
+          <div className="omni-glass omni-fade-up mx-auto w-full max-w-md rounded-3xl p-6 sm:p-8">
             <div className="mb-6 flex flex-col items-center text-center lg:items-start lg:text-left">
               <OmniWordmark size={34} showTagline className="mb-5 lg:hidden" />
               <OmniWordmark size={28} className="mb-5 hidden lg:flex" />
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7C3CFF]">
-                Bem-vindo de volta 👋
+                Bem-vindo de volta
               </p>
               <h2 className="mt-1 text-2xl font-bold tracking-tight">Faça login para continuar</h2>
               <p className="mt-1 text-xs text-[#A0A0B0]">

@@ -1,99 +1,59 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ShoppingCart, TrendingUp, Wallet } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Brain, ShoppingCart, Sparkles, TrendingUp, Wallet, BarChart3 } from "lucide-react";
 import { LabAppShell, StatusPill } from "../_components/lab-app-shell";
-
-const KPIS = [
-  { label: "Faturamento", value: "R$ 8.764,50", delta: "+12,5%", icon: Wallet, tone: "purple" },
-  { label: "Vendas", value: "142", delta: "+8,2%", icon: ShoppingCart, tone: "blue" },
-  { label: "Lucro", value: "R$ 3.215,20", delta: "+15,7%", icon: TrendingUp, tone: "cyan" },
-  { label: "Despesas", value: "R$ 1.842,35", delta: "-4,3%", icon: BarChart3, tone: "pink", down: true },
-];
+import { AreaSpark, DonutChart, LabKpi, LabSectionTitle } from "../_components/lab-widgets";
 
 export default function LabDashboardPage() {
   return (
-    <LabAppShell title="Dashboard">
+    <LabAppShell title="Dashboard" subtitle="Visão geral · mock das prints">
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {KPIS.map((k) => {
-          const Icon = k.icon;
-          return (
-            <div key={k.label} className="omni-glass rounded-2xl p-3.5 sm:p-4">
-              <div className="mb-3 flex items-start justify-between">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-[#A0A0B0]">
-                  {k.label}
-                </p>
-                <span
-                  className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-xl",
-                    k.tone === "purple" && "bg-[#7C3CFF]/15 text-[#7C3CFF]",
-                    k.tone === "blue" && "bg-[#3882F6]/15 text-[#3882F6]",
-                    k.tone === "cyan" && "bg-[#0CD4FF]/15 text-[#0CD4FF]",
-                    k.tone === "pink" && "bg-pink-500/15 text-pink-400",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                </span>
-              </div>
-              <p className="text-xl font-bold tracking-tight sm:text-2xl">{k.value}</p>
-              <p className={cn("mt-1 text-xs font-semibold", k.down ? "text-[#EF4444]" : "text-[#22C55E]")}>
-                {k.delta}
-              </p>
-            </div>
-          );
-        })}
+        <LabKpi label="Faturamento" value="R$ 8.764,50" delta="+12,5% vs mês anterior" icon={Wallet} tone="purple" delay={0} />
+        <LabKpi label="Vendas" value="142" delta="+8,2% vs mês anterior" icon={ShoppingCart} tone="blue" delay={1} />
+        <LabKpi label="Lucro" value="R$ 3.215,20" delta="+15,7% vs mês anterior" icon={TrendingUp} tone="cyan" delay={2} />
+        <LabKpi label="Despesas" value="R$ 1.842,35" delta="-4,3% vs mês anterior" icon={BarChart3} tone="pink" down delay={3} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="omni-glass rounded-2xl p-4 sm:p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold">Evolução de vendas</h2>
-              <p className="text-xs text-[#A0A0B0]">01/05 — 29/05</p>
-            </div>
-          </div>
-          <svg viewBox="0 0 360 160" className="h-40 w-full sm:h-48" aria-hidden>
-            <defs>
-              <linearGradient id="dashArea" x1="0" y1="0" x2="0" y2="1">
-                <stop stopColor="#7C3CFF" stopOpacity="0.4" />
-                <stop offset="1" stopColor="#7C3CFF" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            {[0, 1, 2, 3].map((i) => (
-              <line key={i} x1="0" x2="360" y1={20 + i * 35} y2={20 + i * 35} stroke="#ffffff10" />
-            ))}
-            <path
-              d="M0 120 C 40 110, 70 100, 100 95 S 160 70, 200 75 S 260 40, 300 35 S 340 20, 360 18 L 360 160 L 0 160 Z"
-              fill="url(#dashArea)"
-            />
-            <path
-              d="M0 120 C 40 110, 70 100, 100 95 S 160 70, 200 75 S 260 40, 300 35 S 340 20, 360 18"
-              fill="none"
-              stroke="#7C3CFF"
-              strokeWidth="2.5"
-            />
-          </svg>
+      <div className="relative grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="omni-glass omni-fade-up omni-fade-up-d1 rounded-2xl p-4 sm:p-5">
+          <LabSectionTitle title="Evolução de vendas" subtitle="01/05 — 29/05" />
+          <AreaSpark id="dashAreaDeep" />
         </div>
 
-        <div className="omni-glass rounded-2xl p-4 sm:p-5">
-          <h2 className="mb-4 text-sm font-semibold">Vendas por operação</h2>
+        <div className="omni-glass omni-fade-up omni-fade-up-d2 rounded-2xl p-4 sm:p-5">
+          <LabSectionTitle title="Vendas por operação" />
           <div className="flex items-center gap-5">
-            <div
-              className="relative flex h-32 w-32 shrink-0 items-center justify-center rounded-full"
-              style={{ background: "conic-gradient(#7C3CFF 0 62%, #3882F6 62% 100%)" }}
-            >
-              <div className="flex h-[78px] w-[78px] flex-col items-center justify-center rounded-full bg-[#0B0D17]">
-                <span className="text-xl font-bold">62%</span>
-                <span className="text-[10px] text-[#A0A0B0]">Salgados</span>
-              </div>
-            </div>
+            <DonutChart percent={62} label="Salgados" />
             <div className="space-y-3 text-sm">
-              <LegendDot color="#7C3CFF" label="Salgados" value="62%" />
-              <LegendDot color="#3882F6" label="Brigadeiros" value="38%" />
+              <Legend color="#7C3CFF" label="Salgados" value="62%" />
+              <Legend color="#3882F6" label="Brigadeiros" value="38%" />
+              <p className="pt-1 text-[11px] leading-snug text-[#A0A0B0]">
+                Salgados concentram a maior parte do volume no mês.
+              </p>
             </div>
           </div>
         </div>
+
+        {/* Floating insight cards like prints */}
+        <div className="pointer-events-none absolute -right-1 -top-2 z-10 hidden max-w-[180px] rounded-xl border border-[#7C3CFF]/35 bg-[#1A1D2B]/95 p-2.5 shadow-xl lg:block">
+          <div className="mb-1 flex items-center gap-1.5">
+            <Brain className="h-3.5 w-3.5 text-[#7C3CFF]" />
+            <p className="text-[10px] font-semibold">Insights inteligentes</p>
+          </div>
+          <p className="text-[9px] leading-snug text-[#A0A0B0]">
+            Destaques do que realmente importa na operação.
+          </p>
+        </div>
+      </div>
+
+      <div className="omni-glass omni-fade-up omni-fade-up-d3 flex items-center gap-3 rounded-2xl px-4 py-3">
+        <Sparkles className="h-4 w-4 shrink-0 text-[#0CD4FF]" />
+        <p className="flex-1 text-xs text-[#A0A0B0] sm:text-sm">
+          <span className="font-semibold text-white">Relatórios automáticos</span> — leitura visual
+          clara dos resultados do período.
+        </p>
+        <BarChart3 className="h-4 w-4 text-[#7C3CFF]" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -102,16 +62,16 @@ export default function LabDashboardPage() {
       </div>
 
       <p className="text-center text-xs text-[#A0A0B0]">
-        Ambiente de teste ·{" "}
+        Lab ·{" "}
         <Link href="/" className="text-[#7C3CFF] hover:underline">
-          voltar à produção
+          produção
         </Link>
       </p>
     </LabAppShell>
   );
 }
 
-function LegendDot({ color, label, value }: { color: string; label: string; value: string }) {
+function Legend({ color, label, value }: { color: string; label: string; value: string }) {
   return (
     <div className="flex items-center gap-2">
       <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
@@ -137,7 +97,7 @@ function OpCard({
   good: boolean;
 }) {
   return (
-    <div className="omni-glass rounded-2xl p-4">
+    <div className="omni-glass omni-glass-hover rounded-2xl p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-semibold">{name}</h3>
         <StatusPill tone={good ? "good" : "warn"}>{status}</StatusPill>

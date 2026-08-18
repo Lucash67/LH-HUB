@@ -135,7 +135,10 @@ export default function OnboardingLabPage() {
         </h1>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-[#A0A0B0]">{slide.description}</p>
 
-        <div className="relative my-6 flex min-h-[280px] flex-1 items-center justify-center">
+        <div
+          key={slide.id}
+          className="relative my-6 flex min-h-[280px] flex-1 items-center justify-center omni-fade-up"
+        >
           {slide.body === "features" && <FeaturesGrid />}
           {slide.body === "orbit" && <OrbitGraphic />}
           {slide.body === "dashboard" && <DashboardPreview />}

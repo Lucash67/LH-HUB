@@ -1,4 +1,4 @@
-/* OMNI Design Lab — tokens locais (não alteram globals de produção) */
+/* OMNI Design Lab — tokens + motion (isolado da produção) */
 .omni-lab {
   --omni-bg: #05050c;
   --omni-surface: #12141f;
@@ -17,6 +17,10 @@
     rgba(56, 130, 246, 0.2) 50%,
     rgba(12, 212, 255, 0.15) 100%
   );
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(124, 60, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(12, 212, 255, 0.1), transparent 50%),
+    var(--omni-bg);
 }
 
 .omni-lab .omni-gradient-text {
@@ -31,17 +35,48 @@
 }
 
 .omni-lab .omni-glass {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(
     160deg,
-    rgba(124, 60, 255, 0.1) 0%,
-    rgba(18, 20, 31, 0.92) 40%,
+    rgba(124, 60, 255, 0.12) 0%,
+    rgba(18, 20, 31, 0.94) 38%,
     rgba(10, 11, 18, 0.98) 100%
   );
-  border: 1px solid rgba(124, 60, 255, 0.2);
+  border: 1px solid rgba(124, 60, 255, 0.22);
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(12, 212, 255, 0.08);
-  backdrop-filter: blur(16px);
+    0 0 0 1px rgba(12, 212, 255, 0.04),
+    inset 0 1px 0 rgba(12, 212, 255, 0.1);
+  backdrop-filter: blur(18px);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.omni-lab .omni-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(124, 60, 255, 0.55) 40%,
+    rgba(12, 212, 255, 0.35) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.omni-lab .omni-glass-hover:hover {
+  border-color: rgba(124, 60, 255, 0.45);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.5),
+    0 0 28px rgba(124, 60, 255, 0.12),
+    inset 0 1px 0 rgba(12, 212, 255, 0.12);
+  transform: translateY(-1px);
 }
 
 .omni-lab .omni-orb {
@@ -55,4 +90,96 @@
   box-shadow:
     0 0 40px rgba(124, 60, 255, 0.35),
     0 0 80px rgba(12, 212, 255, 0.15);
+}
+
+.omni-lab .omni-fade-up {
+  animation: omniFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.omni-lab .omni-fade-up-d1 {
+  animation-delay: 0.06s;
+}
+.omni-lab .omni-fade-up-d2 {
+  animation-delay: 0.12s;
+}
+.omni-lab .omni-fade-up-d3 {
+  animation-delay: 0.18s;
+}
+.omni-lab .omni-fade-up-d4 {
+  animation-delay: 0.24s;
+}
+
+@keyframes omniFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.omni-lab .omni-pulse-dot {
+  animation: omniPulse 2s ease-in-out infinite;
+}
+
+@keyframes omniPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+.omni-lab .omni-sidebar {
+  background: linear-gradient(180deg, rgba(15, 17, 26, 0.99) 0%, rgba(8, 9, 14, 1) 100%);
+  box-shadow:
+    4px 0 40px rgba(0, 0, 0, 0.45),
+    inset -1px 0 0 rgba(124, 60, 255, 0.12);
+}
+
+.omni-lab .omni-field {
+  height: 2.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(124, 60, 255, 0.2);
+  background: #0b0d17;
+  padding: 0 0.85rem;
+  font-size: 0.875rem;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.omni-lab .omni-field::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.omni-lab .omni-field:focus {
+  border-color: rgba(124, 60, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(124, 60, 255, 0.15);
+}
+
+.omni-lab .omni-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  color: #a0a0b0;
+  transition: all 0.15s ease;
+}
+
+.omni-lab .omni-chip-active {
+  border-color: transparent;
+  background-image: var(--omni-gradient);
+  color: #fff;
+  font-weight: 600;
 }

@@ -66,7 +66,7 @@ export function LabAppShell({ title, subtitle, actionLabel, children }: LabAppSh
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[86vw] flex-col border-r border-[#7C3CFF]/15 bg-[#0A0B14] transition-transform lg:static lg:z-auto lg:w-auto lg:max-w-none lg:translate-x-0",
+          "omni-sidebar fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[86vw] flex-col border-r border-[#7C3CFF]/15 transition-transform lg:static lg:z-auto lg:w-auto lg:max-w-none lg:translate-x-0",
           menuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
@@ -211,13 +211,8 @@ export function StatusPill({
 export function SearchFilterBar({ placeholder }: { placeholder: string }) {
   return (
     <div className="flex flex-wrap gap-2">
-      <input
-        placeholder={placeholder}
-        className="h-11 min-w-0 flex-1 rounded-xl border border-[#7C3CFF]/20 bg-[#12141F] px-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#7C3CFF]/50"
-      />
-      <span className="inline-flex h-11 items-center rounded-xl border border-white/10 px-3 text-xs text-[#A0A0B0]">
-        Este mês ▾
-      </span>
+      <input placeholder={placeholder} className="omni-field min-w-0 flex-1" />
+      <span className="omni-chip h-11">Este mês ▾</span>
     </div>
   );
 }
