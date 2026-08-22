@@ -122,8 +122,8 @@ export function WeekPicker({
       )}
 
       {pickerOpen && (
-        <div className="relative">
-          <div className="absolute left-0 top-0 z-30 w-[260px] rounded-xl border border-[#7C3CFF]/25 bg-[#1F2430] p-3 shadow-2xl sm:left-auto sm:right-0">
+        <div className="relative w-full sm:w-auto">
+          <div className="absolute left-0 top-0 z-30 w-[min(280px,calc(100vw-1.5rem))] rounded-xl border border-[#7C3CFF]/25 bg-[#1F2430] p-3 shadow-2xl sm:left-auto sm:right-0">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#e8eaed]/45">
               Ir para a semana de
             </p>

@@ -281,6 +281,24 @@ export function NoteEditor({
     onClose();
   }, [flushDraftToParent, onClose]);
 
+  // Mantém a barra de ações acima do teclado no iOS/Android.
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const sync = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardInset(inset > 40 ? inset : 0);
+    };
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    sync();
+    return () => {
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/70 sm:items-center sm:bg-black/55 sm:p-6 md:p-8">
       {/* div (não button): Espaço não “clica” no overlay e fecha o editor */}
@@ -305,7 +323,7 @@ export function NoteEditor({
         )}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-2 px-3 pb-1 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pt-5">
+        <div className="flex items-center gap-1 px-2 pb-1 pt-[max(0.75rem,env(safe-area-inset-top))] sm:items-start sm:gap-2 sm:px-5 sm:pt-5">
           <input
             ref={titleRef}
             value={draftTitle}
@@ -314,12 +332,31 @@ export function NoteEditor({
             placeholder="Título"
             className="min-w-0 flex-1 bg-transparent text-[20px] font-normal leading-tight tracking-tight text-[#e8eaed] placeholder:text-[#e8eaed]/40 focus:outline-none sm:text-[22px]"
           />
+          {/* Undo/Redo no topo no mobile — ficam sempre acessíveis acima do teclado */}
+          <div className="flex shrink-0 items-center sm:hidden">
+            <ToolbarButton title="Desfazer" disabled={past.length === 0} onClick={undo}>
+              <Undo2 className="h-[18px] w-[18px]" />
+            </ToolbarButton>
+            <ToolbarButton title="Refazer" disabled={future.length === 0} onClick={redo}>
+              <Redo2 className="h-[18px] w-[18px]" />
+            </ToolbarButton>
+          </div>
           <ToolbarButton
             title={note.pinned ? "Desafixar" : "Fixar"}
             onClick={() => onTogglePin(note.id)}
           >
             <Pin className={cn("h-[18px] w-[18px]", note.pinned && "fill-current text-[#e8eaed]")} />
           </ToolbarButton>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleClose}
+            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-[#7C3CFF]/25 px-3.5 text-sm font-semibold text-[#e8eaed] hover:bg-[#7C3CFF]/35 active:bg-[#7C3CFF]/45 sm:hidden"
+            aria-label="Concluir"
+          >
+            <Check className="h-4 w-4" />
+            Concluir
+          </button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-1 sm:px-7 sm:pb-3 sm:pt-2">
@@ -335,12 +372,15 @@ export function NoteEditor({
           />
         </div>
 
-        {/* Barra inferior: ferramentas + undo/redo sempre visíveis no mobile */}
+        {/* Barra inferior: ferramentas + undo/redo (desktop) + concluir */}
         <div
           className={cn(
             "relative shrink-0 border-t border-white/5",
-            "pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 sm:pb-2 sm:pt-1",
+            "pt-1 sm:pb-2 sm:pt-1",
           )}
+          style={{
+            paddingBottom: `max(0.5rem, calc(env(safe-area-inset-bottom) + ${keyboardInset}px))`,
+          }}
         >
           {showPalette && (
             <div className="absolute bottom-[calc(100%+0.35rem)] left-2 right-2 z-20 flex flex-wrap gap-2 rounded-xl border border-[#5f6368]/50 bg-[#2d2e30] p-2.5 shadow-xl sm:right-auto sm:max-w-[320px]">
@@ -457,7 +497,6 @@ export function NoteEditor({
           )}
 
           <div className="flex items-center gap-0.5 px-1.5 sm:px-3">
-            {/* Ferramentas: scroll horizontal no mobile se precisar */}
             <div className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <ToolbarButton
                 title="Cor de fundo"
@@ -509,23 +548,25 @@ export function NoteEditor({
               </ToolbarButton>
             </div>
 
-            <div className="mx-0.5 h-5 w-px shrink-0 bg-white/10 sm:mx-1" />
+            <div className="mx-0.5 hidden h-5 w-px shrink-0 bg-white/10 sm:mx-1 sm:block" />
 
-            {/* Undo / Redo — sempre fixos e tocáveis */}
-            <ToolbarButton title="Desfazer" disabled={past.length === 0} onClick={undo}>
-              <Undo2 className="h-[18px] w-[18px]" />
-            </ToolbarButton>
-            <ToolbarButton title="Refazer" disabled={future.length === 0} onClick={redo}>
-              <Redo2 className="h-[18px] w-[18px]" />
-            </ToolbarButton>
+            <div className="hidden sm:flex">
+              <ToolbarButton title="Desfazer" disabled={past.length === 0} onClick={undo}>
+                <Undo2 className="h-[18px] w-[18px]" />
+              </ToolbarButton>
+              <ToolbarButton title="Refazer" disabled={future.length === 0} onClick={redo}>
+                <Redo2 className="h-[18px] w-[18px]" />
+              </ToolbarButton>
+            </div>
 
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={handleClose}
-              className="ml-0.5 shrink-0 rounded-md px-3 py-2.5 text-sm font-medium text-[#e8eaed]/90 hover:bg-white/10 active:bg-white/15 sm:ml-1 sm:py-1.5"
+              className="ml-auto shrink-0 rounded-md px-3 py-2.5 text-sm font-medium text-[#e8eaed]/90 hover:bg-white/10 active:bg-white/15 sm:ml-1 sm:py-1.5"
             >
-              Fechar
+              <span className="sm:hidden">Concluir</span>
+              <span className="hidden sm:inline">Fechar</span>
             </button>
           </div>
         </div>

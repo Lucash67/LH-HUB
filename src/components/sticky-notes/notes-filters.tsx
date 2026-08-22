@@ -66,7 +66,7 @@ export function NotesFilters({ open, onOpenChange, filters, onChange }: NotesFil
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-[280px] rounded-xl border border-[#7C3CFF]/25 bg-[#1F2430] p-3 shadow-2xl">
+        <div className="absolute left-0 right-auto z-30 mt-2 w-[min(280px,calc(100vw-1.5rem))] rounded-xl border border-[#7C3CFF]/25 bg-[#1F2430] p-3 shadow-2xl sm:left-auto sm:right-0">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-bold uppercase tracking-wider text-[#e8eaed]/50">Filtros</p>
             <button
