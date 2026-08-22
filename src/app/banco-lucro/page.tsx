@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { formatCurrency } from "@/lib/utils";
 import type { ProfitBankView } from "@/lib/profit-bank-service";
-import { PROFIT_BANK_UNIT_SALE_PRICE } from "@/lib/profit-bank-service";
+import { SALGADO_UNIT_PRICE } from "@/lib/day-registration/pricing";
 import { filterUpToDate } from "@/lib/temporal-filter";
 import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
 
@@ -230,7 +230,7 @@ export default function BancoLucroPage() {
               </p>
               <p className="mt-1 text-xl font-bold text-brand-red">{formatCurrency(lossesImpact)}</p>
               <p className="mt-0.5 text-[11px] text-text-muted">
-                {lossesUnits} un. × {formatCurrency(PROFIT_BANK_UNIT_SALE_PRICE)}
+                {lossesUnits} un. × {formatCurrency(SALGADO_UNIT_PRICE)}
               </p>
             </div>
             <div className="rounded-xl border border-surface-border bg-surface-base/40 px-3 py-3">
