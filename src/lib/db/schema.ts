@@ -159,6 +159,21 @@ export const stickyNotes = sqliteTable("sticky_notes", {
   updatedAt: text("updated_at").notNull(),
 });
 
+/** Ideias / demandas / observações futuras. */
+export const ideaItems = sqliteTable("idea_items", {
+  id: text("id").primaryKey(),
+  ownerId: text("owner_id").notNull(),
+  businessId: text("business_id"),
+  title: text("title").notNull().default(""),
+  body: text("body").notNull().default(""),
+  kind: text("kind", { enum: ["ideia", "demanda", "observacao"] }).notNull().default("ideia"),
+  status: text("status", { enum: ["open", "done", "archived"] }).notNull().default("open"),
+  pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 export const investments = sqliteTable("investments", {
   id: text("id").primaryKey(),
   businessId: text("business_id").notNull().default("salgados"),
