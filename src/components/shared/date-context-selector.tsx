@@ -115,7 +115,7 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
 
       {open && (
         <div
-          className="absolute right-0 top-full z-50 mt-2 min-w-[260px] rounded-xl border border-surface-border bg-surface-elevated py-1 shadow-lg sm:left-0 sm:right-auto"
+          className="absolute left-0 top-full z-50 mt-2 w-[min(280px,calc(100vw-1.5rem))] min-w-[240px] rounded-xl border border-surface-border bg-surface-elevated py-1 shadow-lg"
           role="listbox"
         >
           <MenuItem
