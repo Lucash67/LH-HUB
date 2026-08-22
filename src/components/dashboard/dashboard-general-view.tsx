@@ -31,7 +31,7 @@ const DEFAULT_COPY: DashboardScopeCopy = {
   heroEyebrow: "Visão executiva · histórico completo",
   revenueLabel: "Receita total",
   profitLabel: "Lucro total",
-  goalLabel: "Meta geral",
+  goalLabel: "Meta lucro geral",
   buyersSubtext: "un. no histórico",
   chartsSubtitle: "Histórico completo",
   profitPhrase: "Lucro acumulado",
