@@ -4,24 +4,39 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { DashboardWelcomeBanner } from "@/components/dashboard/dashboard-welcome-banner";
-import { DashboardDayView } from "@/components/dashboard/dashboard-day-view";
 import { DashboardGeneralView } from "@/components/dashboard/dashboard-general-view";
 import { PageLoader } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { ClipboardPaste, RefreshCw } from "lucide-react";
-import { formatViewDateLabel, type DashboardViewData } from "@/lib/dashboard-view";
+import {
+  dashboardScopeCopy,
+  formatViewDateLabel,
+  type DashboardViewData,
+} from "@/lib/dashboard-view";
 import type { DiaryAutoInsight } from "@/lib/diary-auto-insights";
 import { isViewingToday, useTemporalViewContext } from "@/stores/temporal-context-store";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import type { OperationalDiaryEntry } from "@/lib/diary/types";
 import type { WeekPulse } from "@/lib/week-pulse";
+import { temporalQueryParams } from "@/lib/temporal-filter";
 
 interface DashboardViewPayload {
   data: DashboardViewData;
   diaryEntry: OperationalDiaryEntry | null;
   autoInsights: DiaryAutoInsight[];
   weekPulse?: WeekPulse | null;
-  context?: { mode: "day" | "general"; viewDate: string };
+  context?: {
+    mode: "day" | "general" | "range";
+    viewDate: string;
+    dateFrom?: string;
+    dateTo?: string;
+  };
+}
+
+function dashboardQueryString(context: ReturnType<typeof useTemporalViewContext>): string {
+  const params = temporalQueryParams(context);
+  if (Object.keys(params).length === 0) return "viewMode=general";
+  return new URLSearchParams(params).toString();
 }
 
 export default function DashboardPage() {
@@ -31,11 +46,8 @@ export default function DashboardPage() {
   const viewingToday = isViewingToday(context);
   const dayLabel = formatViewDateLabel(context);
   const shouldPoll = context.mode === "general" || viewingToday;
-
-  const dashboardParams =
-    context.mode === "day"
-      ? `viewMode=day&date=${context.viewDate}`
-      : "viewMode=general";
+  const dashboardParams = dashboardQueryString(context);
+  const scopeCopy = dashboardScopeCopy(context);
 
   const {
     data: payload,
@@ -44,7 +56,14 @@ export default function DashboardPage() {
     isError,
     error,
   } = useQuery<DashboardViewPayload>({
-    queryKey: ["dashboard-view", activeBusinessId, context.mode, context.viewDate],
+    queryKey: [
+      "dashboard-view",
+      activeBusinessId,
+      context.mode,
+      context.viewDate,
+      context.dateFrom,
+      context.dateTo,
+    ],
     queryFn: async () => {
       const r = await fetch(withQuery(`/api/dashboard/view?${dashboardParams}`));
       const json = await r.json();
@@ -80,7 +99,11 @@ export default function DashboardPage() {
   const contextMatches =
     !!payload?.context &&
     payload.context.mode === context.mode &&
-    (context.mode === "general" || payload.context.viewDate === context.viewDate);
+    (context.mode === "general" ||
+      (context.mode === "day" && payload.context.viewDate === context.viewDate) ||
+      (context.mode === "range" &&
+        payload.context.dateFrom === context.dateFrom &&
+        payload.context.dateTo === context.dateTo));
 
   if (isError) {
     return (
@@ -118,18 +141,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { data, diaryEntry } = payload;
-  const {
-    metrics,
-    charts,
-    isGeneralView,
-    profitGrowthVsYesterday,
-    operationResult,
-    daySummary,
-    dayComparison,
-  } = data;
-
-  const showTrend = !isGeneralView && dayComparison.enabled;
+  const { metrics, charts } = payload.data;
 
   return (
     <ModuleShell
@@ -140,7 +152,6 @@ export default function DashboardPage() {
       <DashboardWelcomeBanner viewDate={context.mode === "day" ? context.viewDate : null} />
 
       <div className="dashboard-mesh -mx-1 rounded-3xl px-1 py-1 sm:mx-0 sm:px-0">
-      {isGeneralView ? (
         <DashboardGeneralView
           revenue={metrics.revenueToday}
           profit={metrics.profitToday}
@@ -149,30 +160,8 @@ export default function DashboardPage() {
           uniqueBuyers={metrics.customersToday}
           flavors={charts.flavors}
           payments={charts.payments}
+          copy={scopeCopy}
         />
-      ) : (
-        daySummary && (
-          <DashboardDayView
-            viewDate={context.viewDate}
-            viewingToday={viewingToday}
-            revenue={metrics.revenueToday}
-            profit={metrics.profitToday}
-            profitTrend={showTrend ? profitGrowthVsYesterday : undefined}
-            trendLabel={dayComparison.label}
-            goalProgress={metrics.goalProgress}
-            goalUnits={daySummary.goalUnits}
-            soldUnits={daySummary.soldUnits}
-            bonusIncome={diaryEntry?.bonusIncome}
-            operationResult={operationResult}
-            daySummary={{
-              ...daySummary,
-              losses: Math.max(daySummary.losses, Number(diaryEntry?.quantityLost) || 0),
-            }}
-            hasOperations={metrics.hasOperations}
-            nonOperational={dayComparison.isNonOperationalDay}
-          />
-        )
-      )}
       </div>
     </ModuleShell>
   );

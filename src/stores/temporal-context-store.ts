@@ -14,15 +14,29 @@ function sanitizeViewDate(date: string | undefined): string {
   return date;
 }
 
-/** general = histórico completo · day = data específica */
-export type TemporalViewMode = "general" | "day";
+function normalizeRange(
+  from: string,
+  to: string,
+): { dateFrom: string; dateTo: string } {
+  const a = sanitizeViewDate(from);
+  const b = sanitizeViewDate(to);
+  return a <= b ? { dateFrom: a, dateTo: b } : { dateFrom: b, dateTo: a };
+}
+
+/** general = histórico completo · day = data específica · range = período inclusivo */
+export type TemporalViewMode = "general" | "day" | "range";
 
 export interface TemporalContextState {
   viewMode: TemporalViewMode;
   /** Data de referência quando viewMode === 'day' (yyyy-MM-dd) */
   viewDate: string;
+  /** Início inclusivo quando viewMode === 'range' */
+  dateFrom: string;
+  /** Fim inclusivo quando viewMode === 'range' */
+  dateTo: string;
   setGeneral: () => void;
   setViewDate: (date: string) => void;
+  setDateRange: (from: string, to: string) => void;
   setToday: () => void;
   setYesterday: () => void;
   setLastOperationalDay: (date: string) => void;
@@ -33,32 +47,60 @@ export const useTemporalContextStore = create<TemporalContextState>()(
     (set) => ({
       viewMode: "general",
       viewDate: todayISO(),
+      dateFrom: todayISO(),
+      dateTo: todayISO(),
       setGeneral: () => set({ viewMode: "general" }),
-      setViewDate: (date) => set({ viewMode: "day", viewDate: sanitizeViewDate(date) }),
+      setViewDate: (date) =>
+        set({
+          viewMode: "day",
+          viewDate: sanitizeViewDate(date),
+        }),
+      setDateRange: (from, to) => {
+        const { dateFrom, dateTo } = normalizeRange(from, to);
+        set({
+          viewMode: "range",
+          dateFrom,
+          dateTo,
+          viewDate: dateTo,
+        });
+      },
       setToday: () => set({ viewMode: "day", viewDate: todayISO() }),
       setYesterday: () =>
-        set({ viewMode: "day", viewDate: format(subDays(new Date(), 1), "yyyy-MM-dd") }),
+        set({
+          viewMode: "day",
+          viewDate: format(subDays(new Date(), 1), "yyyy-MM-dd"),
+        }),
       setLastOperationalDay: (date) => set({ viewMode: "day", viewDate: date }),
     }),
     {
       name: "lbo-temporal-context",
-      version: 3,
+      version: 4,
       migrate: (persisted: unknown, version) => {
         const state = persisted as Partial<TemporalContextState>;
         const viewDate = sanitizeViewDate(state.viewDate);
+        const today = todayISO();
         if (version < 2) {
           return {
             viewMode: "general" as const,
             viewDate,
+            dateFrom: today,
+            dateTo: today,
           };
         }
-        if (version < 3) {
+        if (version < 4) {
           return {
-            ...state,
+            viewMode: state.viewMode === "day" ? ("day" as const) : ("general" as const),
             viewDate,
-          } as TemporalContextState;
+            dateFrom: sanitizeViewDate(state.dateFrom) || today,
+            dateTo: sanitizeViewDate(state.dateTo) || today,
+          };
         }
-        return { ...state, viewDate } as TemporalContextState;
+        return {
+          ...state,
+          viewDate,
+          dateFrom: sanitizeViewDate(state.dateFrom) || today,
+          dateTo: sanitizeViewDate(state.dateTo) || today,
+        } as TemporalContextState;
       },
     },
   ),
@@ -67,12 +109,16 @@ export const useTemporalContextStore = create<TemporalContextState>()(
 export interface TemporalViewContext {
   mode: TemporalViewMode;
   viewDate: string;
+  dateFrom: string;
+  dateTo: string;
 }
 
 export function useTemporalViewContext(): TemporalViewContext {
   const viewMode = useTemporalContextStore((s) => s.viewMode);
   const viewDate = useTemporalContextStore((s) => s.viewDate);
-  return { mode: viewMode, viewDate };
+  const dateFrom = useTemporalContextStore((s) => s.dateFrom);
+  const dateTo = useTemporalContextStore((s) => s.dateTo);
+  return { mode: viewMode, viewDate, dateFrom, dateTo };
 }
 
 /** @deprecated Prefer useTemporalViewContext */
@@ -86,4 +132,8 @@ export function isViewingToday(context: TemporalViewContext): boolean {
 
 export function isViewingGeneral(context: TemporalViewContext): boolean {
   return context.mode === "general";
+}
+
+export function isViewingRange(context: TemporalViewContext): boolean {
+  return context.mode === "range";
 }

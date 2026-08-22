@@ -651,6 +651,7 @@ function buildGeneralDashboardView(
   dailyGoal: number,
   totalRegisteredClients: number,
   dayMetrics?: OperationalDayMetricsLike[] | null,
+  scopeLabel = "Histórico completo",
 ): DashboardViewData {
   // Diário homologado é a fonte oficial de receita/lucro; vendas ficam para mix/pagamentos.
   const hasDiaryMetrics = !!dayMetrics && dayMetrics.length > 0;
@@ -683,11 +684,15 @@ function buildGeneralDashboardView(
     ? dayMetrics!.filter((d) => d.date >= monthStart && d.date <= monthEnd).reduce((s, d) => s + d.revenue, 0)
     : sumRevenue(sales.filter((s) => s.date >= monthStart && s.date <= monthEnd));
 
-  // Meta geral = média de receita por dia operacional vs meta diária.
+  // Meta = média de receita por dia operacional vs meta diária.
   const avgDailyRevenue = operationalDayCount > 0 ? totalRevenue / operationalDayCount : 0;
   const generalGoalProgress = computeGoalProgress(avgDailyRevenue, dailyGoal);
   const uniqueBuyers = uniqueCustomerCount(sales);
   const salesCount = sales.length;
+  const buyersLabel =
+    totalRegisteredClients > 0
+      ? `${totalRegisteredClients} clientes cadastrados`
+      : `${uniqueBuyers} compradores únicos${scopeLabel !== "Histórico completo" ? " no período" : " no histórico"}`;
 
   return {
     isGeneralView: true,
@@ -737,12 +742,9 @@ function buildGeneralDashboardView(
     customerInsight: {
       uniqueBuyers: totalRegisteredClients > 0 ? totalRegisteredClients : uniqueBuyers,
       topBuyer: null,
-      summary:
-        totalRegisteredClients > 0
-          ? `${totalRegisteredClients} clientes cadastrados`
-          : `${uniqueBuyers} compradores únicos no histórico`,
+      summary: buyersLabel,
     },
-    topProductsSubtitle: "Histórico completo",
+    topProductsSubtitle: scopeLabel,
     dayComparison: { enabled: false, label: "", isNonOperationalDay: false },
   };
 }
@@ -778,6 +780,19 @@ export function enrichDiaryContext(
   };
 }
 
+function salesInRange(sales: DashboardSale[], from: string, to: string): DashboardSale[] {
+  return sales.filter((s) => s.date >= from && s.date <= to);
+}
+
+function metricsInRange(
+  dayMetrics: OperationalDayMetricsLike[] | null | undefined,
+  from: string,
+  to: string,
+): OperationalDayMetricsLike[] | null {
+  if (!dayMetrics?.length) return null;
+  return dayMetrics.filter((d) => d.date >= from && d.date <= to);
+}
+
 export function buildDashboardView(
   sales: DashboardSale[],
   context: TemporalViewContext,
@@ -790,6 +805,22 @@ export function buildDashboardView(
 ): DashboardViewData {
   if (context.mode === "general") {
     return buildGeneralDashboardView(sales, currentStock, dailyGoal, totalRegisteredClients, dayMetrics);
+  }
+
+  if (context.mode === "range") {
+    const from = context.dateFrom;
+    const to = context.dateTo;
+    const scopedSales = salesInRange(sales, from, to);
+    const scopedMetrics = metricsInRange(dayMetrics, from, to);
+    const scopeLabel = `${format(parseISO(from), "dd/MM/yyyy")} – ${format(parseISO(to), "dd/MM/yyyy")}`;
+    return buildGeneralDashboardView(
+      scopedSales,
+      currentStock,
+      dailyGoal,
+      totalRegisteredClients,
+      scopedMetrics,
+      scopeLabel,
+    );
   }
 
   const viewDate = context.viewDate;
@@ -919,6 +950,11 @@ export function formatViewDateLabel(context: TemporalViewContext): string {
   if (context.mode === "general") {
     return "Visão executiva — histórico completo";
   }
+  if (context.mode === "range") {
+    const from = format(parseISO(context.dateFrom), "dd/MM", { locale: ptBR });
+    const to = format(parseISO(context.dateTo), "dd/MM/yyyy", { locale: ptBR });
+    return `Período · ${from} – ${to}`;
+  }
   if (isViewingTodayContext(context)) {
     return format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
   }
@@ -927,10 +963,62 @@ export function formatViewDateLabel(context: TemporalViewContext): string {
 
 export function formatContextSelectorLabel(context: TemporalViewContext): string {
   if (context.mode === "general") return "Geral";
+  if (context.mode === "range") {
+    return `${format(parseISO(context.dateFrom), "dd/MM", { locale: ptBR })} – ${format(parseISO(context.dateTo), "dd/MM", { locale: ptBR })}`;
+  }
   if (isViewingTodayContext(context)) return "Hoje";
   return format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR });
 }
 
 function isViewingTodayContext(context: TemporalViewContext): boolean {
   return context.mode === "day" && context.viewDate === format(new Date(), "yyyy-MM-dd");
+}
+
+/** Rótulos da visão estilo “geral” para dia / período / histórico. */
+export function dashboardScopeCopy(context: TemporalViewContext): {
+  heroEyebrow: string;
+  revenueLabel: string;
+  profitLabel: string;
+  goalLabel: string;
+  buyersSubtext: string;
+  chartsSubtitle: string;
+  profitPhrase: string;
+} {
+  if (context.mode === "range") {
+    const from = format(parseISO(context.dateFrom), "dd/MM", { locale: ptBR });
+    const to = format(parseISO(context.dateTo), "dd/MM", { locale: ptBR });
+    return {
+      heroEyebrow: `Visão do período · ${from} – ${to}`,
+      revenueLabel: "Receita do período",
+      profitLabel: "Lucro do período",
+      goalLabel: "Meta do período",
+      buyersSubtext: "un. no período",
+      chartsSubtitle: `${from} – ${to}`,
+      profitPhrase: "Lucro do período",
+    };
+  }
+  if (context.mode === "day") {
+    const day = format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR });
+    const short = isViewingTodayContext(context) ? "hoje" : day;
+    return {
+      heroEyebrow: isViewingTodayContext(context)
+        ? "Visão do dia · hoje"
+        : `Visão do dia · ${day}`,
+      revenueLabel: "Receita do dia",
+      profitLabel: "Lucro do dia",
+      goalLabel: "Meta do dia",
+      buyersSubtext: `un. ${short === "hoje" ? "hoje" : `em ${day}`}`,
+      chartsSubtitle: isViewingTodayContext(context) ? "Hoje" : day,
+      profitPhrase: "Lucro do dia",
+    };
+  }
+  return {
+    heroEyebrow: "Visão executiva · histórico completo",
+    revenueLabel: "Receita total",
+    profitLabel: "Lucro total",
+    goalLabel: "Meta geral",
+    buyersSubtext: "un. no histórico",
+    chartsSubtitle: "Histórico completo",
+    profitPhrase: "Lucro acumulado",
+  };
 }

@@ -18,6 +18,8 @@ import { previousOperationalDate } from "./temporal-filter";
 
 export interface InsightsGenerationOptions {
   date?: string;
+  dateFrom?: string;
+  dateTo?: string;
   viewMode?: string;
 }
 
@@ -42,8 +44,11 @@ async function resolveDayComparison(
 ): Promise<DayComparisonContext> {
   const today = format(new Date(), "yyyy-MM-dd");
 
-  if (options?.viewMode === "day" && options.date) {
-    const anchorDate = options.date;
+  if (
+    (options?.viewMode === "day" || options?.viewMode === "range") &&
+    (options.date || options.dateTo)
+  ) {
+    const anchorDate = options.date ?? options.dateTo!;
     const allSales = await fetchScopedSales({ businessId });
     const knownDates = allSales.map((s) => s.date);
     const compareDate = previousOperationalDate(anchorDate, businessId, knownDates);

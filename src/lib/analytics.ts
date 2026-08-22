@@ -162,9 +162,25 @@ export async function getGrowthChart(): Promise<ChartDataPoint[]> {
 }
 
 export interface FinancialSummaryOptions {
-  viewMode?: "general" | "day";
+  viewMode?: "general" | "day" | "range";
   /** No modo dia: acumulado até esta data (inclusive). */
   date?: string;
+  /** No modo range: início inclusivo. */
+  dateFrom?: string;
+  /** No modo range: fim inclusivo. */
+  dateTo?: string;
+}
+
+function inFinancialScope(
+  date: string,
+  options?: FinancialSummaryOptions,
+): boolean {
+  if (!options?.viewMode || options.viewMode === "general") return true;
+  if (options.viewMode === "day" && options.date) return date <= options.date;
+  if (options.viewMode === "range" && options.dateFrom && options.dateTo) {
+    return date >= options.dateFrom && date <= options.dateTo;
+  }
+  return true;
 }
 
 export async function getRevenueChartUpTo(
@@ -189,11 +205,23 @@ export async function getFinancialSummary(
   businessId: string = ALL_BUSINESSES_ID,
   options?: FinancialSummaryOptions,
 ) {
-  const isDayScoped = options?.viewMode === "day" && options.date;
-  const scopeEnd = isDayScoped ? options.date! : undefined;
+  const isDayScoped = options?.viewMode === "day" && !!options.date;
+  const isRangeScoped =
+    options?.viewMode === "range" && !!options.dateFrom && !!options.dateTo;
+  const isScoped = isDayScoped || isRangeScoped;
+  const scopeEnd = isDayScoped
+    ? options!.date!
+    : isRangeScoped
+      ? options!.dateTo!
+      : undefined;
+  const scopeStart = isRangeScoped ? options!.dateFrom! : undefined;
 
-  // Geral = histórico completo (não só o mês corrente); dia = acumulado até a data.
-  const salesFilter = isDayScoped ? { businessId, dateLte: scopeEnd } : { businessId };
+  // Geral = histórico completo; dia = acumulado até a data; range = janela inclusiva.
+  const salesFilter = isRangeScoped
+    ? { businessId, dateGte: scopeStart, dateLte: scopeEnd }
+    : isDayScoped
+      ? { businessId, dateLte: scopeEnd }
+      : { businessId };
   const scopedSales = await fetchMetricSales(salesFilter);
 
   let grossRevenue: number;
@@ -205,8 +233,8 @@ export async function getFinancialSummary(
   dayScopedMetricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
 
   if (dayScopedMetricsMap && dayScopedMetricsMap.size > 0) {
-    const days = Array.from(dayScopedMetricsMap.values()).filter(
-      (d) => !scopeEnd || d.date <= scopeEnd,
+    const days = Array.from(dayScopedMetricsMap.values()).filter((d) =>
+      inFinancialScope(d.date, options),
     );
     grossRevenue = days.reduce((s, d) => s + d.revenue, 0);
     operationalProfit = days.reduce((s, d) => s + d.profit, 0);
@@ -252,8 +280,8 @@ export async function getFinancialSummary(
           ? db.select().from(pgCashFlow).where(and(...cashConditions))
           : db.select().from(pgCashFlow),
       );
-      const filteredCash = scopeEnd
-        ? cashRows.filter((e) => e.eventDate <= scopeEnd)
+      const filteredCash = isScoped
+        ? cashRows.filter((e) => inFinancialScope(e.eventDate, options))
         : cashRows;
       expenseEntries = filteredCash
         .filter((e) => e.eventType === "expense")
@@ -267,7 +295,7 @@ export async function getFinancialSummary(
     // Investimentos diários (compras) — antes ficavam vazios no Postgres.
     const investmentRecords = await getInvestmentFinanceRecords(businessId).catch(() => []);
     scopedInvestments = investmentRecords
-      .filter((i) => !scopeEnd || i.date <= scopeEnd)
+      .filter((i) => inFinancialScope(i.date, options))
       .map((i) => ({
         id: i.id,
         description: i.description ?? "Investimento operacional",
@@ -293,7 +321,7 @@ export async function getFinancialSummary(
         ? allInvestments
         : allInvestments.filter((i) => i.businessId === businessId)
     )
-      .filter((i) => !scopeEnd || i.date <= scopeEnd)
+      .filter((i) => inFinancialScope(i.date, options))
       .map((i) => ({
       id: i.id,
       description: i.description,
@@ -326,11 +354,11 @@ export async function getFinancialSummary(
   const totalIncome = grossRevenue + otherIncome.reduce((s, e) => s + e.amount, 0);
   const totalOut = expenseEntries.reduce((s, e) => s + e.amount, 0) + totalCost;
 
-  // Geral considera o histórico completo; dia limita até a data selecionada.
-  const dualPeriod = isDayScoped ? { end: scopeEnd } : undefined;
+  // Geral considera o histórico completo; dia limita até a data; range usa o fim do período.
+  const dualPeriod = isScoped ? { end: scopeEnd } : undefined;
   const dualFinance = await getDualFinancialView(businessId, dualPeriod);
 
-  const monthlyChart = isDayScoped
+  const monthlyChart = isScoped
     ? await getRevenueChartUpTo(30, businessId, scopeEnd!, dayScopedMetricsMap)
     : await getRevenueChart(30, businessId);
 
@@ -351,7 +379,11 @@ export async function getFinancialSummary(
       deferredCollections: deferredCollections.reduce((s, e) => s + e.amount, 0),
     },
     monthlyChart,
-    scope: isDayScoped ? { mode: "day" as const, date: scopeEnd! } : { mode: "general" as const },
+    scope: isRangeScoped
+      ? { mode: "range" as const, dateFrom: scopeStart!, dateTo: scopeEnd! }
+      : isDayScoped
+        ? { mode: "day" as const, date: scopeEnd! }
+        : { mode: "general" as const },
   };
 }
 

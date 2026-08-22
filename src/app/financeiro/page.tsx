@@ -12,7 +12,8 @@ import { HeroMetric } from "@/components/executive/hero-metric";
 import { DollarSign, TrendingUp, Wallet, PiggyBank, ArrowDownUp, Banknote, UserCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useBusinessScope } from "@/hooks/use-business-scope";
-import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
+import { useTemporalViewContext } from "@/stores/temporal-context-store";
+import { temporalQueryParams } from "@/lib/temporal-filter";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -57,19 +58,32 @@ interface FinancialData {
   };
   cashFlow: { income: number; expenses: number; balance: number };
   monthlyChart: Array<{ label: string; value: number; profit?: number; revenue?: number }>;
-  scope?: { mode: "general" | "day"; date?: string };
+  scope?: {
+    mode: "general" | "day" | "range";
+    date?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  };
 }
 
 export default function FinanceiroPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
   const context = useTemporalViewContext();
-
-  const financialUrl = isViewingGeneral(context)
-    ? withQuery("/api/financial")
-    : withQuery(`/api/financial?date=${context.viewDate}&viewMode=day`);
+  const scopeParams = temporalQueryParams(context);
+  const financialUrl =
+    Object.keys(scopeParams).length === 0
+      ? withQuery("/api/financial")
+      : withQuery(`/api/financial?${new URLSearchParams(scopeParams)}`);
 
   const { data, isLoading, isError, error } = useQuery<FinancialData>({
-    queryKey: ["financial", activeBusinessId, context.mode, context.viewDate],
+    queryKey: [
+      "financial",
+      activeBusinessId,
+      context.mode,
+      context.viewDate,
+      context.dateFrom,
+      context.dateTo,
+    ],
     queryFn: async () => {
       const r = await fetch(financialUrl);
       const json = await r.json();
@@ -86,7 +100,11 @@ export default function FinanceiroPage() {
     (context.mode === "general" && data.scope.mode === "general") ||
     (context.mode === "day" &&
       data.scope.mode === "day" &&
-      (!data.scope.date || data.scope.date === context.viewDate));
+      (!data.scope.date || data.scope.date === context.viewDate)) ||
+    (context.mode === "range" &&
+      data.scope.mode === "range" &&
+      data.scope.dateFrom === context.dateFrom &&
+      data.scope.dateTo === context.dateTo);
 
   if (isError) {
     return (
@@ -107,10 +125,13 @@ export default function FinanceiroPage() {
   }
 
   const { operation, operator, reconciliation } = data.operatorFinance;
-  const isDayScoped = data.scope?.mode === "day";
-  const scopeLabel = isDayScoped
-    ? `Acumulado até ${format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR })}`
-    : "Histórico completo";
+  const isScoped = data.scope?.mode === "day" || data.scope?.mode === "range";
+  const scopeLabel =
+    data.scope?.mode === "range" && data.scope.dateFrom && data.scope.dateTo
+      ? `Período ${format(parseISO(data.scope.dateFrom), "dd/MM/yyyy", { locale: ptBR })} – ${format(parseISO(data.scope.dateTo), "dd/MM/yyyy", { locale: ptBR })}`
+      : data.scope?.mode === "day"
+        ? `Acumulado até ${format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR })}`
+        : "Histórico completo";
   const resultPositive = data.operationalProfit >= 0;
   const operatorPositive = operator.operatorNetGain >= 0;
   const conclusion = resultPositive
@@ -127,7 +148,7 @@ export default function FinanceiroPage() {
       <div className="space-y-5">
         <ExecutiveSummary
           theme="finance"
-          title={isDayScoped ? "Resumo acumulado" : "Resumo Financeiro"}
+          title={isScoped ? "Resumo acumulado" : "Resumo Financeiro"}
           conclusion={conclusion}
           items={[
             { label: "Entradas", value: formatCurrency(data.cashFlow.income), highlight: true },
@@ -251,8 +272,8 @@ export default function FinanceiroPage() {
           </CardContent>
         </Card>
 
-        <SectionPanel theme="finance" title="Tendencia" subtitle={isDayScoped ? "Ultimos 30 dias ate a data selecionada" : "Faturamento mensal"}>
-          <ChartCard data={data.monthlyChart} title={isDayScoped ? "Faturamento diario" : "Faturamento Mensal"} type="area" height={320} />
+        <SectionPanel theme="finance" title="Tendencia" subtitle={isScoped ? "Ultimos 30 dias ate a data selecionada" : "Faturamento mensal"}>
+          <ChartCard data={data.monthlyChart} title={isScoped ? "Faturamento diario" : "Faturamento Mensal"} type="area" height={320} />
         </SectionPanel>
       </div>
     </ModuleShell>

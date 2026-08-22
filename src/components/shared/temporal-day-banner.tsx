@@ -12,7 +12,6 @@ import { useBusinessScope } from "@/hooks/use-business-scope";
 import { formatCurrency } from "@/lib/utils";
 import type { DiaryAutoInsight } from "@/lib/diary-auto-insights";
 import {
-  isViewingGeneral,
   useTemporalViewContext,
 } from "@/stores/temporal-context-store";
 import { isAllBusinesses } from "@/lib/business-units";
@@ -33,7 +32,8 @@ interface DaySummaryResponse {
 export function TemporalDayBanner() {
   const context = useTemporalViewContext();
   const { activeBusinessId, withQuery } = useBusinessScope();
-  const dayScoped = !isViewingGeneral(context) && !isAllBusinesses(activeBusinessId);
+  const dayScoped =
+    context.mode === "day" && !isAllBusinesses(activeBusinessId);
 
   const { data, isLoading } = useQuery<DaySummaryResponse>({
     queryKey: ["temporal-day-summary", activeBusinessId, context.viewDate],
