@@ -251,6 +251,20 @@ function initLegacyTables(sqlite: Database.Database) {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS idea_items (
+      id TEXT PRIMARY KEY,
+      owner_id TEXT NOT NULL,
+      business_id TEXT,
+      title TEXT NOT NULL DEFAULT '',
+      body TEXT NOT NULL DEFAULT '',
+      kind TEXT NOT NULL DEFAULT 'ideia',
+      status TEXT NOT NULL DEFAULT 'open',
+      pinned INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS investments (
       id TEXT PRIMARY KEY,
       description TEXT NOT NULL,
