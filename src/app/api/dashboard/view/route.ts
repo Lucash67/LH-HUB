@@ -18,6 +18,7 @@ import { withTenantScope } from "@/lib/auth/with-tenant-api";
 import { ensureSalgadosProfitGoals } from "@/lib/goals-service";
 import {
   SALGADOS_DAILY_PROFIT_GOAL,
+  SALGADOS_DAILY_UNITS_GOAL,
   SALGADOS_WEEKLY_PROFIT_GOAL,
   usesSalgadosProfitGoals,
 } from "@/lib/salgados-profit-goals";
@@ -79,11 +80,13 @@ export async function GET(request: NextRequest) {
 
       let dailyGoal = goals.find((g) => g.type === "daily")?.targetAmount ?? 0;
       let weeklyGoal = goals.find((g) => g.type === "weekly")?.targetAmount ?? 0;
+      let dailyUnitsGoal = goals.find((g) => g.type === "daily")?.targetUnits ?? 0;
 
-      // Salgados (e visão Todos): meta canônica de lucro — nunca deixa Meta em 0% por alvo zerado.
+      // Salgados (e visão Todos): meta canônica de lucro + unidades.
       if (usesSalgadosProfitGoals(businessId)) {
         dailyGoal = SALGADOS_DAILY_PROFIT_GOAL;
         weeklyGoal = SALGADOS_WEEKLY_PROFIT_GOAL;
+        dailyUnitsGoal = SALGADOS_DAILY_UNITS_GOAL;
       }
 
       // Base diário-primeiro: alimenta o resumo da semana nas duas visões.
@@ -95,6 +98,11 @@ export async function GET(request: NextRequest) {
         dailyProfitGoal: usesSalgadosProfitGoals(businessId)
           ? SALGADOS_DAILY_PROFIT_GOAL
           : undefined,
+        dailyUnitsGoal: usesSalgadosProfitGoals(businessId)
+          ? SALGADOS_DAILY_UNITS_GOAL
+          : dailyUnitsGoal > 0
+            ? dailyUnitsGoal
+            : undefined,
         allowFallback: true as const,
         sales,
         purchasesByDate,
@@ -117,6 +125,9 @@ export async function GET(request: NextRequest) {
         if (weeklyGoal <= 0 && !usesSalgadosProfitGoals(businessId)) {
           weeklyGoal = smartGoals?.weekly.targetRevenue ?? 0;
         }
+        if (dailyUnitsGoal <= 0 && !usesSalgadosProfitGoals(businessId)) {
+          dailyUnitsGoal = smartGoals?.daily.targetUnits ?? 0;
+        }
         const diaryContext = enrichDiaryContext(entry, smartGoals?.daily?.targetUnits);
         const data = buildDashboardView(
           normalizeDashboardSales(sales),
@@ -127,6 +138,7 @@ export async function GET(request: NextRequest) {
           diaryContext,
           businessId,
           dayMetrics,
+          dailyUnitsGoal,
         );
         // Garante perdas do diário no card mesmo se o resumo vier desalinhado.
         if (data.daySummary && entry) {
@@ -155,13 +167,14 @@ export async function GET(request: NextRequest) {
 
       // Visão geral / período: smart só para negócios sem meta canônica de lucro.
       if (
-        (dailyGoal <= 0 || weeklyGoal <= 0) &&
+        (dailyGoal <= 0 || weeklyGoal <= 0 || dailyUnitsGoal <= 0) &&
         !isAllBusinesses(businessId) &&
         !usesSalgadosProfitGoals(businessId)
       ) {
         const smartGoals = await getSmartGoalsView(businessId).catch(() => null);
         if (dailyGoal <= 0) dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
         if (weeklyGoal <= 0) weeklyGoal = smartGoals?.weekly.targetRevenue ?? 0;
+        if (dailyUnitsGoal <= 0) dailyUnitsGoal = smartGoals?.daily.targetUnits ?? 0;
       }
       const data = buildDashboardView(
         normalizeDashboardSales(sales),
@@ -172,6 +185,7 @@ export async function GET(request: NextRequest) {
         null,
         businessId,
         dayMetrics,
+        dailyUnitsGoal,
       );
       const pulseDate =
         viewMode === "day" ? viewDate : viewMode === "range" ? dateTo : format(new Date(), "yyyy-MM-dd");

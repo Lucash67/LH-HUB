@@ -9,6 +9,9 @@ import {
   SALGADOS_DAILY_PROFIT_GOAL,
   SALGADOS_MONTHLY_PROFIT_GOAL,
   SALGADOS_WEEKLY_PROFIT_GOAL,
+  SALGADOS_DAILY_UNITS_GOAL,
+  SALGADOS_MONTHLY_UNITS_GOAL,
+  SALGADOS_WEEKLY_UNITS_GOAL,
   usesSalgadosProfitGoals,
 } from "@/lib/salgados-profit-goals";
 import {
@@ -67,6 +70,19 @@ export async function initializeGoalsIfEmpty(businessId: string): Promise<void> 
         return SALGADOS_MONTHLY_PROFIT_GOAL * 12;
     }
   };
+  const defaultUnits = (type: GoalType): number | null => {
+    if (!isSalgados) return null;
+    switch (type) {
+      case "daily":
+        return SALGADOS_DAILY_UNITS_GOAL;
+      case "weekly":
+        return SALGADOS_WEEKLY_UNITS_GOAL;
+      case "monthly":
+        return SALGADOS_MONTHLY_UNITS_GOAL;
+      case "yearly":
+        return SALGADOS_MONTHLY_UNITS_GOAL * 12;
+    }
+  };
 
   const types: GoalType[] = ["daily", "weekly", "monthly", "yearly"];
   for (const type of types) {
@@ -75,27 +91,30 @@ export async function initializeGoalsIfEmpty(businessId: string): Promise<void> 
       businessId,
       type,
       targetAmount: defaultAmount(type),
-      targetUnits: null,
+      targetUnits: defaultUnits(type),
       periodStart,
       periodEnd,
     });
   }
 }
 
-/** Garante metas de lucro canônicas da Salgados (R$50 / R$250 / R$1.000). */
+/** Garante metas canônicas da Salgados (lucro + unidades). */
 export async function ensureSalgadosProfitGoals(): Promise<void> {
   const businessId = SALGADOS_BUSINESS_ID;
   await initializeGoalsIfEmpty(businessId);
 
-  const targets: Record<GoalType, number> = {
-    daily: SALGADOS_DAILY_PROFIT_GOAL,
-    weekly: SALGADOS_WEEKLY_PROFIT_GOAL,
-    monthly: SALGADOS_MONTHLY_PROFIT_GOAL,
-    yearly: SALGADOS_MONTHLY_PROFIT_GOAL * 12,
+  const targets: Record<GoalType, { amount: number; units: number }> = {
+    daily: { amount: SALGADOS_DAILY_PROFIT_GOAL, units: SALGADOS_DAILY_UNITS_GOAL },
+    weekly: { amount: SALGADOS_WEEKLY_PROFIT_GOAL, units: SALGADOS_WEEKLY_UNITS_GOAL },
+    monthly: { amount: SALGADOS_MONTHLY_PROFIT_GOAL, units: SALGADOS_MONTHLY_UNITS_GOAL },
+    yearly: {
+      amount: SALGADOS_MONTHLY_PROFIT_GOAL * 12,
+      units: SALGADOS_MONTHLY_UNITS_GOAL * 12,
+    },
   };
 
   for (const type of Object.keys(targets) as GoalType[]) {
-    const amount = targets[type];
+    const { amount, units } = targets[type];
     const existing = await findGoalByType(businessId, type);
     const bounds = periodBounds(type);
     if (!existing) {
@@ -103,16 +122,16 @@ export async function ensureSalgadosProfitGoals(): Promise<void> {
         businessId,
         type,
         targetAmount: amount,
-        targetUnits: null,
+        targetUnits: units,
         periodStart: bounds.periodStart,
         periodEnd: bounds.periodEnd,
       });
       continue;
     }
-    if (existing.targetAmount !== amount) {
+    if (existing.targetAmount !== amount || existing.targetUnits !== units) {
       await updateGoalById(existing.id, {
         targetAmount: amount,
-        targetUnits: existing.targetUnits ?? null,
+        targetUnits: units,
         periodStart: bounds.periodStart,
         periodEnd: bounds.periodEnd,
       });

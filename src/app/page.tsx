@@ -156,8 +156,11 @@ export default function DashboardPage() {
           revenue={metrics.revenueToday}
           profit={metrics.profitToday}
           goalProgress={metrics.goalProgress}
+          unitsGoalProgress={metrics.unitsGoalProgress}
+          unitsGoalTarget={metrics.unitsGoalTarget}
           itemsSold={metrics.itemsSoldToday}
           uniqueBuyers={metrics.customersToday}
+          profitUnitsInsight={metrics.profitUnitsInsight}
           flavors={charts.flavors}
           payments={charts.payments}
           copy={scopeCopy}

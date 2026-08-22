@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { DollarSign, Target, TrendingUp, Users } from "lucide-react";
+import { DollarSign, Package, Target, TrendingUp, Users } from "lucide-react";
 import { PulseMetric } from "@/components/dashboard/pulse-metric";
 import { TopProductsCard, ChartCard } from "@/components/charts/chart-card";
 import { formatCurrency } from "@/lib/utils";
@@ -11,6 +11,7 @@ export interface DashboardScopeCopy {
   revenueLabel: string;
   profitLabel: string;
   goalLabel: string;
+  unitsGoalLabel: string;
   buyersSubtext: string;
   chartsSubtitle: string;
   profitPhrase: string;
@@ -20,8 +21,11 @@ interface DashboardGeneralViewProps {
   revenue: number;
   profit: number;
   goalProgress: number;
+  unitsGoalProgress?: number;
+  unitsGoalTarget?: number;
   itemsSold: number;
   uniqueBuyers: number;
+  profitUnitsInsight?: string | null;
   flavors: Array<{ label: string; value: number }>;
   payments: Array<{ label: string; value: number }>;
   copy?: DashboardScopeCopy;
@@ -32,6 +36,7 @@ const DEFAULT_COPY: DashboardScopeCopy = {
   revenueLabel: "Receita total",
   profitLabel: "Lucro total",
   goalLabel: "Meta lucro geral",
+  unitsGoalLabel: "Meta un. geral",
   buyersSubtext: "un. no histórico",
   chartsSubtitle: "Histórico completo",
   profitPhrase: "Lucro acumulado",
@@ -41,12 +46,17 @@ export function DashboardGeneralView({
   revenue,
   profit,
   goalProgress,
+  unitsGoalProgress = 0,
+  unitsGoalTarget = 0,
   itemsSold,
   uniqueBuyers,
+  profitUnitsInsight = null,
   flavors,
   payments,
   copy = DEFAULT_COPY,
 }: DashboardGeneralViewProps) {
+  const showUnitsGoal = unitsGoalTarget > 0;
+
   return (
     <div className="space-y-5">
       <motion.div
@@ -76,7 +86,24 @@ export function DashboardGeneralView({
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      {profitUnitsInsight && (
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-brand-yellow/25 bg-brand-yellow/[0.07] px-4 py-3 text-sm text-text-secondary"
+        >
+          <span className="font-semibold text-brand-yellow">Lucro × volume · </span>
+          {profitUnitsInsight}
+        </motion.p>
+      )}
+
+      <div
+        className={
+          showUnitsGoal
+            ? "grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5"
+            : "grid grid-cols-2 gap-3 xl:grid-cols-4"
+        }
+      >
         <PulseMetric label={copy.revenueLabel} value={revenue} icon={DollarSign} variant="revenue" delay={0} />
         <PulseMetric
           label={copy.profitLabel}
@@ -93,14 +120,25 @@ export function DashboardGeneralView({
           variant="meta"
           delay={2}
         />
+        {showUnitsGoal && (
+          <PulseMetric
+            label={copy.unitsGoalLabel}
+            value={unitsGoalProgress}
+            format="percent"
+            icon={Package}
+            variant="info"
+            subtext={`${itemsSold} / ${unitsGoalTarget} un.`}
+            delay={3}
+          />
+        )}
         <PulseMetric
           label="Compradores"
           value={uniqueBuyers}
           format="number"
           icon={Users}
-          variant="info"
+          variant={showUnitsGoal ? "neutral" : "info"}
           subtext={`${itemsSold} ${copy.buyersSubtext}`}
-          delay={3}
+          delay={showUnitsGoal ? 4 : 3}
         />
       </div>
 

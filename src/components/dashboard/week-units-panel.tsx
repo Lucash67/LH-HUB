@@ -51,6 +51,9 @@ export function WeekUnitsPanel({
         </p>
         <p className="text-[11px] text-text-muted">
           {operationalDays} {operationalDays === 1 ? "dia" : "dias"}
+          {pulse.unitsGoalTarget > 0
+            ? ` · meta ${Math.round((units / pulse.unitsGoalTarget) * 100)}%`
+            : ""}
         </p>
       </div>
 

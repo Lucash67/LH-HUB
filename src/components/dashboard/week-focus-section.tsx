@@ -142,7 +142,9 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
   const best = [...operated].sort((a, b) => b.profit - a.profit)[0] ?? null;
   const weakest =
     operated.length > 1 ? [...operated].sort((a, b) => a.profit - b.profit)[0] ?? null : null;
-  const missingToGoal = Math.max(pulse.goalRevenue - pulse.revenue, 0);
+  const missingToGoal = Math.max(pulse.goalRevenue - pulse.profit, 0);
+  const missingUnits =
+    pulse.unitsGoalTarget > 0 ? Math.max(pulse.unitsGoalTarget - pulse.units, 0) : 0;
   const maxMix = Math.max(...pulse.products.map((product) => product.units), 1);
   const mixUnits = pulse.products.reduce((total, product) => total + product.units, 0);
   const mixIdentified = pulse.mixIdentifiedUnits ?? 0;
@@ -187,7 +189,13 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+      <div
+        className={
+          pulse.unitsGoalTarget > 0
+            ? "grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-5"
+            : "grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4"
+        }
+      >
         <StatCard
           label="Faturamento"
           value={formatCurrency(pulse.revenue)}
@@ -216,7 +224,7 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
           delay={0.12}
         />
         <StatCard
-          label="Meta semanal"
+          label="Meta lucro"
           value={pulse.goalRevenue > 0 ? `${Math.round(pulse.goalProgress)}%` : "—"}
           hint={
             pulse.goalRevenue <= 0
@@ -228,7 +236,27 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
           tone="goal"
           delay={0.18}
         />
+        {pulse.unitsGoalTarget > 0 && (
+          <StatCard
+            label="Meta unidades"
+            value={`${Math.round(pulse.unitsGoalProgress)}%`}
+            hint={
+              missingUnits > 0
+                ? `faltaram ${missingUnits} de ${pulse.unitsGoalTarget} un.`
+                : `${pulse.units} / ${pulse.unitsGoalTarget} un. batidas`
+            }
+            tone="units"
+            delay={0.22}
+          />
+        )}
       </div>
+
+      {pulse.profitUnitsInsight && (
+        <p className="rounded-2xl border border-brand-yellow/20 bg-brand-yellow/[0.06] px-4 py-2.5 text-sm text-text-secondary">
+          <span className="font-semibold text-brand-yellow">Lucro × volume · </span>
+          {pulse.profitUnitsInsight}
+        </p>
+      )}
 
       <div className="grid gap-3 lg:grid-cols-5">
         <div className="rounded-2xl border border-blue-500/20 bg-surface-card/80 p-4 lg:col-span-3">
@@ -316,7 +344,7 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[11px] font-bold text-text-secondary">
                   <Target className="h-3.5 w-3.5 text-brand-yellow" />
-                  Meta semanal
+                  Meta lucro
                 </span>
                 <span className="text-[11px] font-bold text-brand-yellow">
                   {Math.round(pulse.goalProgress)}%
@@ -333,6 +361,27 @@ export function WeekFocusSection({ pulse }: { pulse: WeekPulse }) {
                   )}
                 />
               </div>
+              {pulse.unitsGoalTarget > 0 && (
+                <>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-text-secondary">Meta unidades</span>
+                    <span className="text-[11px] font-bold text-[#0CD4FF]">
+                      {Math.round(pulse.unitsGoalProgress)}% · {pulse.units}/{pulse.unitsGoalTarget}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(pulse.unitsGoalProgress, 100)}%` }}
+                      transition={{ duration: 0.7, delay: 0.32, ease: "easeOut" }}
+                      className={cn(
+                        "h-full rounded-full",
+                        pulse.unitsGoalProgress >= 100 ? "bg-emerald-400" : "bg-[#0CD4FF]",
+                      )}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
