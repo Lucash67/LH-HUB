@@ -1,7 +1,8 @@
 /**
  * Metas canônicas de lucro da operação Salgados (Salty).
- * Floor diário R$50 → semana cheia (5 dias) R$250 → mês cheia (20 dias) R$1.000.
+ * Floor diário R$60 → semana cheia (5 dias) R$300 → mês cheia (20 dias) R$1.200.
  * Dia sem operação não entra no alvo do período (exceção de falta).
+ * Progresso pode ultrapassar 100% quando o lucro supera o floor.
  */
 import {
   ALL_BUSINESSES_ID,
@@ -9,9 +10,9 @@ import {
   isAllBusinesses,
 } from "@/lib/business-units";
 
-export const SALGADOS_DAILY_PROFIT_GOAL = 50;
-export const SALGADOS_WEEKLY_PROFIT_GOAL = 250;
-export const SALGADOS_MONTHLY_PROFIT_GOAL = 1000;
+export const SALGADOS_DAILY_PROFIT_GOAL = 60;
+export const SALGADOS_WEEKLY_PROFIT_GOAL = 300;
+export const SALGADOS_MONTHLY_PROFIT_GOAL = 1200;
 export const SALGADOS_GOAL_DAYS_PER_WEEK = 5;
 export const SALGADOS_GOAL_DAYS_PER_MONTH = 20;
 
@@ -25,7 +26,7 @@ export function usesSalgadosProfitGoals(businessId: string | undefined | null): 
   );
 }
 
-/** Alvo de lucro no período = R$50 × dias em que houve operação. */
+/** Alvo de lucro no período = R$60 × dias em que houve operação. */
 export function salgadosPeriodProfitTarget(operatedDays: number): number {
   return SALGADOS_DAILY_PROFIT_GOAL * Math.max(0, operatedDays);
 }

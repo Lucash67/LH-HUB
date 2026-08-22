@@ -90,7 +90,8 @@ export function calcGrowth(current: number, previous: number): number {
 
 export function goalProgress(current: number, target: number): number {
   if (target === 0) return 0;
-  return Math.min((current / target) * 100, 100);
+  // Sem teto: lucro acima da meta aparece como >100% (ex.: R$120 / R$60 = 200%).
+  return (current / target) * 100;
 }
 
 export const PRODUCT_CATEGORIES = [
