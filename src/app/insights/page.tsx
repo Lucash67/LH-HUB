@@ -10,7 +10,8 @@ import { motion } from "framer-motion";
 import { useBusinessScope } from "@/hooks/use-business-scope";
 import { fetchJsonArray } from "@/lib/api/safe-json";
 import { SectionPanel } from "@/components/executive/section-panel";
-import { isViewingGeneral, useTemporalViewContext } from "@/stores/temporal-context-store";
+import { useTemporalViewContext } from "@/stores/temporal-context-store";
+import { temporalQueryParams } from "@/lib/temporal-filter";
 
 interface Insight {
   id: string;
@@ -31,12 +32,21 @@ export default function InsightsPage() {
   const { activeBusinessId, withQuery } = useBusinessScope();
   const context = useTemporalViewContext();
 
-  const insightsUrl = isViewingGeneral(context)
-    ? withQuery("/api/insights")
-    : withQuery(`/api/insights?date=${context.viewDate}&viewMode=day`);
+  const scopeParams = temporalQueryParams(context);
+  const insightsUrl =
+    Object.keys(scopeParams).length === 0
+      ? withQuery("/api/insights")
+      : withQuery(`/api/insights?${new URLSearchParams(scopeParams)}`);
 
   const { data: insights = [], isLoading, isError, error, refetch } = useQuery<Insight[]>({
-    queryKey: ["insights", activeBusinessId, context.mode, context.viewDate],
+    queryKey: [
+      "insights",
+      activeBusinessId,
+      context.mode,
+      context.viewDate,
+      context.dateFrom,
+      context.dateTo,
+    ],
     queryFn: () => fetchJsonArray<Insight>(insightsUrl),
     staleTime: 120_000,
     refetchInterval: 120_000,

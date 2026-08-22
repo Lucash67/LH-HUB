@@ -11,13 +11,17 @@ import { isAllBusinesses } from "@/lib/business-units";
 import { listDailyPurchaseMixByDate } from "@/lib/operational-data-service";
 import { fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import { listSalesEnriched } from "@/platform/db/repositories/sale-repository";
-import type { TemporalViewContext } from "@/stores/temporal-context-store";
+import type { TemporalViewContext, TemporalViewMode } from "@/stores/temporal-context-store";
 import { MSG, apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { withTenantScope } from "@/lib/auth/with-tenant-api";
 
 function isSunday(dateKey: string): boolean {
   return parseISO(dateKey).getDay() === 0;
+}
+
+function isISODate(value: string | null): value is string {
+  return !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 function normalizeDashboardSales(
@@ -29,6 +33,22 @@ function normalizeDashboardSales(
   }));
 }
 
+function parseViewContext(params: URLSearchParams): TemporalViewContext {
+  const rawMode = params.get("viewMode");
+  const mode: TemporalViewMode =
+    rawMode === "day" ? "day" : rawMode === "range" ? "range" : "general";
+  const today = format(new Date(), "yyyy-MM-dd");
+  const viewDate = isISODate(params.get("date")) ? params.get("date")! : today;
+  let dateFrom = isISODate(params.get("dateFrom")) ? params.get("dateFrom")! : today;
+  let dateTo = isISODate(params.get("dateTo")) ? params.get("dateTo")! : today;
+  if (dateFrom > dateTo) {
+    const swap = dateFrom;
+    dateFrom = dateTo;
+    dateTo = swap;
+  }
+  return { mode, viewDate, dateFrom, dateTo };
+}
+
 export async function GET(request: NextRequest) {
   const auth = await requireApiSession();
   if (isAuthFailure(auth)) return auth;
@@ -36,10 +56,8 @@ export async function GET(request: NextRequest) {
     return await withTenantScope(auth, request.nextUrl.searchParams.get("businessId"), async (scope) => {
       const params = request.nextUrl.searchParams;
       const businessId = scope.businessId;
-      const viewMode = params.get("viewMode") === "day" ? "day" : "general";
-      const viewDate = params.get("date") ?? format(new Date(), "yyyy-MM-dd");
-
-      const context: TemporalViewContext = { mode: viewMode, viewDate };
+      const context = parseViewContext(params);
+      const { mode: viewMode, viewDate, dateFrom, dateTo } = context;
 
       const [sales, goals, purchasesByDate] = await Promise.all([
         listSalesEnriched(businessId),
@@ -110,11 +128,11 @@ export async function GET(request: NextRequest) {
             isSunday(viewDate) && dayMetrics
               ? buildConservativeWeekForecast(dayMetrics, viewDate, businessId)
               : null,
-          context: { mode: viewMode, viewDate },
+          context: { mode: viewMode, viewDate, dateFrom, dateTo },
         });
       }
 
-      // Visão geral usa o diário homologado como fonte oficial de receita/lucro.
+      // Visão geral / período usa o diário homologado como fonte oficial de receita/lucro.
       if ((dailyGoal <= 0 || weeklyGoal <= 0) && !isAllBusinesses(businessId)) {
         const smartGoals = await getSmartGoalsView(businessId).catch(() => null);
         if (dailyGoal <= 0) dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
@@ -130,7 +148,8 @@ export async function GET(request: NextRequest) {
         businessId,
         dayMetrics,
       );
-      const pulseDate = viewMode === "day" ? viewDate : format(new Date(), "yyyy-MM-dd");
+      const pulseDate =
+        viewMode === "day" ? viewDate : viewMode === "range" ? dateTo : format(new Date(), "yyyy-MM-dd");
       return NextResponse.json({
         data,
         diaryEntry: null,
@@ -149,7 +168,7 @@ export async function GET(request: NextRequest) {
                 isAllBusinesses(businessId) ? "salgados" : businessId,
               )
             : null,
-        context: { mode: viewMode, viewDate },
+        context: { mode: viewMode, viewDate, dateFrom, dateTo },
       });
     });
   } catch (error) {

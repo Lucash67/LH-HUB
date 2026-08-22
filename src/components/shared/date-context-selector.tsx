@@ -22,11 +22,15 @@ import {
 export function DateContextSelector({ compact }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const [rangeFrom, setRangeFrom] = useState("");
+  const [rangeTo, setRangeTo] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const context = useTemporalViewContext();
   const setGeneral = useTemporalContextStore((s) => s.setGeneral);
   const setViewDate = useTemporalContextStore((s) => s.setViewDate);
+  const setDateRange = useTemporalContextStore((s) => s.setDateRange);
   const setToday = useTemporalContextStore((s) => s.setToday);
   const setYesterday = useTemporalContextStore((s) => s.setYesterday);
   const setLastOperationalDay = useTemporalContextStore((s) => s.setLastOperationalDay);
@@ -55,15 +59,32 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
         setPickerOpen(false);
+        setRangeOpen(false);
       }
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (context.mode === "range") {
+      setRangeFrom(context.dateFrom);
+      setRangeTo(context.dateTo);
+    }
+  }, [context.mode, context.dateFrom, context.dateTo]);
+
   function selectDate(date: string) {
     setViewDate(date);
     setOpen(false);
+    setPickerOpen(false);
+    setRangeOpen(false);
+  }
+
+  function applyRange() {
+    if (!rangeFrom || !rangeTo) return;
+    setDateRange(rangeFrom, rangeTo);
+    setOpen(false);
+    setRangeOpen(false);
     setPickerOpen(false);
   }
 
@@ -94,7 +115,7 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
 
       {open && (
         <div
-          className="absolute right-0 top-full z-50 mt-2 min-w-[240px] rounded-xl border border-surface-border bg-surface-elevated py-1 shadow-lg sm:left-0 sm:right-auto"
+          className="absolute right-0 top-full z-50 mt-2 min-w-[260px] rounded-xl border border-surface-border bg-surface-elevated py-1 shadow-lg sm:left-0 sm:right-auto"
           role="listbox"
         >
           <MenuItem
@@ -143,7 +164,14 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
             )}
           </MenuItem>
           <div className="my-1 border-t border-surface-border" />
-          <MenuItem onClick={() => setPickerOpen((v) => !v)}>Selecionar data...</MenuItem>
+          <MenuItem
+            onClick={() => {
+              setPickerOpen((v) => !v);
+              setRangeOpen(false);
+            }}
+          >
+            Selecionar data...
+          </MenuItem>
           {pickerOpen && (
             <div className="border-t border-surface-border px-3 py-2">
               <input
@@ -156,7 +184,52 @@ export function DateContextSelector({ compact }: { compact?: boolean }) {
               />
             </div>
           )}
-          <MenuItem disabled>Selecionar período...</MenuItem>
+          <MenuItem
+            onClick={() => {
+              setRangeOpen((v) => !v);
+              setPickerOpen(false);
+              if (!rangeFrom) {
+                setRangeFrom(context.mode === "range" ? context.dateFrom : context.viewDate);
+              }
+              if (!rangeTo) {
+                setRangeTo(context.mode === "range" ? context.dateTo : context.viewDate);
+              }
+            }}
+            active={context.mode === "range"}
+          >
+            Selecionar período...
+          </MenuItem>
+          {rangeOpen && (
+            <div className="space-y-2 border-t border-surface-border px-3 py-3">
+              <label className="block text-[11px] font-medium uppercase tracking-wide text-text-muted">
+                De
+                <input
+                  type="date"
+                  value={rangeFrom}
+                  onChange={(e) => setRangeFrom(e.target.value)}
+                  className="mt-1 h-11 w-full rounded-lg border border-surface-border bg-surface-base px-2 py-1.5 text-base text-text-primary sm:h-auto sm:text-sm"
+                />
+              </label>
+              <label className="block text-[11px] font-medium uppercase tracking-wide text-text-muted">
+                Até
+                <input
+                  type="date"
+                  value={rangeTo}
+                  onChange={(e) => setRangeTo(e.target.value)}
+                  className="mt-1 h-11 w-full rounded-lg border border-surface-border bg-surface-base px-2 py-1.5 text-base text-text-primary sm:h-auto sm:text-sm"
+                />
+              </label>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full"
+                disabled={!rangeFrom || !rangeTo}
+                onClick={applyRange}
+              >
+                Aplicar período
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

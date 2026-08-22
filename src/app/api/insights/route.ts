@@ -15,10 +15,14 @@ export async function GET(request: NextRequest) {
       const params = request.nextUrl.searchParams;
       const businessId = scope.businessId;
       const date = params.get("date");
+      const dateFrom = params.get("dateFrom");
+      const dateTo = params.get("dateTo");
       const viewMode = params.get("viewMode");
 
       const executive = await generateInsights(businessId, {
-        date: date ?? undefined,
+        date: date ?? dateTo ?? undefined,
+        dateFrom: dateFrom ?? undefined,
+        dateTo: dateTo ?? undefined,
         viewMode: viewMode ?? undefined,
       });
 

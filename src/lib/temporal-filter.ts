@@ -1,5 +1,5 @@
 /**
- * Filtros reutilizáveis para o Contexto Temporal (Geral / Dia).
+ * Filtros reutilizáveis para o Contexto Temporal (Geral / Dia / Período).
  */
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -15,6 +15,9 @@ export function filterByTemporalContext<T extends DatedRow>(
   context: TemporalViewContext,
 ): T[] {
   if (context.mode === "general") return rows;
+  if (context.mode === "range") {
+    return rows.filter((r) => r.date >= context.dateFrom && r.date <= context.dateTo);
+  }
   return rows.filter((r) => r.date === context.viewDate);
 }
 
@@ -23,6 +26,9 @@ export function filterUpToDate<T extends DatedRow>(
   context: TemporalViewContext,
 ): T[] {
   if (context.mode === "general") return rows;
+  if (context.mode === "range") {
+    return rows.filter((r) => r.date >= context.dateFrom && r.date <= context.dateTo);
+  }
   return rows.filter((r) => r.date <= context.viewDate);
 }
 
@@ -41,12 +47,24 @@ export function formatTemporalFilterSubtitle(context: TemporalViewContext): stri
   if (context.mode === "general") {
     return "Visão geral · histórico completo";
   }
+  if (context.mode === "range") {
+    const from = format(parseISO(context.dateFrom), "dd/MM/yyyy", { locale: ptBR });
+    const to = format(parseISO(context.dateTo), "dd/MM/yyyy", { locale: ptBR });
+    return `Período · ${from} – ${to}`;
+  }
   const label = format(parseISO(context.viewDate), "EEEE, dd/MM/yyyy", { locale: ptBR });
   return `Dia selecionado · ${label}`;
 }
 
 export function temporalQueryParams(context: TemporalViewContext): Record<string, string> {
   if (context.mode === "general") return {};
+  if (context.mode === "range") {
+    return {
+      viewMode: "range",
+      dateFrom: context.dateFrom,
+      dateTo: context.dateTo,
+    };
+  }
   return { date: context.viewDate, viewMode: "day" };
 }
 

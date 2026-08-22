@@ -15,7 +15,10 @@ export function TemporalDayChip() {
 
   if (isViewingGeneral(context) || isAllBusinesses(activeBusinessId)) return null;
 
-  const dateLabel = format(parseISO(context.viewDate), "dd/MM/yyyy (EEEE)", { locale: ptBR });
+  const dateLabel =
+    context.mode === "range"
+      ? `${format(parseISO(context.dateFrom), "dd/MM/yyyy", { locale: ptBR })} – ${format(parseISO(context.dateTo), "dd/MM/yyyy", { locale: ptBR })}`
+      : format(parseISO(context.viewDate), "dd/MM/yyyy (EEEE)", { locale: ptBR });
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#7C3CFF]/20 bg-gradient-to-r from-[#7C3CFF]/8 via-surface-card to-[#0CD4FF]/5 px-3 py-2 text-sm">
@@ -23,12 +26,14 @@ export function TemporalDayChip() {
       <span className="text-text-secondary">
         KPIs filtrados para <strong className="text-text-primary">{dateLabel}</strong>
       </span>
-      <Link
-        href="/diario"
-        className="ml-auto inline-flex min-h-[32px] items-center px-1 text-xs font-medium text-[#0CD4FF] hover:underline"
-      >
-        Abrir diário →
-      </Link>
+      {context.mode === "day" && (
+        <Link
+          href="/diario"
+          className="ml-auto inline-flex min-h-[32px] items-center px-1 text-xs font-medium text-[#0CD4FF] hover:underline"
+        >
+          Abrir diário →
+        </Link>
+      )}
     </div>
   );
 }
