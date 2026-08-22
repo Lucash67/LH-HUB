@@ -24,6 +24,8 @@ import { deriveDiaryTotalProfit } from "@/lib/diary/types";
 import type { OperationalDiaryEntry } from "@/lib/diary/types";
 import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 import {
+  describeProfitUnitsDivergence,
+  salgadosPeriodUnitsTarget,
   usesSalgadosProfitGoals,
 } from "@/lib/salgados-profit-goals";
 
@@ -133,6 +135,11 @@ export interface DashboardViewMetrics {
   currentStock: number;
   dailyGoal: number;
   goalProgress: number;
+  /** Alvo de unidades no escopo (dia ou período × dias operados). */
+  unitsGoalTarget: number;
+  unitsGoalProgress: number;
+  /** Insight quando lucro % e volume % divergem. */
+  profitUnitsInsight: string | null;
   customersToday: number;
   pixTotal: number;
   cardTotal: number;
@@ -648,6 +655,21 @@ function buildPriorities(diary?: DiaryDayContext | null): DashboardPriority[] {
   return items;
 }
 
+function resolveUnitsGoalTarget(
+  businessId: string | undefined,
+  dailyUnitsGoal: number,
+  operatedDays: number,
+  diaryUnits?: number,
+): number {
+  if (diaryUnits != null && diaryUnits > 0) return diaryUnits;
+  if (operatedDays <= 0) return 0;
+  if (dailyUnitsGoal > 0) return dailyUnitsGoal * operatedDays;
+  if (usesSalgadosProfitGoals(businessId)) {
+    return salgadosPeriodUnitsTarget(operatedDays);
+  }
+  return 0;
+}
+
 function buildGeneralDashboardView(
   sales: DashboardSale[],
   currentStock: number,
@@ -655,6 +677,8 @@ function buildGeneralDashboardView(
   totalRegisteredClients: number,
   dayMetrics?: OperationalDayMetricsLike[] | null,
   scopeLabel = "Histórico completo",
+  dailyUnitsGoal = 0,
+  businessId?: string,
 ): DashboardViewData {
   // Diário homologado é a fonte oficial de receita/lucro; vendas ficam para mix/pagamentos.
   const hasDiaryMetrics = !!dayMetrics && dayMetrics.length > 0;
@@ -695,6 +719,17 @@ function buildGeneralDashboardView(
     profitTarget > 0
       ? computeGoalProgress(totalProfit, profitTarget)
       : 0;
+  const unitsGoalTarget = resolveUnitsGoalTarget(
+    businessId,
+    dailyUnitsGoal,
+    operationalDayCount,
+  );
+  const unitsGoalProgress =
+    unitsGoalTarget > 0 ? computeGoalProgress(totalUnits, unitsGoalTarget) : 0;
+  const profitUnitsInsight = describeProfitUnitsDivergence(
+    generalGoalProgress,
+    unitsGoalProgress,
+  );
   const uniqueBuyers = uniqueCustomerCount(sales);
   const salesCount = sales.length;
   const buyersLabel =
@@ -713,6 +748,9 @@ function buildGeneralDashboardView(
       currentStock,
       dailyGoal,
       goalProgress: generalGoalProgress,
+      unitsGoalTarget,
+      unitsGoalProgress,
+      profitUnitsInsight,
       goalRevenue: avgDailyProfit,
       customersToday: totalRegisteredClients > 0 ? totalRegisteredClients : uniqueBuyers,
       pixTotal: payments.pix,
@@ -740,6 +778,9 @@ function buildGeneralDashboardView(
         itemsSoldToday: totalUnits,
         dailyGoal,
         goalProgress: generalGoalProgress,
+        unitsGoalTarget,
+        unitsGoalProgress,
+        profitUnitsInsight,
         goalRevenue: avgDailyProfit,
       } as DashboardViewMetrics,
     ),
@@ -810,9 +851,19 @@ export function buildDashboardView(
   diary?: DiaryDayContext | null,
   businessId?: string,
   dayMetrics?: OperationalDayMetricsLike[] | null,
+  dailyUnitsGoal = 0,
 ): DashboardViewData {
   if (context.mode === "general") {
-    return buildGeneralDashboardView(sales, currentStock, dailyGoal, totalRegisteredClients, dayMetrics);
+    return buildGeneralDashboardView(
+      sales,
+      currentStock,
+      dailyGoal,
+      totalRegisteredClients,
+      dayMetrics,
+      "Histórico completo",
+      dailyUnitsGoal,
+      businessId,
+    );
   }
 
   if (context.mode === "range") {
@@ -828,6 +879,8 @@ export function buildDashboardView(
       totalRegisteredClients,
       scopedMetrics,
       scopeLabel,
+      dailyUnitsGoal,
+      businessId,
     );
   }
 
@@ -893,6 +946,20 @@ export function buildDashboardView(
     });
   }
 
+  const profitGoalProgress = computeGoalProgress(profitToday, dailyGoal);
+  const unitsGoalTarget = resolveUnitsGoalTarget(
+    businessId,
+    dailyUnitsGoal,
+    1,
+    diary?.dailyGoalUnits,
+  );
+  const unitsGoalProgress =
+    unitsGoalTarget > 0 ? computeGoalProgress(itemsSoldToday, unitsGoalTarget) : 0;
+  const profitUnitsInsight = describeProfitUnitsDivergence(
+    profitGoalProgress,
+    unitsGoalProgress,
+  );
+
   const metrics: DashboardViewMetrics = {
     revenueToday,
     profitToday,
@@ -901,7 +968,10 @@ export function buildDashboardView(
     itemsSoldToday,
     currentStock,
     dailyGoal,
-    goalProgress: computeGoalProgress(profitToday, dailyGoal),
+    goalProgress: profitGoalProgress,
+    unitsGoalTarget,
+    unitsGoalProgress,
+    profitUnitsInsight,
     goalRevenue: profitToday,
     customersToday,
     pixTotal: payments.pix,
@@ -918,14 +988,14 @@ export function buildDashboardView(
       revenueToday > 0,
   };
 
-  const unitGoal = diary?.dailyGoalUnits;
+  // Lucro é a meta principal; unidades ficam no card companheiro (unitsGoalProgress).
+  // Negócios sem meta de lucro ainda podem usar % de unidades como “meta” legada.
   const preferProfitMeta = usesSalgadosProfitGoals(businessId) || dailyGoal > 0;
-  const metaProgress =
-    preferProfitMeta
-      ? metrics.goalProgress
-      : unitGoal && unitGoal > 0
-        ? Math.min(Math.round(((diary?.quantitySold ?? itemsSoldToday) / unitGoal) * 100), 999)
-        : metrics.goalProgress;
+  const metaProgress = preferProfitMeta
+    ? metrics.goalProgress
+    : unitsGoalTarget > 0
+      ? unitsGoalProgress
+      : metrics.goalProgress;
 
   return {
     isGeneralView: false,
@@ -991,6 +1061,7 @@ export function dashboardScopeCopy(context: TemporalViewContext): {
   revenueLabel: string;
   profitLabel: string;
   goalLabel: string;
+  unitsGoalLabel: string;
   buyersSubtext: string;
   chartsSubtitle: string;
   profitPhrase: string;
@@ -1005,6 +1076,7 @@ export function dashboardScopeCopy(context: TemporalViewContext): {
       revenueLabel: "Receita do dia",
       profitLabel: "Lucro do dia",
       goalLabel: "Meta lucro do dia",
+      unitsGoalLabel: "Meta un. do dia",
       buyersSubtext: `un. ${short === "hoje" ? "hoje" : `em ${day}`}`,
       chartsSubtitle: isViewingTodayContext(context) ? "Hoje" : day,
       profitPhrase: "Lucro do dia",
@@ -1018,6 +1090,7 @@ export function dashboardScopeCopy(context: TemporalViewContext): {
       revenueLabel: "Receita do período",
       profitLabel: "Lucro do período",
       goalLabel: "Meta lucro do período",
+      unitsGoalLabel: "Meta un. do período",
       buyersSubtext: "un. no período",
       chartsSubtitle: `${from} – ${to}`,
       profitPhrase: "Lucro do período",
@@ -1028,6 +1101,7 @@ export function dashboardScopeCopy(context: TemporalViewContext): {
     revenueLabel: "Receita total",
     profitLabel: "Lucro total",
     goalLabel: "Meta lucro geral",
+    unitsGoalLabel: "Meta un. geral",
     buyersSubtext: "un. no histórico",
     chartsSubtitle: "Histórico completo",
     profitPhrase: "Lucro acumulado",

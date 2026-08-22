@@ -112,7 +112,7 @@ export function WeekPulsePanel({
       {pulse.goalRevenue > 0 && (
         <div className="mt-2.5 border-t border-surface-border/60 pt-2">
           <div className="flex items-center justify-between gap-2 text-[10px]">
-            <span className="text-text-muted">Meta semanal</span>
+            <span className="text-text-muted">Meta lucro</span>
             <span className="font-bold text-text-secondary">
               {Math.round(pulse.goalProgress)}% de {formatCurrency(pulse.goalRevenue)}
             </span>
@@ -128,6 +128,30 @@ export function WeekPulsePanel({
               )}
             />
           </div>
+          {pulse.unitsGoalTarget > 0 && (
+            <>
+              <div className="mt-2 flex items-center justify-between gap-2 text-[10px]">
+                <span className="text-text-muted">Meta unidades</span>
+                <span className="font-bold text-text-secondary">
+                  {Math.round(pulse.unitsGoalProgress)}% · {pulse.units}/{pulse.unitsGoalTarget}
+                </span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-hover">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(pulse.unitsGoalProgress, 100)}%` }}
+                  transition={{ duration: 0.7, delay: 0.28, ease: "easeOut" }}
+                  className={cn(
+                    "h-full rounded-full",
+                    pulse.unitsGoalProgress >= 100 ? "bg-emerald-400" : "bg-[#0CD4FF]",
+                  )}
+                />
+              </div>
+            </>
+          )}
+          {pulse.profitUnitsInsight && (
+            <p className="mt-2 text-[10px] leading-snug text-text-muted">{pulse.profitUnitsInsight}</p>
+          )}
         </div>
       )}
     </div>

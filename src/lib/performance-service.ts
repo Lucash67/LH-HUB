@@ -11,13 +11,19 @@ import {
 import { ptBR } from "date-fns/locale";
 import { fetchMetricSales } from "@/platform/db/data-access/metrics";
 import { computePeriodMetrics } from "@/lib/analytics-engine/aggregates";
-import { calcGrowth, getMonthRange, getWeekRange } from "@/lib/utils";
+import { calcGrowth, getMonthRange, getWeekRange, goalProgress } from "@/lib/utils";
 import { isOperationalDay, WEEKDAY_MON_FRI } from "@/lib/operational-calendar";
 import {
   buildOperationalDayMetrics,
   type OperationalDayMetrics,
 } from "@/lib/operational-day-metrics";
 import type { ChartDataPoint } from "@/lib/analytics";
+import {
+  SALGADOS_DAILY_PROFIT_GOAL,
+  SALGADOS_DAILY_UNITS_GOAL,
+  describeProfitUnitsDivergence,
+  usesSalgadosProfitGoals,
+} from "@/lib/salgados-profit-goals";
 
 export type PerformancePeriod = "weekly" | "monthly";
 
@@ -40,6 +46,13 @@ export interface PerformanceView {
     previousRevenue: number;
     previousProfit: number;
     previousLabel: string;
+  };
+  goals: {
+    profitTarget: number;
+    profitProgress: number;
+    unitsTarget: number;
+    unitsProgress: number;
+    insight: string | null;
   };
   dailyChart: ChartDataPoint[];
   weekdayChart: ChartDataPoint[];
@@ -156,6 +169,13 @@ export async function getPerformanceView(
   const metricsRaw = computePeriodMetrics(operationalSales);
   const diaryUnits = periodMetrics.reduce((s, d) => s + (d.units ?? 0), 0);
   const itemsSold = diaryUnits > 0 ? diaryUnits : metricsRaw.itemsSold;
+  const operatedDays = Math.max(periodMetrics.length, 0);
+
+  const useCanonical = usesSalgadosProfitGoals(businessId);
+  const profitTarget = useCanonical ? SALGADOS_DAILY_PROFIT_GOAL * operatedDays : 0;
+  const unitsTarget = useCanonical ? SALGADOS_DAILY_UNITS_GOAL * operatedDays : 0;
+  const profitProgress = goalProgress(profit, profitTarget);
+  const unitsProgress = goalProgress(itemsSold, unitsTarget);
 
   return {
     period,
@@ -177,6 +197,13 @@ export async function getPerformanceView(
       previousRevenue,
       previousProfit,
       previousLabel: formatPeriodLabel(period, prev),
+    },
+    goals: {
+      profitTarget,
+      profitProgress,
+      unitsTarget,
+      unitsProgress,
+      insight: describeProfitUnitsDivergence(profitProgress, unitsProgress),
     },
     dailyChart: buildDailyChart(periodMetrics, range, businessId),
     weekdayChart: buildWeekdayChart(periodMetrics),

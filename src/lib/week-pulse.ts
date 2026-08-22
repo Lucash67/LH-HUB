@@ -14,6 +14,7 @@ import {
   isSaleExcludedFromMix,
   isUnidentifiedFlavorProduct,
 } from "@/lib/salgados-flavors";
+import { describeProfitUnitsDivergence } from "@/lib/salgados-profit-goals";
 import type { OperationalDayMetricsLike } from "@/lib/dashboard-view";
 
 const WEEKDAY_LABEL = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"] as const;
@@ -45,6 +46,11 @@ export interface WeekPulse {
   operationalDays: number;
   goalRevenue: number;
   goalProgress: number;
+  /** Meta de unidades da semana (12 × dias operados). */
+  unitsGoalTarget: number;
+  unitsGoalProgress: number;
+  /** Insight quando lucro % e volume % divergem. */
+  profitUnitsInsight: string | null;
   /** Variação contra a semana anterior. null quando não há base de comparação. */
   profitTrend: number | null;
   revenueTrend: number | null;
@@ -88,6 +94,8 @@ export interface WeekPulseOptions {
   goalRevenue?: number;
   /** Quando definido, a meta da semana = dailyProfitGoal × dias operados (exceção de falta). */
   dailyProfitGoal?: number;
+  /** Meta diária de unidades; semana = dailyUnitsGoal × dias operados. */
+  dailyUnitsGoal?: number;
   /** Na visão geral, cai para a última semana operada quando a atual está vazia. */
   allowFallback?: boolean;
   /** Vendas do negócio — usadas para o mix por sabor. */
@@ -201,6 +209,7 @@ export function buildWeekPulse(
   {
     goalRevenue = 0,
     dailyProfitGoal,
+    dailyUnitsGoal,
     allowFallback = false,
     sales = [],
     purchasesByDate = {},
@@ -265,6 +274,16 @@ export function buildWeekPulse(
     effectiveGoal > 0
       ? ((dailyProfitGoal != null ? profit : revenue) / effectiveGoal) * 100
       : 0;
+  const unitsGoalTarget =
+    dailyUnitsGoal != null && dailyUnitsGoal > 0
+      ? dailyUnitsGoal * Math.max(operationalDays, 1)
+      : 0;
+  const unitsGoalProgress =
+    unitsGoalTarget > 0 ? (units / unitsGoalTarget) * 100 : 0;
+  const profitUnitsInsight = describeProfitUnitsDivergence(
+    goalProgressValue,
+    unitsGoalProgress,
+  );
 
   return {
     start: range.start,
@@ -277,6 +296,9 @@ export function buildWeekPulse(
     operationalDays,
     goalRevenue: effectiveGoal,
     goalProgress: goalProgressValue,
+    unitsGoalTarget,
+    unitsGoalProgress,
+    profitUnitsInsight,
     profitTrend:
       previousProfit > 0 ? ((profit - previousProfit) / previousProfit) * 100 : null,
     revenueTrend:

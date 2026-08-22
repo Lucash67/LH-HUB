@@ -129,6 +129,35 @@ export default function DesempenhoPage() {
           />
         </div>
 
+        {data.goals.profitTarget > 0 && !isEmptyPeriod && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-[#7C3CFF]/20 bg-gradient-to-br from-[#7C3CFF]/10 to-surface-card px-4 py-3">
+              <p className="text-xs text-text-muted">Meta lucro da semana</p>
+              <p className="text-lg font-bold text-[#7C3CFF]">
+                {Math.round(data.goals.profitProgress)}%
+              </p>
+              <p className="text-xs text-text-secondary">
+                {formatCurrency(data.metrics.profit)} / {formatCurrency(data.goals.profitTarget)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-[#0CD4FF]/20 bg-gradient-to-br from-[#0CD4FF]/10 to-surface-card px-4 py-3">
+              <p className="text-xs text-text-muted">Meta unidades da semana</p>
+              <p className="text-lg font-bold text-[#0CD4FF]">
+                {Math.round(data.goals.unitsProgress)}%
+              </p>
+              <p className="text-xs text-text-secondary">
+                {data.metrics.itemsSold} / {data.goals.unitsTarget} un.
+              </p>
+            </div>
+            {data.goals.insight && (
+              <p className="rounded-xl border border-brand-yellow/25 bg-brand-yellow/[0.07] px-4 py-3 text-sm text-text-secondary sm:col-span-2">
+                <span className="font-semibold text-brand-yellow">Lucro × volume · </span>
+                {data.goals.insight}
+              </p>
+            )}
+          </div>
+        )}
+
         {!isEmptyPeriod && (
           <ChartCard
             title="Dia a dia"
