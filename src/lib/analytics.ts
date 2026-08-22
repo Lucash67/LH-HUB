@@ -1,8 +1,12 @@
 import { format, subDays, parseISO, getDay } from "date-fns";
 import { and, eq, inArray, lte } from "drizzle-orm";
 import { calcGrowth, getWeekRange, getMonthRange, goalProgress } from "./utils";
-import { getDailyGoalTarget } from "./goals-service";
+import { ensureSalgadosProfitGoals, getDailyGoalTarget } from "./goals-service";
 import { getSmartGoalsView } from "./smart-goals-service";
+import {
+  salgadosGoalTargetForType,
+  usesSalgadosProfitGoals,
+} from "./salgados-profit-goals";
 import { ALL_BUSINESSES_ID, isAllBusinesses } from "./business-units";
 import { getTenantDbIds } from "@/lib/auth/tenant-context";
 import {
@@ -423,11 +427,22 @@ export async function getGoalsWithProgress(businessId: string = ALL_BUSINESSES_I
   };
 
   // Metas sem alvo configurado usam o alvo sugerido pelas Metas Inteligentes.
+  // Salgados: lucro canônico (R$50/dia) — garante % real também na visão Todos.
+  const salgadosProfit = usesSalgadosProfitGoals(businessId);
+  if (salgadosProfit) {
+    await ensureSalgadosProfitGoals().catch(() => undefined);
+  }
+
   let smartView: Awaited<ReturnType<typeof getSmartGoalsView>> = null;
-  if (!isAllBusinesses(businessId) && allGoals.some((g) => g.targetAmount <= 0)) {
+  if (!salgadosProfit && !isAllBusinesses(businessId) && allGoals.some((g) => g.targetAmount <= 0)) {
     smartView = await getSmartGoalsView(businessId).catch(() => null);
   }
   const suggestedTarget = (type: string): number => {
+    if (salgadosProfit) {
+      return salgadosGoalTargetForType(
+        type as "daily" | "weekly" | "monthly" | "yearly",
+      );
+    }
     if (!smartView) return 0;
     switch (type) {
       case "daily":
@@ -456,8 +471,18 @@ export async function getGoalsWithProgress(businessId: string = ALL_BUSINESSES_I
       goal.periodEnd >= today;
     const periodStart = honorsStoredPeriod ? goal.periodStart : live.periodStart;
     const periodEnd = honorsStoredPeriod ? goal.periodEnd : live.periodEnd;
+
+    const periodDays =
+      metricsMap && metricsMap.size > 0
+        ? Array.from(metricsMap.values()).filter(
+            (d) => d.date >= periodStart && d.date <= periodEnd,
+          )
+        : [];
+
     let current: number;
-    if (metricsMap && metricsMap.size > 0) {
+    if (salgadosProfit && metricsMap && metricsMap.size > 0) {
+      current = periodDays.reduce((s, d) => s + d.profit, 0);
+    } else if (metricsMap && metricsMap.size > 0) {
       current = Array.from(metricsMap.values())
         .filter((d) => d.date >= periodStart && d.date <= periodEnd)
         .reduce((s, d) => s + d.revenue, 0);
@@ -467,22 +492,35 @@ export async function getGoalsWithProgress(businessId: string = ALL_BUSINESSES_I
         dateGte: periodStart,
         dateLte: periodEnd,
       });
-      current = periodSales.reduce((s, v) => s + v.totalAmount, 0);
+      current = salgadosProfit
+        ? periodSales.reduce((s, v) => s + v.profit, 0)
+        : periodSales.reduce((s, v) => s + v.totalAmount, 0);
     }
+
+    const operatedDays = periodDays.length;
     const configuredAmount = goal.targetAmount ?? 0;
     const configuredUnits = goal.targetUnits ?? null;
-    const isCustom = configuredAmount > 0 || (configuredUnits != null && configuredUnits > 0);
-    const targetSource = isCustom ? "custom" : "smart";
-    const targetAmount = isCustom
-      ? configuredAmount > 0
-        ? configuredAmount
-        : suggestedTarget(goal.type)
-      : suggestedTarget(goal.type);
+    const isCustom =
+      !salgadosProfit &&
+      (configuredAmount > 0 || (configuredUnits != null && configuredUnits > 0));
+    const targetSource = salgadosProfit ? "salgados-profit" : isCustom ? "custom" : "smart";
+    const targetAmount = salgadosProfit
+      ? goal.type === "daily"
+        ? salgadosGoalTargetForType("daily")
+        : salgadosGoalTargetForType(
+            goal.type as "weekly" | "monthly" | "yearly",
+            operatedDays > 0 ? operatedDays : undefined,
+          )
+      : isCustom
+        ? configuredAmount > 0
+          ? configuredAmount
+          : suggestedTarget(goal.type)
+        : suggestedTarget(goal.type);
     const progress = goalProgress(current, targetAmount);
     result.push({
       ...goal,
       type: goal.type,
-      configuredAmount,
+      configuredAmount: salgadosProfit ? targetAmount : configuredAmount,
       configuredUnits,
       targetAmount,
       targetUnits: configuredUnits,
@@ -507,10 +545,11 @@ export async function getCalendarData(
   businessId: string = ALL_BUSINESSES_ID,
 ) {
   let target = await getDailyGoalTarget(businessId);
-  if (target <= 0 && !isAllBusinesses(businessId)) {
+  if (target <= 0 && !isAllBusinesses(businessId) && !usesSalgadosProfitGoals(businessId)) {
     const smart = await getSmartGoalsView(businessId).catch(() => null);
     target = smart?.daily.targetRevenue ?? 0;
   }
+  const salgadosProfit = usesSalgadosProfitGoals(businessId);
   const startDate = format(new Date(year, month - 1, 1), "yyyy-MM-dd");
   const endDate = format(new Date(year, month, 0), "yyyy-MM-dd");
 
@@ -521,30 +560,33 @@ export async function getCalendarData(
 
   const dayData: Record<
     string,
-    { revenue: number; status: "hit" | "close" | "miss"; sales: typeof monthSales }
+    { revenue: number; profit: number; status: "hit" | "close" | "miss"; sales: typeof monthSales }
   > = {};
 
   for (const sale of monthSales) {
     if (!dayData[sale.date]) {
-      dayData[sale.date] = { revenue: 0, status: "miss", sales: [] };
+      dayData[sale.date] = { revenue: 0, profit: 0, status: "miss", sales: [] };
     }
     dayData[sale.date].revenue += sale.totalAmount;
+    dayData[sale.date].profit += sale.profit;
     dayData[sale.date].sales.push(sale);
   }
 
-  // Diário homologado sobrescreve a receita do dia.
+  // Diário homologado sobrescreve a receita/lucro do dia.
   if (metricsMap) {
     for (const day of Array.from(metricsMap.values())) {
       if (day.date < startDate || day.date > endDate) continue;
       if (!dayData[day.date]) {
-        dayData[day.date] = { revenue: 0, status: "miss", sales: [] };
+        dayData[day.date] = { revenue: 0, profit: 0, status: "miss", sales: [] };
       }
       dayData[day.date].revenue = day.revenue;
+      dayData[day.date].profit = day.profit;
     }
   }
 
   for (const [, data] of Object.entries(dayData)) {
-    data.status = computeCalendarDayStatus(data.revenue, target);
+    const value = salgadosProfit ? data.profit : data.revenue;
+    data.status = computeCalendarDayStatus(value, target);
   }
 
   return { dayData, target };

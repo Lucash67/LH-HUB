@@ -23,6 +23,9 @@ import type { TemporalViewContext } from "@/stores/temporal-context-store";
 import { deriveDiaryTotalProfit } from "@/lib/diary/types";
 import type { OperationalDiaryEntry } from "@/lib/diary/types";
 import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
+import {
+  usesSalgadosProfitGoals,
+} from "@/lib/salgados-profit-goals";
 
 export interface DashboardSaleItem {
   quantity: number;
@@ -549,16 +552,16 @@ function buildOperationResult(
     const percent = Math.round(metrics.goalProgress);
     if (percent >= 100) {
       return {
-        headline: "Meta financeira atingida",
+        headline: "Meta de lucro atingida",
         percent,
-        summary: "Receita do dia dentro do objetivo",
+        summary: "Lucro do dia dentro do objetivo",
         tone: "success",
       };
     }
     return {
       headline: "Em andamento",
       percent,
-      summary: `${percent}% da meta financeira`,
+      summary: `${percent}% da meta de lucro`,
       tone: percent >= 70 ? "warning" : "neutral",
     };
   }
@@ -684,9 +687,14 @@ function buildGeneralDashboardView(
     ? dayMetrics!.filter((d) => d.date >= monthStart && d.date <= monthEnd).reduce((s, d) => s + d.revenue, 0)
     : sumRevenue(sales.filter((s) => s.date >= monthStart && s.date <= monthEnd));
 
-  // Meta = média de receita por dia operacional vs meta diária.
-  const avgDailyRevenue = operationalDayCount > 0 ? totalRevenue / operationalDayCount : 0;
-  const generalGoalProgress = computeGoalProgress(avgDailyRevenue, dailyGoal);
+  // Meta de lucro: total do período vs (alvo diário × dias operados).
+  // Dias sem operação não entram no alvo (exceção de falta).
+  const avgDailyProfit = operationalDayCount > 0 ? totalProfit / operationalDayCount : 0;
+  const profitTarget = dailyGoal > 0 ? dailyGoal * operationalDayCount : 0;
+  const generalGoalProgress =
+    profitTarget > 0
+      ? computeGoalProgress(totalProfit, profitTarget)
+      : 0;
   const uniqueBuyers = uniqueCustomerCount(sales);
   const salesCount = sales.length;
   const buyersLabel =
@@ -705,7 +713,7 @@ function buildGeneralDashboardView(
       currentStock,
       dailyGoal,
       goalProgress: generalGoalProgress,
-      goalRevenue: avgDailyRevenue,
+      goalRevenue: avgDailyProfit,
       customersToday: totalRegisteredClients > 0 ? totalRegisteredClients : uniqueBuyers,
       pixTotal: payments.pix,
       cardTotal: payments.card,
@@ -732,7 +740,7 @@ function buildGeneralDashboardView(
         itemsSoldToday: totalUnits,
         dailyGoal,
         goalProgress: generalGoalProgress,
-        goalRevenue: avgDailyRevenue,
+        goalRevenue: avgDailyProfit,
       } as DashboardViewMetrics,
     ),
     daySummary: null,
@@ -893,8 +901,8 @@ export function buildDashboardView(
     itemsSoldToday,
     currentStock,
     dailyGoal,
-    goalProgress: computeGoalProgress(revenueToday, dailyGoal),
-    goalRevenue: revenueToday,
+    goalProgress: computeGoalProgress(profitToday, dailyGoal),
+    goalRevenue: profitToday,
     customersToday,
     pixTotal: payments.pix,
     cardTotal: payments.card,
@@ -911,10 +919,13 @@ export function buildDashboardView(
   };
 
   const unitGoal = diary?.dailyGoalUnits;
+  const preferProfitMeta = usesSalgadosProfitGoals(businessId) || dailyGoal > 0;
   const metaProgress =
-    unitGoal && unitGoal > 0
-      ? Math.min(Math.round(((diary?.quantitySold ?? itemsSoldToday) / unitGoal) * 100), 999)
-      : metrics.goalProgress;
+    preferProfitMeta
+      ? metrics.goalProgress
+      : unitGoal && unitGoal > 0
+        ? Math.min(Math.round(((diary?.quantitySold ?? itemsSoldToday) / unitGoal) * 100), 999)
+        : metrics.goalProgress;
 
   return {
     isGeneralView: false,
@@ -984,19 +995,6 @@ export function dashboardScopeCopy(context: TemporalViewContext): {
   chartsSubtitle: string;
   profitPhrase: string;
 } {
-  if (context.mode === "range") {
-    const from = format(parseISO(context.dateFrom), "dd/MM", { locale: ptBR });
-    const to = format(parseISO(context.dateTo), "dd/MM", { locale: ptBR });
-    return {
-      heroEyebrow: `Visão do período · ${from} – ${to}`,
-      revenueLabel: "Receita do período",
-      profitLabel: "Lucro do período",
-      goalLabel: "Meta do período",
-      buyersSubtext: "un. no período",
-      chartsSubtitle: `${from} – ${to}`,
-      profitPhrase: "Lucro do período",
-    };
-  }
   if (context.mode === "day") {
     const day = format(parseISO(context.viewDate), "dd/MM/yyyy", { locale: ptBR });
     const short = isViewingTodayContext(context) ? "hoje" : day;
@@ -1006,17 +1004,30 @@ export function dashboardScopeCopy(context: TemporalViewContext): {
         : `Visão do dia · ${day}`,
       revenueLabel: "Receita do dia",
       profitLabel: "Lucro do dia",
-      goalLabel: "Meta do dia",
+      goalLabel: "Meta lucro do dia",
       buyersSubtext: `un. ${short === "hoje" ? "hoje" : `em ${day}`}`,
       chartsSubtitle: isViewingTodayContext(context) ? "Hoje" : day,
       profitPhrase: "Lucro do dia",
+    };
+  }
+  if (context.mode === "range") {
+    const from = format(parseISO(context.dateFrom), "dd/MM", { locale: ptBR });
+    const to = format(parseISO(context.dateTo), "dd/MM", { locale: ptBR });
+    return {
+      heroEyebrow: `Visão do período · ${from} – ${to}`,
+      revenueLabel: "Receita do período",
+      profitLabel: "Lucro do período",
+      goalLabel: "Meta lucro do período",
+      buyersSubtext: "un. no período",
+      chartsSubtitle: `${from} – ${to}`,
+      profitPhrase: "Lucro do período",
     };
   }
   return {
     heroEyebrow: "Visão executiva · histórico completo",
     revenueLabel: "Receita total",
     profitLabel: "Lucro total",
-    goalLabel: "Meta geral",
+    goalLabel: "Meta lucro geral",
     buyersSubtext: "un. no histórico",
     chartsSubtitle: "Histórico completo",
     profitPhrase: "Lucro acumulado",

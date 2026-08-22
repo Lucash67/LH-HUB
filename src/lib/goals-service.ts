@@ -2,8 +2,15 @@ import { format, subDays } from "date-fns";
 import {
   ALL_BUSINESSES_ID,
   BUSINESS_GOALS_BLOCKED_MESSAGE,
+  SALGADOS_BUSINESS_ID,
   isAllBusinesses,
 } from "@/lib/business-units";
+import {
+  SALGADOS_DAILY_PROFIT_GOAL,
+  SALGADOS_MONTHLY_PROFIT_GOAL,
+  SALGADOS_WEEKLY_PROFIT_GOAL,
+  usesSalgadosProfitGoals,
+} from "@/lib/salgados-profit-goals";
 import {
   findGoalByType,
   insertGoal,
@@ -46,17 +53,70 @@ export async function initializeGoalsIfEmpty(businessId: string): Promise<void> 
   const existing = await findGoalByType(businessId, "daily");
   if (existing) return;
 
+  const isSalgados = usesSalgadosProfitGoals(businessId);
+  const defaultAmount = (type: GoalType): number => {
+    if (!isSalgados) return 0;
+    switch (type) {
+      case "daily":
+        return SALGADOS_DAILY_PROFIT_GOAL;
+      case "weekly":
+        return SALGADOS_WEEKLY_PROFIT_GOAL;
+      case "monthly":
+        return SALGADOS_MONTHLY_PROFIT_GOAL;
+      case "yearly":
+        return SALGADOS_MONTHLY_PROFIT_GOAL * 12;
+    }
+  };
+
   const types: GoalType[] = ["daily", "weekly", "monthly", "yearly"];
   for (const type of types) {
     const { periodStart, periodEnd } = periodBounds(type);
     await insertGoal({
       businessId,
       type,
-      targetAmount: 0,
+      targetAmount: defaultAmount(type),
       targetUnits: null,
       periodStart,
       periodEnd,
     });
+  }
+}
+
+/** Garante metas de lucro canônicas da Salgados (R$50 / R$250 / R$1.000). */
+export async function ensureSalgadosProfitGoals(): Promise<void> {
+  const businessId = SALGADOS_BUSINESS_ID;
+  await initializeGoalsIfEmpty(businessId);
+
+  const targets: Record<GoalType, number> = {
+    daily: SALGADOS_DAILY_PROFIT_GOAL,
+    weekly: SALGADOS_WEEKLY_PROFIT_GOAL,
+    monthly: SALGADOS_MONTHLY_PROFIT_GOAL,
+    yearly: SALGADOS_MONTHLY_PROFIT_GOAL * 12,
+  };
+
+  for (const type of Object.keys(targets) as GoalType[]) {
+    const amount = targets[type];
+    const existing = await findGoalByType(businessId, type);
+    const bounds = periodBounds(type);
+    if (!existing) {
+      await insertGoal({
+        businessId,
+        type,
+        targetAmount: amount,
+        targetUnits: null,
+        periodStart: bounds.periodStart,
+        periodEnd: bounds.periodEnd,
+      });
+      continue;
+    }
+    if (existing.targetAmount !== amount) {
+      await updateGoalById(existing.id, {
+        targetAmount: amount,
+        targetUnits: existing.targetUnits ?? null,
+        periodStart: bounds.periodStart,
+        periodEnd: bounds.periodEnd,
+      });
+    }
   }
 }
 
@@ -140,6 +200,9 @@ export async function clearGoalsToSmart(
 }
 
 export async function getDailyGoalTarget(businessId: string = ALL_BUSINESSES_ID): Promise<number> {
+  if (usesSalgadosProfitGoals(businessId)) {
+    return SALGADOS_DAILY_PROFIT_GOAL;
+  }
   const dailyGoals = await listGoalsByType("daily");
   if (isAllBusinesses(businessId)) {
     return dailyGoals.reduce((sum, g) => sum + g.targetAmount, 0);

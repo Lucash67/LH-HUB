@@ -15,6 +15,12 @@ import type { TemporalViewContext, TemporalViewMode } from "@/stores/temporal-co
 import { MSG, apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { withTenantScope } from "@/lib/auth/with-tenant-api";
+import { ensureSalgadosProfitGoals } from "@/lib/goals-service";
+import {
+  SALGADOS_DAILY_PROFIT_GOAL,
+  SALGADOS_WEEKLY_PROFIT_GOAL,
+  usesSalgadosProfitGoals,
+} from "@/lib/salgados-profit-goals";
 
 function isSunday(dateKey: string): boolean {
   return parseISO(dateKey).getDay() === 0;
@@ -65,8 +71,20 @@ export async function GET(request: NextRequest) {
         listDailyPurchaseMixByDate(businessId).catch(() => ({})),
       ]);
 
+      if (usesSalgadosProfitGoals(businessId)) {
+        await ensureSalgadosProfitGoals().catch((error) => {
+          console.error("ensureSalgadosProfitGoals:", error);
+        });
+      }
+
       let dailyGoal = goals.find((g) => g.type === "daily")?.targetAmount ?? 0;
       let weeklyGoal = goals.find((g) => g.type === "weekly")?.targetAmount ?? 0;
+
+      // Salgados (e visão Todos): meta canônica de lucro — nunca deixa Meta em 0% por alvo zerado.
+      if (usesSalgadosProfitGoals(businessId)) {
+        dailyGoal = SALGADOS_DAILY_PROFIT_GOAL;
+        weeklyGoal = SALGADOS_WEEKLY_PROFIT_GOAL;
+      }
 
       // Base diário-primeiro: alimenta o resumo da semana nas duas visões.
       const metricsMap = await buildOperationalDayMetrics(businessId).catch(() => null);
@@ -74,6 +92,9 @@ export async function GET(request: NextRequest) {
 
       const weekPulseOptions = {
         goalRevenue: weeklyGoal,
+        dailyProfitGoal: usesSalgadosProfitGoals(businessId)
+          ? SALGADOS_DAILY_PROFIT_GOAL
+          : undefined,
         allowFallback: true as const,
         sales,
         purchasesByDate,
@@ -90,10 +111,10 @@ export async function GET(request: NextRequest) {
         ]);
         diaryEntry = entry;
         autoInsights = insights;
-        if (dailyGoal <= 0) {
+        if (dailyGoal <= 0 && !usesSalgadosProfitGoals(businessId)) {
           dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
         }
-        if (weeklyGoal <= 0) {
+        if (weeklyGoal <= 0 && !usesSalgadosProfitGoals(businessId)) {
           weeklyGoal = smartGoals?.weekly.targetRevenue ?? 0;
         }
         const diaryContext = enrichDiaryContext(entry, smartGoals?.daily?.targetUnits);
@@ -132,8 +153,12 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Visão geral / período usa o diário homologado como fonte oficial de receita/lucro.
-      if ((dailyGoal <= 0 || weeklyGoal <= 0) && !isAllBusinesses(businessId)) {
+      // Visão geral / período: smart só para negócios sem meta canônica de lucro.
+      if (
+        (dailyGoal <= 0 || weeklyGoal <= 0) &&
+        !isAllBusinesses(businessId) &&
+        !usesSalgadosProfitGoals(businessId)
+      ) {
         const smartGoals = await getSmartGoalsView(businessId).catch(() => null);
         if (dailyGoal <= 0) dailyGoal = smartGoals?.daily.targetRevenue ?? 0;
         if (weeklyGoal <= 0) weeklyGoal = smartGoals?.weekly.targetRevenue ?? 0;

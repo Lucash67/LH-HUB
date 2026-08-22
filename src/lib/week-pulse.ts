@@ -86,6 +86,8 @@ export interface WeekPulsePurchaseLine {
 
 export interface WeekPulseOptions {
   goalRevenue?: number;
+  /** Quando definido, a meta da semana = dailyProfitGoal × dias operados (exceção de falta). */
+  dailyProfitGoal?: number;
   /** Na visão geral, cai para a última semana operada quando a atual está vazia. */
   allowFallback?: boolean;
   /** Vendas do negócio — usadas para o mix por sabor. */
@@ -198,6 +200,7 @@ export function buildWeekPulse(
   focusDate: string,
   {
     goalRevenue = 0,
+    dailyProfitGoal,
     allowFallback = false,
     sales = [],
     purchasesByDate = {},
@@ -223,7 +226,7 @@ export function buildWeekPulse(
   const profit = sumProfit(weekDays);
   const units = weekDays.reduce((total, day) => total + (day.units ?? 0), 0);
   const operationalDays = weekDays.filter(
-    (day) => day.revenue > 0 || (day.units ?? 0) > 0,
+    (day) => day.revenue > 0 || day.profit > 0 || (day.units ?? 0) > 0,
   ).length;
 
   const byDate = new Map(weekDays.map((day) => [day.date, day]));
@@ -254,6 +257,15 @@ export function buildWeekPulse(
 
   const mix = buildProductMix(sales, range.start, range.end, purchasesByDate);
 
+  const effectiveGoal =
+    dailyProfitGoal != null && dailyProfitGoal > 0
+      ? dailyProfitGoal * Math.max(operationalDays, 1)
+      : goalRevenue;
+  const goalProgressValue =
+    effectiveGoal > 0
+      ? ((dailyProfitGoal != null ? profit : revenue) / effectiveGoal) * 100
+      : 0;
+
   return {
     start: range.start,
     end: range.end,
@@ -263,8 +275,8 @@ export function buildWeekPulse(
     units,
     margin: revenue > 0 ? (profit / revenue) * 100 : 0,
     operationalDays,
-    goalRevenue,
-    goalProgress: goalRevenue > 0 ? (revenue / goalRevenue) * 100 : 0,
+    goalRevenue: effectiveGoal,
+    goalProgress: goalProgressValue,
     profitTrend:
       previousProfit > 0 ? ((profit - previousProfit) / previousProfit) * 100 : null,
     revenueTrend:
