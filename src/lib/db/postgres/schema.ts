@@ -520,6 +520,31 @@ export const stickyNotes = pgTable(
   }),
 );
 
+/** Ideias, demandas e observações futuras — escopo por usuário. */
+export const ideaItems = pgTable(
+  "idea_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    businessId: uuid("business_id").references(() => businesses.id, { onDelete: "set null" }),
+    title: text("title").notNull().default(""),
+    body: text("body").notNull().default(""),
+    kind: text("kind", { enum: ["ideia", "demanda", "observacao"] }).notNull().default("ideia"),
+    status: text("status", { enum: ["open", "done", "archived"] }).notNull().default("open"),
+    pinned: boolean("pinned").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerIdx: index("idx_idea_items_owner").on(table.ownerId),
+    ownerStatusIdx: index("idx_idea_items_owner_status").on(table.ownerId, table.status),
+    ownerUpdatedIdx: index("idx_idea_items_owner_updated").on(table.ownerId, table.updatedAt),
+  }),
+);
+
 /** Leitura interpretativa semanal/mensal (Retrato). */
 export const periodReviews = pgTable(
   "period_reviews",
