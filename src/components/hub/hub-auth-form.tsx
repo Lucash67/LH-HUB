@@ -8,6 +8,7 @@ import { cn } from "@/components/ui/utils";
 import { HUB_COPY } from "@/constants/hub-brand";
 import { LhHoldingLogo } from "@/components/hub/lh-hub-logo";
 import { markHubSession } from "@/lib/hub-session";
+import { resolvePostLoginPath } from "@/lib/auth/safe-next-path";
 import { useBusinessContextStore } from "@/stores/business-context-store";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -139,7 +140,8 @@ export function HubAuthForm({ compact = false }: { compact?: boolean }) {
 
       setSuccess(true);
       await new Promise((r) => setTimeout(r, 300));
-      router.push("/");
+      const dest = resolvePostLoginPath(searchParams.get("next"));
+      router.push(dest);
     } catch {
       setErrors({ form: "Erro de conexão. Verifique sua rede e tente novamente." });
     } finally {

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { AUTH_COOKIE, verifySessionToken } from "@/lib/auth/session";
+import { OMNI_HUB_PATH } from "@/constants/omni-products";
+import { resolvePostLoginPath } from "@/lib/auth/safe-next-path";
 
 const PUBLIC_PREFIXES = ["/login", "/api/auth"];
 
@@ -18,7 +20,9 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/login")) {
     if (session) {
-      return NextResponse.redirect(new URL("/", request.url));
+      const next = request.nextUrl.searchParams.get("next");
+      const dest = resolvePostLoginPath(next);
+      return NextResponse.redirect(new URL(dest, request.url));
     }
     return NextResponse.next();
   }
@@ -32,7 +36,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
+    if (pathname !== OMNI_HUB_PATH) {
+      loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
+    }
     return NextResponse.redirect(loginUrl);
   }
 

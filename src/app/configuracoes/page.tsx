@@ -283,6 +283,10 @@ export default function ConfiguracoesPage() {
                 <a href="/schedule" className="underline hover:text-[#0CD4FF]">
                   Schedule
                 </a>
+                {" · "}
+                <a href="/hub" className="underline hover:text-[#0CD4FF]">
+                  Hub
+                </a>
               </p>
               <p>Versão 1.0.0</p>
               <p className="mt-4 text-xs text-text-muted">

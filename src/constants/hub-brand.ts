@@ -102,5 +102,5 @@ export const HUB_COPY = {
   footerSlogan: "Uma marca. Várias soluções. Seu negócio no centro.",
   footerLegacy: "Conexão, organização e inteligência para o seu negócio evoluir.",
   authWelcome: "Bem-vindo de volta",
-  authSubtitle: "Entre para continuar no OMNI Business — produto de gestão do ecossistema OMNI.",
+  authSubtitle: "Entre na OMNI — seu ecossistema de produtos.",
 } as const;

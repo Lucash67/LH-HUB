@@ -266,9 +266,9 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
   // Dias só com quitação (sem operação no diário) ainda entram no total de quits.
   const historyDates = new Set(history.map((d) => d.date));
   const orphanFlows: ProfitBankDayCashFlow[] = [];
-  for (const [date, flow] of cashFlowByDate) {
+  cashFlowByDate.forEach((flow, date) => {
     if (!historyDates.has(date)) orphanFlows.push(flow);
-  }
+  });
 
   const pendingItems: ProfitBankPendingItem[] = sales
     .filter((s) => s.paymentStatus === "pending")
