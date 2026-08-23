@@ -271,13 +271,19 @@ export default function ConfiguracoesPage() {
           <CardContent>
             <div className="space-y-2 text-sm text-text-secondary">
               <p>
+                <strong className="text-text-primary">OMNI</strong>
+                <span className="text-text-muted"> · marca-mãe / ecossistema</span>
+              </p>
+              <p>
+                Produto atual:{" "}
                 <strong className="text-text-primary">OMNI Business</strong>
               </p>
-              <p>Produto de gestão do ecossistema OMNI</p>
-              <p className="text-xs text-[#7C3CFF]">OMNI · marca-mãe · Business · Schedule (em breve)</p>
+              <p className="text-xs text-[#7C3CFF]">
+                Business (produção) · Schedule (previsto — ainda não implementado)
+              </p>
               <p>Versão 1.0.0</p>
               <p className="mt-4 text-xs text-text-muted">
-                Sistema escalável para crescer do primeiro salgado vendido até uma operação completa.
+                Modernização visual sem mudar a operação: mesmos dados, mesmos fluxos.
               </p>
             </div>
           </CardContent>
