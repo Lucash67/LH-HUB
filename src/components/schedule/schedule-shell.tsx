@@ -35,7 +35,7 @@ export function ScheduleShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3 pb-2 scrollbar-none">
           {SCHEDULE_NAV.map((item) => {
-            const active = item.exact
+            const active = "exact" in item && item.exact
               ? pathname === item.href
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
