@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { AUTH_COOKIE, verifySessionToken } from "@/lib/auth/session";
 import { OMNI_HUB_PATH } from "@/constants/omni-products";
+import { OMNI_ONBOARDING_PATH } from "@/lib/omni-onboarding";
 import { resolvePostLoginPath } from "@/lib/auth/safe-next-path";
 
 const PUBLIC_PREFIXES = ["/login", "/api/auth"];
@@ -36,7 +37,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
     const loginUrl = new URL("/login", request.url);
-    if (pathname !== OMNI_HUB_PATH) {
+    // Não polui next com Hub/Onboarding — login normal deve recomeçar o fluxo.
+    if (pathname !== OMNI_HUB_PATH && pathname !== OMNI_ONBOARDING_PATH) {
       loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
     }
     return NextResponse.redirect(loginUrl);

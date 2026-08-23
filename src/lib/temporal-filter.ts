@@ -79,6 +79,7 @@ export const TEMPORAL_FILTER_EXCLUDED_PATHS = [
   "/ideias",
   "/schedule",
   "/hub",
+  "/onboarding",
   "/dev",
 ] as const;
 
