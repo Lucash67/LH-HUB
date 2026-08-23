@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { buildWeekdayDraftTemplate } from "./weekday-draft-templates";
+
+export { buildWeekdayDraftTemplate } from "./weekday-draft-templates";
 
 export const draftSaleSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/),
@@ -100,57 +103,5 @@ export interface DayRegistrationPreview extends DayRegistrationPlan {
   existingSalesCount: number;
 }
 
-/** Modelo no padrão Lucas — copie, preencha e cole no Registro do Dia. */
-export const DRAFT_TEMPLATE = `DD/MM
-
-Encomendados hoje:
-
-- 0 Croissant
-- 0 Pastel
-- 0 Mistao
-
-Custo total dos salgados: R$0,00
-Minha parte investida: R$0,00
-Parte restante do meu pai (não sai nada de mim) R$0,00
-
-Separados para o trabalho do meu pai:
-
-- 0 Croissant
-- 0 Mistao
-- 0 Pastel
-
-Obs: Importante ressaltar que esses vendidos no trabalho do meu pai eu ainda não possuo dados mais completos (turno, nome, forma de pagamento e sabor pego). Eu apenas dou pro meu pai levar e vender e depois me passar o valor do faturamento
-
-Separados para acal:
-
-- 0 Croissant
-- 0 Pastel
-- 0 Mistao
-
-Histórico de vendas:
-
-1 - Nome Completo da Cliente: 1 Croissant | Manhã ✅Pix
-2 - Nome Completo do Cliente: 1 Mistao | Manhã ✅Pix
-3 - Nome: 1 Croissant | Manhã ✅Pix
-4 - Cliente não identificado que deu em moeda: 1 Mistao | Manhã ✅Moeda (Já foi revertido em pix)
-5 - Cliente não identificado que deu em espécie: 1 Croissant | Manhã ✅Espécie
-6 - Mikely: 1 Mistao | Manhã (devendo) ⚠️
-7 - Nome: 1 croisant e 1 mistao | Manhã ✅Pix
-8 - Leonardo de Souza Sena: 1 | Tarde ✅Pix
-9 - Não pagou (Pegou quando eu não estava)
-10 - Não pagou (Pegou quando eu não estava)
-
-Devendo ainda de ontem: Nome (R$5) | Pagou dia DD/MM - Manhã ✅Pix
-
-Observações do dia:
-
-- Escreva aqui o que o sistema não consegue deduzir sozinho
-- Novos clientes, oportunidades, pendências, contexto do dia
-
-Previsões de Lucro
-- Lucro previsto do dia se meu pai vender os que ele levou: R$0
-
-Faturamento e Lucro
-- Faturamento do dia: R$0
-- Lucro do dia: R$0
-`;
+/** Modelo no padrão Lucas — use buildWeekdayDraftTemplate(hoje) ao carregar (data atual). */
+export const DRAFT_TEMPLATE = buildWeekdayDraftTemplate(new Date());
