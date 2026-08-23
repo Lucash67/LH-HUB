@@ -60,43 +60,48 @@ export const HUB_ENTERPRISES: HubEnterprise[] = [
 
 export const HUB_VALUE_PROPS = [
   {
-    title: "Visão completa",
-    description: "Tudo conectado em um só lugar para você enxergar a operação.",
+    title: "Conexão",
+    description: "Tudo centralizado — operação e decisões no mesmo lugar.",
   },
   {
-    title: "Mais controle",
-    description: "Indicadores e registros em tempo real da sua operação.",
+    title: "Organização",
+    description: "Registros e indicadores claros, no ritmo do dia a dia.",
   },
   {
     title: "Inteligência",
-    description: "Dados claros para decidir com segurança.",
+    description: "Dados que ajudam a decidir com segurança.",
   },
   {
-    title: "Crescimento",
-    description: "Organização que escala com o seu negócio.",
+    title: "Evolução",
+    description: "Uma marca expansível: Business hoje, novas soluções depois.",
   },
 ] as const;
 
 /**
- * Arquitetura de marca:
- * OMNI = marca-mãe / ecossistema
- * OMNI Business = produto atual (este sistema)
- * OMNI Schedule = produto futuro (não implementar)
+ * Arquitetura de marca (oficial):
+ *
+ *   OMNI              = marca-mãe / ecossistema / plataforma
+ *   OMNI Business     = produto de gestão (este app em produção)
+ *   OMNI Schedule     = produto futuro — NÃO implementar nesta etapa
+ *
+ * Telas globais (login, auth, conta) priorizam a marca OMNI.
+ * O chrome interno do app identifica o produto OMNI Business.
+ * Não inventar módulos/funcionalidades a partir de referências visuais.
  */
 export const HUB_COPY = {
   holdingName: "OMNI",
-  holdingTagline: "Seu sistema operacional de negócios",
+  holdingTagline: "Ecossistema de soluções para o seu negócio",
   productName: "OMNI Business",
   productTagline: "Gestão da operação",
   brandName: "OMNI",
-  heroTitle: "Seu sistema operacional",
-  heroHighlight: "de negócios.",
+  heroTitle: "Conecte. Organize.",
+  heroHighlight: "Evolua.",
   heroTagline: "OMNI · Ecossistema",
   heroDescription:
-    "Um sistema completo para você entender, controlar e fazer sua operação crescer.",
+    "A OMNI é a plataforma. OMNI Business cuida da gestão da operação — e o ecossistema cresce com novas soluções.",
   enterprisesHeading: "Operações ativas",
-  footerSlogan: "Um sistema. Toda a sua operação. Resultados reais.",
+  footerSlogan: "Uma marca. Várias soluções. Seu negócio no centro.",
   footerLegacy: "Conexão, organização e inteligência para o seu negócio evoluir.",
   authWelcome: "Bem-vindo de volta",
-  authSubtitle: "Faça login para continuar no OMNI Business.",
+  authSubtitle: "Entre para continuar no OMNI Business — produto de gestão do ecossistema OMNI.",
 } as const;
