@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, PiggyBank, Target, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, Banknote, PiggyBank, Target, Wallet } from "lucide-react";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { PageLoader } from "@/components/ui/loading";
 import { ChartCard } from "@/components/charts/chart-card";
@@ -62,6 +62,36 @@ export default function BancoLucroPage() {
   const scopedPending = scopedHistory.reduce((s, d) => s + d.pending, 0);
   const scopedLossUnits = scopedHistory.reduce((s, d) => s + d.lossesUnits, 0);
   const scopedLossImpact = scopedHistory.reduce((s, d) => s + d.lossesImpact, 0);
+  const scopedCashFlow = useMemo(() => {
+    const empty = {
+      pixOwnSameDay: 0,
+      cashSpecies: 0,
+      otherChannels: 0,
+      fiadoSettledLater: 0,
+      quitsReceived: 0,
+      estimatedPixExtrato: 0,
+    };
+    if (!scopedHistory.length) return empty;
+    const pixOwnSameDay = scopedHistory.reduce((s, d) => s + (d.cashFlow?.pixOwnSameDay ?? 0), 0);
+    const cashSpecies = scopedHistory.reduce((s, d) => s + (d.cashFlow?.cashSpecies ?? 0), 0);
+    const otherChannels = scopedHistory.reduce((s, d) => s + (d.cashFlow?.otherChannels ?? 0), 0);
+    const fiadoSettledLater = scopedHistory.reduce(
+      (s, d) => s + (d.cashFlow?.fiadoSettledLater ?? 0),
+      0,
+    );
+    const quitsReceived = scopedHistory.reduce(
+      (s, d) => s + (d.cashFlow?.quitsReceivedToday ?? 0),
+      0,
+    );
+    return {
+      pixOwnSameDay,
+      cashSpecies,
+      otherChannels,
+      fiadoSettledLater,
+      quitsReceived,
+      estimatedPixExtrato: pixOwnSameDay + quitsReceived,
+    };
+  }, [scopedHistory]);
 
   if (isError) {
     return (
@@ -100,6 +130,7 @@ export default function BancoLucroPage() {
   const theoreticalBalance = systemBalance + openPendings + lossesImpact;
   const frictionGap = openPendings + lossesImpact;
   const practicalBalance = general ? data.practicalBalance : scopedBalance;
+  const cashFlow = general ? data.cashFlow : scopedCashFlow;
 
   return (
     <ModuleShell title="Cofrinho" subtitle="Lucro acumulado da operação">
@@ -262,6 +293,76 @@ export default function BancoLucroPage() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-brand-green/20 bg-surface-card/80 p-4 sm:p-5">
+          <div className="mb-3 flex items-start gap-2">
+            <ArrowDownToLine className="mt-0.5 h-4 w-4 shrink-0 text-brand-green" />
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Entradas vs extrato</p>
+              <p className="text-xs text-text-muted">
+                Onde o dinheiro das vendas pagas caiu — PIX no dia, espécie, outros canais e quits.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-brand-green/25 bg-brand-green/5 px-3 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                PIX no dia
+              </p>
+              <p className="mt-1 text-xl font-bold text-brand-green">
+                {formatCurrency(cashFlow.pixOwnSameDay)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-text-muted">seu extrato no dia da venda</p>
+            </div>
+            <div className="rounded-xl border border-surface-border bg-surface-base/40 px-3 py-3">
+              <div className="flex items-center gap-1.5">
+                <Banknote className="h-3.5 w-3.5 text-text-muted" />
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                  Espécie
+                </p>
+              </div>
+              <p className="mt-1 text-xl font-bold text-text-primary">
+                {formatCurrency(cashFlow.cashSpecies)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-text-muted">ainda pode estar fora do banco</p>
+            </div>
+            <div className="rounded-xl border border-surface-border bg-surface-base/40 px-3 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                Outros canais
+              </p>
+              <p className="mt-1 text-xl font-bold text-text-primary">
+                {formatCurrency(cashFlow.otherChannels)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-text-muted">Henrique / colegas — não é seu PIX</p>
+            </div>
+            <div className="rounded-xl border border-[#0CD4FF]/25 bg-[#0CD4FF]/5 px-3 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                Quits recebidos
+              </p>
+              <p className="mt-1 text-xl font-bold text-[#0CD4FF]">
+                {formatCurrency(cashFlow.quitsReceived)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-text-muted">fiados de dias anteriores</p>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-surface-border bg-surface-base/30 px-3 py-2.5">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                Estimativa PIX no extrato
+              </p>
+              <p className="text-[11px] text-text-muted">PIX no dia + quits (sem espécie / sem Henrique)</p>
+            </div>
+            <p className="text-lg font-bold tabular-nums text-brand-green">
+              {formatCurrency(cashFlow.estimatedPixExtrato)}
+            </p>
+          </div>
+          {cashFlow.fiadoSettledLater > 0 && (
+            <p className="mt-2 text-[11px] text-text-muted">
+              Neste recorte, {formatCurrency(cashFlow.fiadoSettledLater)} em fiado do próprio dia
+              foi quitado depois (entra em “Quits” no dia do recebimento).
+            </p>
           )}
         </div>
 

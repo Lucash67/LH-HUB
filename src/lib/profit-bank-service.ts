@@ -15,6 +15,19 @@ export const PROFIT_BANK_UNIT_SALE_PRICE = SALGADO_UNIT_PRICE;
 
 const PRACTICAL_KEY_PREFIX = "profit_bank_practical_";
 
+export interface ProfitBankDayCashFlow {
+  /** PIX/cartão no seu extrato no próprio dia da venda. */
+  pixOwnSameDay: number;
+  /** Dinheiro em espécie (pode ainda não ter ido pro banco). */
+  cashSpecies: number;
+  /** Canal pai / Colegas do Henrique — não entra no seu PIX. */
+  otherChannels: number;
+  /** Fiados deste dia quitados depois (caixa noutro dia). */
+  fiadoSettledLater: number;
+  /** Quits recebidos neste dia de vendas anteriores. */
+  quitsReceivedToday: number;
+}
+
 export interface ProfitBankDay {
   date: string;
   label: string;
@@ -26,6 +39,7 @@ export interface ProfitBankDay {
   pending: number;
   lossesUnits: number;
   lossesImpact: number;
+  cashFlow: ProfitBankDayCashFlow;
 }
 
 export interface ProfitBankPendingItem {
@@ -34,6 +48,19 @@ export interface ProfitBankPendingItem {
   amount: number;
   clientName: string;
   notes: string | null;
+}
+
+export interface ProfitBankCashFlowTotals {
+  pixOwnSameDay: number;
+  cashSpecies: number;
+  otherChannels: number;
+  fiadoSettledLater: number;
+  quitsReceived: number;
+  /**
+   * Base que costuma bater com o PIX do extrato:
+   * PIX próprio no dia + quits recebidos (sem espécie / sem canal Henrique).
+   */
+  estimatedPixExtrato: number;
 }
 
 export interface ProfitBankView {
@@ -63,6 +90,108 @@ export interface ProfitBankView {
   theoreticalBalance: number;
   /** Diferença teórico − sistema (pendências + perdas). */
   frictionGap: number;
+  /** Quebra do dinheiro: PIX próprio × espécie × outros canais × quits. */
+  cashFlow: ProfitBankCashFlowTotals;
+}
+
+type EnrichedSale = Awaited<ReturnType<typeof listSalesEnriched>>[number];
+
+function saleAmount(sale: EnrichedSale): number {
+  const received = Number(sale.amountReceived);
+  if (Number.isFinite(received) && received > 0) return received;
+  return Number(sale.totalAmount) || 0;
+}
+
+/** Canal que não cai no PIX/extrato do operador (pai / colegas Henrique). */
+export function isOtherChannelSale(sale: {
+  department?: string | null;
+  client?: { name?: string | null } | null;
+  notes?: string | null;
+}): boolean {
+  const dept = (sale.department ?? "").toLowerCase();
+  const client = (sale.client?.name ?? "").toLowerCase();
+  const notes = (sale.notes ?? "").toLowerCase();
+  return (
+    dept.includes("henrique") ||
+    dept.includes("colegas") ||
+    client.includes("colegas do henrique") ||
+    (client.includes("henrique") && notes.includes("lote")) ||
+    notes.includes("colegas do henrique")
+  );
+}
+
+function emptyDayCashFlow(): ProfitBankDayCashFlow {
+  return {
+    pixOwnSameDay: 0,
+    cashSpecies: 0,
+    otherChannels: 0,
+    fiadoSettledLater: 0,
+    quitsReceivedToday: 0,
+  };
+}
+
+function buildCashFlowByDate(sales: EnrichedSale[]): Map<string, ProfitBankDayCashFlow> {
+  const byDate = new Map<string, ProfitBankDayCashFlow>();
+
+  const ensure = (date: string) => {
+    let row = byDate.get(date);
+    if (!row) {
+      row = emptyDayCashFlow();
+      byDate.set(date, row);
+    }
+    return row;
+  };
+
+  for (const sale of sales) {
+    const status = sale.paymentStatus ?? "paid";
+    if (status !== "paid" && status !== "partial") continue;
+
+    const amount = saleAmount(sale);
+    if (amount <= 0) continue;
+
+    const saleDate = sale.date;
+    const settlement = sale.settlementDate ?? sale.paymentDate ?? null;
+    const day = ensure(saleDate);
+
+    if (isOtherChannelSale(sale)) {
+      day.otherChannels += amount;
+      continue;
+    }
+
+    const quitLater = !!settlement && settlement > saleDate;
+    if (quitLater) {
+      day.fiadoSettledLater += amount;
+      const receivedDay = ensure(settlement!);
+      receivedDay.quitsReceivedToday += amount;
+      continue;
+    }
+
+    if (sale.paymentMethod === "cash") {
+      day.cashSpecies += amount;
+      continue;
+    }
+
+    // PIX / cartão (e fallback) no dia — o que costuma aparecer no extrato.
+    day.pixOwnSameDay += amount;
+  }
+
+  return byDate;
+}
+
+function sumCashFlows(flows: ProfitBankDayCashFlow[]): ProfitBankCashFlowTotals {
+  const pixOwnSameDay = flows.reduce((s, f) => s + f.pixOwnSameDay, 0);
+  const cashSpecies = flows.reduce((s, f) => s + f.cashSpecies, 0);
+  const otherChannels = flows.reduce((s, f) => s + f.otherChannels, 0);
+  const fiadoSettledLater = flows.reduce((s, f) => s + f.fiadoSettledLater, 0);
+  const quitsReceived = flows.reduce((s, f) => s + f.quitsReceivedToday, 0);
+  return {
+    pixOwnSameDay,
+    cashSpecies,
+    otherChannels,
+    fiadoSettledLater,
+    quitsReceived,
+    estimatedPixExtrato: pixOwnSameDay + quitsReceived,
+  };
 }
 
 function practicalKey(businessId: string): string {
@@ -97,6 +226,7 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
 
   const rows = sortOperationalDays(metricsMap);
   const diaryByDate = new Map(diaryEntries.map((e) => [e.date, e]));
+  const cashFlowByDate = buildCashFlowByDate(sales);
 
   let balance = 0;
   let bestDay: { date: string; profit: number } | null = null;
@@ -108,6 +238,7 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
     const dayPending = Number(diary?.revenue.pending) || 0;
     const dayLost = Math.max(0, Number(diary?.quantityLost) || 0);
     const dayLossImpact = dayLost * PROFIT_BANK_UNIT_SALE_PRICE;
+    const cashFlow = cashFlowByDate.get(row.date) ?? emptyDayCashFlow();
 
     openPendingsFromDiary += dayPending;
     lossesUnits += dayLost;
@@ -128,8 +259,16 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
       pending: dayPending,
       lossesUnits: dayLost,
       lossesImpact: dayLossImpact,
+      cashFlow,
     };
   });
+
+  // Dias só com quitação (sem operação no diário) ainda entram no total de quits.
+  const historyDates = new Set(history.map((d) => d.date));
+  const orphanFlows: ProfitBankDayCashFlow[] = [];
+  for (const [date, flow] of cashFlowByDate) {
+    if (!historyDates.has(date)) orphanFlows.push(flow);
+  }
 
   const pendingItems: ProfitBankPendingItem[] = sales
     .filter((s) => s.paymentStatus === "pending")
@@ -153,6 +292,7 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
   const totalCosts = history.reduce((s, d) => s + d.costs, 0);
   const theoreticalBalance = balance + openPendings + lossesImpact;
   const frictionGap = openPendings + lossesImpact;
+  const cashFlow = sumCashFlows([...history.map((d) => d.cashFlow), ...orphanFlows]);
 
   // Se ainda não há saldo prático salvo, usa o do sistema (não inventa rendimento).
   const practicalBalance = practicalStored ?? balance;
@@ -174,5 +314,6 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
     lossesImpact,
     theoreticalBalance,
     frictionGap,
+    cashFlow,
   };
 }
