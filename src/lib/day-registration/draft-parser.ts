@@ -256,20 +256,60 @@ function detectSection(line: string): LucasSection | "skip" | "date" {
   if (/^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(n)) return "date";
   if (n.startsWith("encomendados hoje")) return "encomendados";
   if (n.startsWith("separados para o trabalho")) return "pai";
+  // Unifor: canal à parte — não mistura com ACAL.
+  if (n.startsWith("separados para") && n.includes("unifor")) return "skip";
   // Aceita "Separados para acal" e "Separados para a acal".
   if (n.startsWith("separados para") && n.includes("acal")) return "acal";
-  if (n.startsWith("histórico de vendas") || n.startsWith("historico de vendas")) return "vendas";
-  if (n.startsWith("devendo ainda")) return "devendo";
-  if (n.startsWith("observações do dia") || n.startsWith("observacoes do dia")) return "observacoes";
+  if (
+    n.startsWith("histórico de vendas") ||
+    n.startsWith("historico de vendas") ||
+    n.startsWith("lista de vendas na acal") ||
+    n.startsWith("lista de vendas") ||
+    n.startsWith("período da manhã") ||
+    n.startsWith("periodo da manhã") ||
+    n.startsWith("periodo da manha") ||
+    n.startsWith("período da tarde") ||
+    n.startsWith("periodo da tarde")
+  ) {
+    return "vendas";
+  }
+  if (n.startsWith("devendo ainda") || n.startsWith("pendentes")) return "devendo";
+  if (
+    n.startsWith("observações do dia") ||
+    n.startsWith("observacoes do dia") ||
+    n.startsWith("obs:") ||
+    n === "obs"
+  ) {
+    return "observacoes";
+  }
   if (n.startsWith("previsões de lucro") || n.startsWith("previsoes de lucro")) return "previsao";
   if (
     n.startsWith("faturamento") ||
-    n.startsWith("lucro total do dia") ||
-    n.startsWith("lucro real do dia")
+    n.startsWith("custo, bonificação") ||
+    n.startsWith("custo, bonificacao") ||
+    n.startsWith("lucro total") ||
+    n.startsWith("lucro real") ||
+    n.startsWith("meu custo") ||
+    n.startsWith("custo total") ||
+    n.startsWith("custo de terceiros") ||
+    n.startsWith("bonificação") ||
+    n.startsWith("bonificacao") ||
+    n.startsWith("cofrinho")
   ) {
     return "faturamento";
   }
-  if (n.startsWith("obs:") || n.startsWith("*hoje")) return "skip";
+  if (
+    n.startsWith("*hoje") ||
+    n.startsWith("——") ||
+    n.startsWith("---") ||
+    n.startsWith("preencher no fim") ||
+    n.startsWith("vendidos em espécie") ||
+    n.startsWith("vendidos em especie") ||
+    n.startsWith("fiados quitados") ||
+    n.startsWith("perdas")
+  ) {
+    return "skip";
+  }
 
   return null;
 }
