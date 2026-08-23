@@ -80,8 +80,8 @@ export const HUB_VALUE_PROPS = [
 /**
  * Arquitetura de marca:
  * OMNI = marca-mãe / ecossistema
- * OMNI Business = produto atual (este sistema)
- * OMNI Schedule = produto futuro (não implementar)
+ * OMNI Business = produto de gestão (este app)
+ * OMNI Schedule = produto de agenda (`/schedule`, schema `schedule.*`)
  */
 export const HUB_COPY = {
   holdingName: "OMNI",
