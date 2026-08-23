@@ -15,6 +15,7 @@ import {
 } from "@/constants/navigation";
 import { BusinessContextSelector } from "@/components/dashboard/business-context-selector";
 import { LhHoldingIcon } from "@/components/hub/lh-hub-logo";
+import { ProductSwitcher } from "@/components/hub/product-switcher";
 import { resolveTheme, THEME_META } from "@/lib/theme-config";
 import { clearHubSession } from "@/lib/hub-session";
 import { useBusinessContextStore } from "@/stores/business-context-store";
@@ -171,6 +172,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
             OMNI <span className="font-semibold tracking-normal text-text-secondary">Business</span>
           </p>
           <p className="truncate text-[10px] uppercase tracking-wider text-text-muted">{APP_TAGLINE}</p>
+          <div className="mt-2">
+            <ProductSwitcher compact />
+          </div>
         </div>
         <button
           type="button"

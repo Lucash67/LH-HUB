@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SCHEDULE_COPY, SCHEDULE_NAV } from "@/constants/schedule-brand";
+import { ProductSwitcher } from "@/components/hub/product-switcher";
 
 export function ScheduleShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,12 +27,9 @@ export function ScheduleShell({ children }: { children: React.ReactNode }) {
               </span>
             </span>
           </Link>
-          <Link
-            href="/"
-            className="shrink-0 text-xs font-medium text-[#0CD4FF] hover:underline"
-          >
-            OMNI Business
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <ProductSwitcher />
+          </div>
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3 pb-2 scrollbar-none">
           {SCHEDULE_NAV.map((item) => {
