@@ -274,7 +274,12 @@ export default function ConfiguracoesPage() {
                 <strong className="text-text-primary">OMNI Business</strong>
               </p>
               <p>Produto de gestão do ecossistema OMNI</p>
-              <p className="text-xs text-[#7C3CFF]">OMNI · marca-mãe · Business · Schedule (em breve)</p>
+              <p className="text-xs text-[#7C3CFF]">
+                OMNI · Business ·{" "}
+                <a href="/schedule" className="underline hover:text-[#0CD4FF]">
+                  Schedule
+                </a>
+              </p>
               <p>Versão 1.0.0</p>
               <p className="mt-4 text-xs text-text-muted">
                 Sistema escalável para crescer do primeiro salgado vendido até uma operação completa.
