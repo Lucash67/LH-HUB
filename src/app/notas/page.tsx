@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { format, subWeeks } from "date-fns";
-import { NotebookPen, Search } from "lucide-react";
+import { CalendarPlus, NotebookPen, Search } from "lucide-react";
 import { ModuleShell } from "@/components/layout/module-shell";
 import { PageLoader } from "@/components/ui/loading";
+import { Button } from "@/components/ui/button";
 import { ComposeBar } from "@/components/sticky-notes/compose-bar";
 import { NoteEditor } from "@/components/sticky-notes/note-editor";
 import { NotesBoard } from "@/components/sticky-notes/notes-board";
@@ -17,6 +18,12 @@ import { StickySaveStatus } from "@/components/sticky-notes/save-status";
 import { useStickyNotes } from "@/hooks/use-sticky-notes";
 import type { StickyNote } from "@/lib/sticky-notes/types";
 import { currentWeekStart, weekKeyFromDate } from "@/lib/sticky-notes/week-board";
+import {
+  buildWeekdayDraftTemplate,
+  isOfficialDraftNote,
+  officialDraftNoteTitle,
+  operationalWeekDates,
+} from "@/lib/day-registration/weekday-draft-templates";
 
 function applyFilters(notes: StickyNote[], filters: NotesFilterState, query: string): StickyNote[] {
   const q = query.trim().toLowerCase();
@@ -68,6 +75,8 @@ export default function NotasPage() {
   const [filters, setFilters] = useState<NotesFilterState>(DEFAULT_NOTES_FILTERS);
   const [focusWeekStart, setFocusWeekStart] = useState(() => currentWeekStart());
   const [active, setActive] = useState<StickyNote | null>(null);
+  const [generatingWeek, setGeneratingWeek] = useState(false);
+  const [weekGenMessage, setWeekGenMessage] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => applyFilters(notes, filters, query),
@@ -79,6 +88,39 @@ export default function NotasPage() {
   };
 
   const editing = active ? notes.find((n) => n.id === active.id) ?? active : null;
+
+  const generateWeekdayDrafts = async () => {
+    setGeneratingWeek(true);
+    setWeekGenMessage(null);
+    try {
+      const dates = operationalWeekDates(focusWeekStart);
+      let created = 0;
+      let skipped = 0;
+      for (const date of dates) {
+        const exists = notes.some((n) => !n.archived && isOfficialDraftNote(n, date));
+        if (exists) {
+          skipped += 1;
+          continue;
+        }
+        await createNote({
+          title: officialDraftNoteTitle(date),
+          body: buildWeekdayDraftTemplate(date),
+          color: "mint",
+          noteDate: date,
+        });
+        created += 1;
+      }
+      if (created === 0 && skipped === 5) {
+        setWeekGenMessage("Seg–sex desta semana já têm rascunho oficial.");
+      } else {
+        setWeekGenMessage(
+          `Criados ${created} rascunho(s)${skipped ? ` · ${skipped} já existiam` : ""}.`,
+        );
+      }
+    } finally {
+      setGeneratingWeek(false);
+    }
+  };
 
   return (
     <ModuleShell
@@ -102,6 +144,9 @@ export default function NotasPage() {
                 Nenhuma nota neste filtro — você ainda pode trocar a semana ou criar uma nota nova.
               </div>
             )}
+            {weekGenMessage && (
+              <p className="text-sm text-text-secondary">{weekGenMessage}</p>
+            )}
             <NotesBoard
               notes={filtered}
               focusWeekStart={focusWeekStart}
@@ -124,12 +169,25 @@ export default function NotasPage() {
                 </div>
               }
               toolbarEnd={
-                <NotesFilters
-                  open={filtersOpen}
-                  onOpenChange={setFiltersOpen}
-                  filters={filters}
-                  onChange={setFilters}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={generatingWeek}
+                    onClick={() => void generateWeekdayDrafts()}
+                    className="shrink-0 border-[#7C3CFF]/30 bg-[#1a1c24] text-[#e8eaed] hover:bg-[#7C3CFF]/15"
+                  >
+                    <CalendarPlus className="mr-1.5 h-3.5 w-3.5 text-[#7C3CFF]" />
+                    {generatingWeek ? "Gerando…" : "Gerar seg–sex"}
+                  </Button>
+                  <NotesFilters
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
+                    filters={filters}
+                    onChange={setFilters}
+                  />
+                </div>
               }
               belowToolbar={
                 <ComposeBar

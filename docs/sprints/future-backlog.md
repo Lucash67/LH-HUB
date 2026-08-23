@@ -2,6 +2,8 @@
 
 Ideias para implementar **depois** da entrega atual.
 
+Consulte também o módulo **Ideias** no app (`/ideias`) — ali ficam demandas e observações do dia a dia para lembrar e priorizar.
+
 ---
 
 ## 1. Módulo de Projeções por Período (ambição & motivação)
@@ -41,4 +43,26 @@ Gerar **faturamento, lucro, unidades e margem projetados** ao fechar cada “cic
 
 ---
 
-_Última atualização: 2026-08-09_
+## 2. Novo cardápio + estratégias para vender mais
+
+**Status:** Aberto · registrado em `/ideias` (demanda) · 2026-08-23  
+**Prioridade sugerida:** alta (crescimento de volume)
+
+### Contexto
+
+Observação operacional: revisar o cardápio e definir novas estratégias de venda (mix, preço, canais ACAL / Henrique / Unifor) para aumentar unidades vendidas sem perder o ritmo do cofrinho.
+
+### Entregáveis sugeridos
+
+- [ ] Definir cardápio alvo (sabores e quantidades típicas por canal)
+- [ ] Estratégias de venda (manhã ACAL, upsell, redução de perdas)
+- [ ] Atualizar modelo de rascunho / produtos no sistema se o mix mudar
+
+### Onde consultar
+
+- App: **Ideias** → demanda “Novo cardápio + estratégias para vender mais”
+- Este arquivo (seção 2)
+
+---
+
+_Última atualização: 2026-08-23_

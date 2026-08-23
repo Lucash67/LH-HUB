@@ -82,11 +82,10 @@ export const HUB_VALUE_PROPS = [
  *
  *   OMNI              = marca-mãe / ecossistema / plataforma
  *   OMNI Business     = produto de gestão (este app em produção)
- *   OMNI Schedule     = produto futuro — NÃO implementar nesta etapa
+ *   OMNI Schedule     = produto de agenda (`/schedule`, schema `schedule.*`)
  *
  * Telas globais (login, auth, conta) priorizam a marca OMNI.
  * O chrome interno do app identifica o produto OMNI Business.
- * Não inventar módulos/funcionalidades a partir de referências visuais.
  */
 export const HUB_COPY = {
   holdingName: "OMNI",

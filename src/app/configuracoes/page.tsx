@@ -279,7 +279,10 @@ export default function ConfiguracoesPage() {
                 <strong className="text-text-primary">OMNI Business</strong>
               </p>
               <p className="text-xs text-[#7C3CFF]">
-                Business (produção) · Schedule (previsto — ainda não implementado)
+                Business (produção) ·{" "}
+                <a href="/schedule" className="underline hover:text-[#0CD4FF]">
+                  Schedule
+                </a>
               </p>
               <p>Versão 1.0.0</p>
               <p className="mt-4 text-xs text-text-muted">

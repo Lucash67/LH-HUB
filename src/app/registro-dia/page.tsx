@@ -13,7 +13,7 @@ import { isAllBusinesses, SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 import { useBusinessContextStore } from "@/stores/business-context-store";
 import { formatCurrency } from "@/lib/utils";
 import { formatSaleShift } from "@/lib/sale-shift";
-import { DRAFT_TEMPLATE, type DayRegistrationPreview } from "@/lib/day-registration/types";
+import { buildWeekdayDraftTemplate, type DayRegistrationPreview } from "@/lib/day-registration/types";
 import {
   ClipboardPaste,
   FileText,
@@ -146,7 +146,7 @@ export default function RegistroDiaPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setDraft(DRAFT_TEMPLATE)}
+              onClick={() => setDraft(buildWeekdayDraftTemplate(new Date()))}
               disabled={!canWrite}
             >
               <FileText className="mr-1 h-3.5 w-3.5" />
@@ -163,9 +163,12 @@ export default function RegistroDiaPage() {
 
             <div className="rounded-lg border border-[#7C3CFF]/20 bg-[#7C3CFF]/5 p-3 text-xs text-text-muted">
               <p className="mb-2 font-medium text-[#0CD4FF]">Seu formato:</p>
-              <p>Data (DD/MM) · Encomendados · Custo/Investimento · Separados pai/ACAL · Histórico de vendas · Observações · Faturamento/Lucro</p>
+              <p>
+                Data (DD/MM) · Encomendados · Henrique · Unifor · Acal · Lista de vendas ·
+                Pendentes/Espécie/Fiados/Perdas · OBS · Custo/Faturamento/Lucro/Cofrinho
+              </p>
               <p className="mt-2 font-medium text-[#0CD4FF]">Linha de venda:</p>
-              <code className="text-text-secondary">1 - Nome: 1 Croissant | 09:00 ✅Pix</code>
+              <code className="text-text-secondary">1 - Nome: 1 salgado | Pix | R$5</code>
             </div>
 
             <Button
