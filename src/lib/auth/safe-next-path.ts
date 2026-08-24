@@ -2,9 +2,9 @@ import { OMNI_HUB_PATH } from "@/constants/omni-products";
 import { OMNI_ONBOARDING_PATH } from "@/lib/omni-onboarding";
 
 /**
- * Destino após login/cadastro bem-sucedido.
- * - Sem `next` → Hub (escolha de produto).
- * - Com `next` (vindo do Hub → produto, ou deep link) → rota do produto.
+ * Destino após login/cadastro OMNI (única autenticação).
+ * - Sem `next` → Hub.
+ * - Com `next` (deep link / rota protegida) → rota solicitada.
  */
 export function resolvePostLoginPath(next: string | null | undefined): string {
   if (!next) return OMNI_HUB_PATH;
