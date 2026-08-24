@@ -35,7 +35,7 @@ export const OMNI_PRODUCTS: OmniProduct[] = [
     description: "Gestão, operação e resultados do negócio.",
     highlights: ["Vendas", "Financeiro", "Estoque", "Clientes", "Indicadores"],
     href: "/",
-    cta: "Entrar no Business",
+    cta: "Acessar Business",
     status: "available",
     icon: BriefcaseBusiness,
     accent: "purple",
@@ -47,7 +47,7 @@ export const OMNI_PRODUCTS: OmniProduct[] = [
     description: "Agenda, clientes, serviços e atendimentos.",
     highlights: ["Agenda", "Clientes", "Serviços", "Equipe"],
     href: "/schedule",
-    cta: "Entrar no Schedule",
+    cta: "Acessar Schedule",
     status: "available",
     icon: CalendarDays,
     accent: "cyan",
@@ -55,12 +55,6 @@ export const OMNI_PRODUCTS: OmniProduct[] = [
 ];
 
 export const OMNI_HUB_PATH = "/hub";
-
-/** Rota de login do produto (após Hub → autenticação → sistema). */
-export function productAuthPath(productHref: string): string {
-  const next = productHref.startsWith("/") ? productHref : `/${productHref}`;
-  return `/login?next=${encodeURIComponent(next)}`;
-}
 
 export function listAvailableProducts(
   products: OmniProduct[] = OMNI_PRODUCTS,

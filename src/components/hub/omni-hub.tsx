@@ -5,7 +5,7 @@ import { ArrowRight, LayoutGrid, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LhHoldingLogo } from "@/components/hub/lh-hub-logo";
 import { useSessionUser } from "@/hooks/use-session-user";
-import { listAvailableProducts, productAuthPath, type OmniProduct } from "@/constants/omni-products";
+import { listAvailableProducts, type OmniProduct } from "@/constants/omni-products";
 import { cn } from "@/lib/utils";
 import { OMNI_ONBOARDING_PATH } from "@/lib/omni-onboarding";
 import { clearHubSession } from "@/lib/hub-session";
@@ -35,7 +35,7 @@ function ProductCard({ product }: { product: OmniProduct }) {
 
   return (
     <Link
-      href={productAuthPath(product.href)}
+      href={product.href}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-3xl border bg-[#12141c]/90 p-5 transition duration-300 sm:p-6",
         "shadow-[0_8px_40px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 hover:shadow-[0_16px_48px_rgba(124,60,255,0.18)]",
