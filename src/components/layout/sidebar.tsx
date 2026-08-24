@@ -18,6 +18,7 @@ import { LhHoldingIcon } from "@/components/hub/lh-hub-logo";
 import { ProductSwitcher } from "@/components/hub/product-switcher";
 import { resolveTheme, THEME_META } from "@/lib/theme-config";
 import { clearHubSession } from "@/lib/hub-session";
+import { OMNI_ONBOARDING_PATH } from "@/lib/omni-onboarding";
 import { useBusinessContextStore } from "@/stores/business-context-store";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -142,7 +143,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       clearHubSession();
       resetBusinessContext(null);
       queryClient.clear();
-      router.push("/login");
+      router.push(OMNI_ONBOARDING_PATH);
       router.refresh();
     } finally {
       setLoggingOut(false);
