@@ -1,8 +1,5 @@
-import { format, getDay, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-/** Segunda=1 … Sexta=5 (date-fns getDay: Dom=0). */
-export type OperationalWeekday = 1 | 2 | 3 | 4 | 5;
 
 function toDate(input: string | Date): Date {
   if (input instanceof Date) return input;
@@ -10,104 +7,91 @@ function toDate(input: string | Date): Date {
   return new Date(input);
 }
 
-function uniforBlock(weekday: number): string {
-  if (weekday === 5) {
-    return `Separados para a Unifor
-
-- Nenhum (não tenho aula nas sextas)
-
-Vendidos: Nenhum`;
-  }
-
-  return `Separados para a Unifor
-
-- …
-
-Total Unifor: … unidades
-Vendidos: …`;
-}
-
 /**
- * Esqueleto do rascunho diário (seg–sex) no formato atual do Lucas.
- * Só preenche a data e o bloco Unifor (sexta sem aula); o resto fica para o dia.
+ * Modelo único do rascunho diário (operação Salgados).
+ * Só preenche a data; o resto fica para o dia.
  */
 export function buildWeekdayDraftTemplate(input: string | Date = new Date()): string {
   const d = toDate(input);
-  const weekday = getDay(d) as number;
   const ddMm = format(d, "dd/MM");
 
   return `${ddMm}
 
 Encomendados hoje:
 
-- … Mistão frito
-- … Carne forno
-- … Croissant
-- … Pão de queijo
+-  Mistão frito
+-  Carne forno
+-  Croissant
+-  Mistão forno
+-  Pão de Queijo
 
-Total: … unidades (R$…)
+Total: unidades (R$)
 
 Separados para o trabalho do Henrique
 
-- …
+-  Mistão frito
+-  Mistão forno
+-  Carne forno
+- Croissant
 
-Total: … unidades
-Total vendidos: …
+Total: unidades
+Total vendidos: Todos (R$)
 
-${uniforBlock(weekday)}
+Separados para a Unifor & Acal:
 
-Separados para a Acal
+-  Mistão frito
+-  Carne forno
+-  Croissant
+-  Mistão forno
+-  Pão de Queijo
 
-- …
-
-Total Acal: … unidades
-Total Acal vendidos: …
+Total: 17 unidades
 
 —— Preencher no fim do dia ——
 
-Lista de vendas na Acal
+Lista de vendas na Unifor & Acal:
 
-Período da Manhã:
-
-1 - Nome: 1 salgado | Pix | R$5
+1 - 
+2 - 
+3 - 
+4 - 
+...
 
 Total: … salgados | R$…
 
-Pendentes:
-- …
-
-Vendidos em espécie:
-- Nenhum
-
-*Os que não identifiquei o sabor foram porque não estive lá para ver e registrar aqui*
-
-Fiados quitados de hoje
-- …
+Pendências para quitar em aberto:
+- Nome da pessoa (data em que pegou fiado): 
 
 Perdas:
-- …
+- 
+
+Pegos fiados:
+- 
+
+Vendidos em espécie:
+- 
 
 OBS:
 
-- …
+- 
 
 Custo, Bonificação, Faturamento e Lucro
 
-Custo total dos salgados: R$…
-Meu custo total: R$…
-Custo de Terceiros: R$…
-Bonificação: R$0
+Custo total dos salgados: R$
+Meu custo total: R$
+Custo de Terceiros: R$
+Bonificação: R$
 
-Faturamento total esperado: R$… | ... total esperado + quitações: R$…
-Faturamento total real: R$…
-Faturamento total real do dia: R$…
+Faturamento total esperado: R$110 | ... total esperado + quitações: R$
+Faturamento total real (do dia + quitação): R$
+Faturamento total real do dia (somente desse dia): R$
 
-Lucro total esperado: R$…
-Lucro total real: R$…
+Lucro total esperado: R$
+Lucro total real: R$
 
 Cofrinho dos lucros:
 - Cofrinho até aqui na teoria: R$ (IA calcula)
-- Cofrinho até aqui na prática: R$… (com rendimento — conferir extrato)
+- Cofrinho até aqui na prática: R$ (com rendimento — conferir extrato)
 `;
 }
 
