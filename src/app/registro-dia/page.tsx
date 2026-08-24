@@ -164,8 +164,8 @@ export default function RegistroDiaPage() {
             <div className="rounded-lg border border-[#7C3CFF]/20 bg-[#7C3CFF]/5 p-3 text-xs text-text-muted">
               <p className="mb-2 font-medium text-[#0CD4FF]">Seu formato:</p>
               <p>
-                Data (DD/MM) · Encomendados · Henrique · Unifor · Acal · Lista de vendas ·
-                Pendentes/Espécie/Fiados/Perdas · OBS · Custo/Faturamento/Lucro/Cofrinho
+                Data (DD/MM) · Encomendados · Henrique · Unifor & Acal · Lista de vendas ·
+                Pendências/Espécie/Fiados/Perdas · OBS · Custo/Faturamento/Lucro/Cofrinho
               </p>
               <p className="mt-2 font-medium text-[#0CD4FF]">Linha de venda:</p>
               <code className="text-text-secondary">1 - Nome: 1 salgado | Pix | R$5</code>
