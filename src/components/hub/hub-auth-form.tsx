@@ -51,6 +51,13 @@ export function HubAuthForm({ compact = false }: { compact?: boolean }) {
     if (token) {
       setResetToken(token);
       setTab("reset");
+      return;
+    }
+    const mode = searchParams.get("mode");
+    if (mode === "register" || mode === "signup") {
+      setTab("register");
+    } else if (mode === "login") {
+      setTab("login");
     }
   }, [searchParams]);
 
