@@ -65,4 +65,31 @@ Observação operacional: revisar o cardápio e definir novas estratégias de ve
 
 ---
 
-_Última atualização: 2026-08-23_
+## 3. Continuação OMNI Schedule + Hub (pausado)
+
+**Status:** Pausado para retomar depois · 2026-08-24  
+**Prioridade sugerida:** alta (segundo produto do ecossistema)
+
+### Onde paramos
+
+- Fundação entregue: schema `schedule.*`, shell `/schedule`, Hub `/hub`, onboarding público, sessão OMNI única
+- Business preservado; Schedule ainda sem CRUD completo (org, serviços, equipe, horários, agenda, booking)
+
+### Próximo ao retomar (ordem do MVP)
+
+1. Organização / estabelecimento  
+2. Serviços + profissionais + disponibilidade (uma fonte de verdade)  
+3. Clientes + appointments (anti double-booking)  
+4. Agenda (dia/semana) + dashboard “o que acontece hoje”  
+5. Booking público mobile-first  
+6. Onboarding/presets vertical Barbearia  
+
+### Onde consultar
+
+- Código: `src/app/schedule/**`, `src/lib/db/postgres/schema-schedule.ts`, `src/constants/omni-products.ts`  
+- App: **Ideias** → “Continuar OMNI Schedule (MVP)”  
+- Prompt original de produto: conversa “OMNI Schedule fundação”
+
+---
+
+_Última atualização: 2026-08-24_
