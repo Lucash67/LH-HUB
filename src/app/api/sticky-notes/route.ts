@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { stickyNoteUpsertSchema } from "@/lib/sticky-notes/types";
+import { ensureDraftNote2608 } from "@/lib/sticky-notes/ensure-draft-2608";
 import {
   deleteStickyNote,
   listStickyNotes,
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
   if (isAuthFailure(auth)) return auth;
   try {
     const includeArchived = request.nextUrl.searchParams.get("archived") === "1";
+    // Aplica o modelo novo só no 26/08 (preserva 25/08) na próxima abertura de /notas.
+    await ensureDraftNote2608(auth.id);
     const notes = await listStickyNotes(auth.id, { includeArchived });
     return NextResponse.json({ notes });
   } catch (error) {

@@ -14,6 +14,11 @@ import {
   localPutNotes,
   mergeNotes,
 } from "@/lib/sticky-notes/local-store";
+import {
+  FORCE_TEMPLATE_NOTE_DATE,
+  usesNewDailyDraftTemplate,
+} from "@/lib/sticky-notes/draft-template-markers";
+import { buildWeekdayDraftTemplate } from "@/lib/day-registration/weekday-draft-templates";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "offline" | "error";
 
@@ -154,21 +159,59 @@ export function useStickyNotes() {
       }
       try {
         const server = await fetchNotes(showArchived);
-        const merged = mergeNotes(server, local).filter((n) =>
+        let merged = mergeNotes(server, local).filter((n) =>
           showArchived ? true : !n.archived,
         );
+
+        // Cache local pode ganhar do servidor pelo timestamp — força o modelo novo no 26/08.
+        const now = new Date().toISOString();
+        merged = merged.map((n) => {
+          if (n.noteDate !== FORCE_TEMPLATE_NOTE_DATE) return n;
+          if (usesNewDailyDraftTemplate(n.body)) return n;
+          return {
+            ...n,
+            body: buildWeekdayDraftTemplate(FORCE_TEMPLATE_NOTE_DATE),
+            clientUpdatedAt: now,
+            updatedAt: now,
+          };
+        });
+
         if (!cancelled) {
           setNotes(merged);
           await localPutNotes(merged);
         }
         const pendingIds = await localGetPendingIds();
-        for (const id of pendingIds) pendingRef.current.add(id);
+        // Não reenviar cache antigo do 26/08 por cima do modelo novo.
+        const forced2608 = merged.find(
+          (n) =>
+            n.noteDate === FORCE_TEMPLATE_NOTE_DATE &&
+            usesNewDailyDraftTemplate(n.body),
+        );
+        if (forced2608) {
+          await localClearPending(forced2608.id);
+          pendingRef.current.delete(forced2608.id);
+          if (navigator.onLine) {
+            try {
+              await putNoteToServer(forced2608);
+            } catch {
+              /* sync best-effort */
+            }
+          }
+        }
+        for (const id of pendingIds) {
+          if (forced2608 && id === forced2608.id) continue;
+          pendingRef.current.add(id);
+        }
         if (pendingIds.length > 0 && navigator.onLine) {
-          const toFlush = merged.filter((n) => pendingIds.includes(n.id));
-          await putBatchToServer(toFlush);
-          for (const id of pendingIds) {
-            await localClearPending(id);
-            pendingRef.current.delete(id);
+          const toFlush = merged.filter(
+            (n) => pendingIds.includes(n.id) && n.id !== forced2608?.id,
+          );
+          if (toFlush.length > 0) {
+            await putBatchToServer(toFlush);
+            for (const note of toFlush) {
+              await localClearPending(note.id);
+              pendingRef.current.delete(note.id);
+            }
           }
         }
         if (!cancelled) setStatus("saved");
