@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/shared/api-messages";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { withTenantScope } from "@/lib/auth/with-tenant-api";
-import { requireTenantBusinessWrite } from "@/lib/auth/tenant-scope";
+import { requireTenantBusinessWrite, type TenantScope } from "@/lib/auth/tenant-scope";
+import { isAllBusinesses, SALGADOS_BUSINESS_ID } from "@/lib/business-units";
 import {
   periodReviewUpsertSchema,
   periodTypeSchema,
@@ -15,6 +16,13 @@ import {
   upsertPeriodReview,
 } from "@/platform/db/repositories/period-review-repository";
 
+/** Retrato é por operação; visão "Todos" não tem UUID — cai em Salgados. */
+function resolveRetratoBusinessId(scope: TenantScope): string | null {
+  if (!isAllBusinesses(scope.businessId)) return scope.businessId;
+  if (scope.slugs.includes(SALGADOS_BUSINESS_ID)) return SALGADOS_BUSINESS_ID;
+  return scope.slugs[0] ?? null;
+}
+
 export async function GET(request: NextRequest) {
   const auth = await requireApiSession();
   if (isAuthFailure(auth)) return auth;
@@ -26,12 +34,7 @@ export async function GET(request: NextRequest) {
         return apiError("Período inválido. Use weekly ou monthly.", 400);
       }
       const periodType = periodParsed.data;
-
-      const list = request.nextUrl.searchParams.get("list") === "1";
-      if (list) {
-        const reviews = await listPeriodReviews(scope.businessId, periodType);
-        return NextResponse.json({ reviews });
-      }
+      const businessId = resolveRetratoBusinessId(scope);
 
       const keyParam = request.nextUrl.searchParams.get("key");
       const offset = Number(request.nextUrl.searchParams.get("offset") ?? "0");
@@ -42,7 +45,27 @@ export async function GET(request: NextRequest) {
           })()
         : resolvePeriodWindow(periodType, Number.isFinite(offset) ? offset : 0);
 
-      const review = await findPeriodReview(scope.businessId, periodType, window.periodKey);
+      if (!businessId) {
+        return NextResponse.json({
+          review: null,
+          window: {
+            periodType,
+            periodKey: window.periodKey,
+            rangeStart: window.rangeStart,
+            rangeEnd: window.rangeEnd,
+            label: window.label,
+            offset: Number.isFinite(offset) ? offset : 0,
+          },
+        });
+      }
+
+      const list = request.nextUrl.searchParams.get("list") === "1";
+      if (list) {
+        const reviews = await listPeriodReviews(businessId, periodType);
+        return NextResponse.json({ reviews });
+      }
+
+      const review = await findPeriodReview(businessId, periodType, window.periodKey);
       return NextResponse.json({
         review,
         window: {
