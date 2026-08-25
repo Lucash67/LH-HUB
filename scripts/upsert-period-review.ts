@@ -8,185 +8,188 @@ import { upsertPeriodReview } from "../src/platform/db/repositories/period-revie
 import type { PeriodReviewUpsert } from "../src/lib/period-reviews/types";
 import { SALGADOS_BUSINESS_ID } from "../src/lib/business-units";
 
-/** Retrato 10–14/08 × 03–09/08 — espelho do canvas semana-vs-anterior-salgados. */
-const WEEK_1014: PeriodReviewUpsert & { businessId: string } = {
+/** Retrato 17–21/08 × 10–14/08 — espelho do canvas semana-17-21-vs-anterior-salgados. */
+const WEEK_1721: PeriodReviewUpsert & { businessId: string } = {
   businessId: SALGADOS_BUSINESS_ID,
   periodType: "weekly",
-  periodKey: "2026-08-10",
-  rangeStart: "2026-08-10",
-  rangeEnd: "2026-08-16",
+  periodKey: "2026-08-17",
+  rangeStart: "2026-08-17",
+  rangeEnd: "2026-08-23",
   status: "published",
   title: "Semana atual vs anterior — Salgados",
-  headline: "Faturou mais, lucrou um pouco menos — e o bolso próprio bancou o volume",
+  headline:
+    "Lucrou mais com menos fat e menos capital próprio — mas a qua 19/08 (100% família) infla o placar",
   summary:
-    "A semana atual faturou mais (R$ 600 vs R$ 500), mas o lucro operacional caiu um pouco (R$ 291 vs R$ 299,50) porque a Acal enfraqueceu, o seu capital próprio subiu ~54% e a semana anterior foi inflada pela sexta 07/08 (estoque 100% Henrique → lucro ≈ faturamento).",
+    "A semana 17–21 lucrou R$ 350,50 vs R$ 296 da 10–14, com faturamento menor (R$ 537,50 vs R$ 600) e capital próprio quase pela metade (R$ 180,50 vs R$ 309). A melhora estrutural é o split com a família; a quarta 19/08 (estoque 100% família → lucro ≈ fat R$ 118,50) distorce a comparação — sem ela o lucro seria ~R$ 232.",
   causes: [
     {
       rank: 1,
-      title: "Acal vendeu menos lucro (−R$ 37,71)",
+      title: "Quarta 19/08 inflou o lucro (~R$ 118,50)",
       detail:
-        "Fat. Acal caiu de R$ 390 para R$ 370 (−R$ 20). Lucro do canal caiu de R$ 234 para R$ 196. Menos tickets (75 → 63 vendas). Terça e quarta da semana atual ficaram em R$ 60 de faturamento Acal — abaixo do padrão da semana boa (R$ 80–100).",
+        "Estoque 100% capital família (R$ 87,50). Lucro do diário = faturamento (R$ 118,50). Sem essa quarta, o lucro da semana atual seria ~R$ 232 — abaixo dos R$ 296 da anterior. Mesmo tipo de dia “grátis” da sexta 07/08: conta no resultado, não serve de baseline.",
       impact: "critical",
-      badge: "#1 impacto",
+      badge: "#1 distorce comparação",
     },
     {
       rank: 2,
-      title: "Sexta 07/08 inflou a semana anterior (~R$ 120)",
+      title: "Você bancou bem menos o estoque (−R$ 128,50 próprio)",
       detail:
-        "Na sexta anterior o estoque foi 100% capital Henrique (R$ 84). As 23 vendas entraram com custo R$ 0 → lucro = faturamento (R$ 120). Sem essa sexta, o lucro da semana anterior seria ~R$ 179,50 — aí a semana atual (R$ 291) teria sido melhor, não pior. A sensação de “semana boa” veio muito desse dia atípico.",
+        "Capital próprio: R$ 309 → R$ 180,50 (bateu a meta ≤ R$ 220). Família: R$ 96 → R$ 211,50. Retorno por real seu: 0,96× → 1,94×. Essa é a melhora estrutural real — independente da quarta atípica.",
       impact: "high",
-      badge: "#2 distorce comparação",
+      badge: "#2 caixa do operador",
     },
     {
       rank: 3,
-      title: "Você bancou bem mais o estoque (+R$ 108,50 próprio)",
+      title: "Terça 18/08: R$ 28 de lucro com R$ 77 só no seu bolso",
       detail:
-        "Capital próprio: R$ 200,50 → R$ 309. Família/Henrique: R$ 143,50 → R$ 96. Resultado: mesmo com fat maior, cada real seu rendeu menos (retorno 1,49× → 0,94×). Dias 10 e 12 com compra de 30 un. / R$ 87 só no seu bolso apertaram a margem do dia.",
+        "Compra 22 un. / R$ 77 100% próprio. Fat. R$ 105 · lucro só R$ 28 · 1 perda. Pior dia da semana e o oposto do que a meta pedia (dividir compra grande).",
       impact: "high",
-      badge: "#3 caixa do operador",
+      badge: "#3 dia fraco",
     },
     {
       rank: 4,
-      title: "Perdas triplicaram (2 → 6 un.)",
+      title: "Faturou e vendeu menos (−R$ 62,50 · −11 un.)",
       detail:
-        "Semana atual: perdas em 11, 12, 13 e 14/08. Cada unidade perdida queima custo sem receita — em volume alto (120 un. vendidas) o desperdício pesa mais no lucro do que na semana anterior.",
+        "120 → 109 un. · fat. R$ 600 → R$ 537,50. Acal quase flat (R$ 370 → R$ 363,50) — ainda abaixo da meta R$ 400. Unifor quase sumiu (R$ 65 → R$ 30).",
       impact: "medium",
-      badge: "#4",
+      badge: "#4 volume",
     },
     {
       rank: 5,
-      title: "Mix deslocou para Henrique/Unifor",
+      title: "Perdas cairam pela metade (6 → 3)",
       detail:
-        "Henrique + Unifor subiram o faturamento (R$ 110 → R$ 230), mas não compensaram a queda de lucro na Acal. Ex.: 12/08 metade do dia foi cota Henrique (R$ 60 fat / R$ 25 lucro) enquanto Acal também ficou em R$ 60 — volume sem o mesmo retorno do melhor mix Acal.",
-      impact: "medium",
-      badge: "#5",
+        "Meta era ≤ 2; ficou em 3 — quase. Melhora clara vs. 10–14/08. Continua valendo o checklist de sobra no fim do dia.",
+      impact: "low",
+      badge: "#5 perdas",
     },
   ],
   actions: [
     {
-      title: "Recuperar Acal (prioridade)",
-      why: "É o canal que mais perdeu lucro (−R$ 38)",
-      measure: "≥ 14–16 vendas Acal/dia · meta R$ 80 fat Acal/dia",
+      title: "Proibir dia 100% próprio em compra ≥ 22 un.",
+      why: "Ter 18/08: R$ 77 próprio → lucro R$ 28",
+      measure: "Own ≤ R$ 50 quando compra ≥ 22 un.",
     },
     {
-      title: "Dividir compra grande com Henrique",
-      why: "Dias de 30 un. no seu bolso matam o retorno",
-      measure: "Own capital/dia ≤ R$ 50 quando compra ≥ 25 un.",
+      title: "Tratar dia 100% família como bônus",
+      why: "Qua 19 infla lucro e distorce a régua",
+      measure: "Comparar semanas sem esses dias",
     },
     {
-      title: "Cortar perda",
-      why: "6 un. perdidas ≈ custo queimado sem venda",
-      measure: "Checklist fim do dia: contar sobra antes de sair",
+      title: "Empurrar Acal para R$ 80–100/dia",
+      why: "Meta R$ 400 ainda não veio (R$ 363,50)",
+      measure: "≥ 16 un. Acal/dia nos dias fracos (seg/qua)",
     },
     {
-      title: "Não confundir fat com lucro",
-      why: "Semana atual faturou +20% e lucro caiu",
-      measure: "Olhar lucro do diário + capital próprio, não só fat",
+      title: "Manter split com Henrique",
+      why: "Own R$ 180,50 foi o melhor movimento da semana",
+      measure: "Own semanal ≤ R$ 200",
     },
     {
-      title: "Tratar sexta ‘grátis’ como bônus",
-      why: "07/08 não é baseline — é exceção",
-      measure: "Comparar semanas sem dias 100% família",
+      title: "Fechar perdas em ≤ 2",
+      why: "Já caiu 6 → 3; falta 1",
+      measure: "Contar sobra antes de sair",
     },
   ],
   nextGoals:
-    "Lucro operacional ≥ R$ 300 · capital próprio ≤ R$ 220 · perdas ≤ 2 un. · fat Acal ≥ R$ 400",
+    "Lucro operacional ≥ R$ 300 sem dia 100% família · capital próprio ≤ R$ 200 · perdas ≤ 2 un. · fat Acal ≥ R$ 400",
   fairReading:
-    "Se tirarmos a sexta 07/08 da conta, a semana atual foi a mais forte em lucro consistente (todos os dias entre R$ 53 e R$ 65). O problema real não é “a operação quebrou” — é Acal mais fraca no meio da semana + mais dinheiro seu no estoque + mais perda. Conserta esses três e a semana volta (ou passa) a anterior.",
+    "No bolso, a semana 17–21 foi melhor: menos dinheiro seu no estoque e retorno ~2× por real investido. No ritmo de venda “limpo” (sem a quarta grátis), o lucro ainda ficou abaixo da 10–14. O jogo agora é repetir o split bom e eliminar o padrão da terça 18 — aí o lucro consistente passa a anterior sem precisar de dia 100% família.",
   metricsSnapshot: {
     current: {
-      label: "10–14/08 (atual)",
+      label: "17–21/08 (atual)",
+      start: "2026-08-17",
+      end: "2026-08-21",
+      revenue: 537.5,
+      diaryProfit: 350.5,
+      unitsSold: 109,
+      unitsLost: 3,
+      ownCapital: 180.5,
+      familyCapital: 211.5,
+      purchaseInvestment: 392,
+    },
+    previous: {
+      label: "10–14/08 (anterior)",
       start: "2026-08-10",
       end: "2026-08-14",
       revenue: 600,
-      diaryProfit: 291,
+      diaryProfit: 296,
       unitsSold: 120,
       unitsLost: 6,
       ownCapital: 309,
       familyCapital: 96,
       purchaseInvestment: 405,
     },
-    previous: {
-      label: "03–09/08 (anterior)",
-      start: "2026-08-03",
-      end: "2026-08-09",
-      revenue: 500,
-      diaryProfit: 299.5,
-      unitsSold: 99,
-      unitsLost: 2,
-      ownCapital: 200.5,
-      familyCapital: 143.5,
-      purchaseInvestment: 344,
-    },
     pills: [
-      { label: "Lucro −R$ 8,50", tone: "warning" },
-      { label: "Acal −R$ 37,71", tone: "danger" },
-      { label: "Capital próprio +R$ 108,50", tone: "neutral" },
+      { label: "Lucro +R$ 54,50", tone: "success" },
+      { label: "Capital próprio −R$ 128,50", tone: "success" },
+      { label: "Fat. −R$ 62,50", tone: "warning" },
+      { label: "Qua 19/08 = R$ 118,50 “grátis”", tone: "neutral" },
     ],
     chartTitleProfit: "Lucro dia a dia",
     dailyProfitNote:
-      "Diário operacional · sex 07/08 = R$ 120 com custo de venda zerado (compra paga pelo Henrique)",
+      "Diário operacional · qua 19/08 = R$ 118,50 com custo de venda zerado (compra 100% família)",
     dailyProfitCompare: [
-      { label: "Seg", previous: 55, current: 63 },
-      { label: "Ter", previous: 60, current: 65 },
-      { label: "Qua", previous: 17.5, current: 53 },
-      { label: "Qui", previous: 27, current: 55 },
-      { label: "Sex", previous: 120, current: 55 },
+      { label: "Seg", previous: 63, current: 60 },
+      { label: "Ter", previous: 65, current: 28 },
+      { label: "Qua", previous: 53, current: 118.5 },
+      { label: "Qui", previous: 55, current: 84 },
+      { label: "Sex", previous: 60, current: 60 },
     ],
-    chartTitleAcal: "Faturamento Acal (o canal que mais dói)",
+    chartTitleAcal: "Faturamento Acal",
+    dailyAcalNote: "Meta da semana passada era ≥ R$ 400 · atual ficou em R$ 363,50",
     dailyAcalRevenueCompare: [
-      { label: "Seg", previous: 55, current: 100 },
-      { label: "Ter", previous: 80, current: 60 },
-      { label: "Qua", previous: 65, current: 60 },
-      { label: "Qui", previous: 90, current: 70 },
-      { label: "Sex", previous: 100, current: 80 },
+      { label: "Seg", previous: 100, current: 60 },
+      { label: "Ter", previous: 60, current: 75 },
+      { label: "Qua", previous: 60, current: 58.5 },
+      { label: "Qui", previous: 70, current: 95 },
+      { label: "Sex", previous: 80, current: 75 },
     ],
     channels: [
       {
         name: "Acal",
-        previousRevenue: 390,
-        currentRevenue: 370,
-        previousProfit: 234.09,
-        currentProfit: 196.38,
+        previousRevenue: 370,
+        currentRevenue: 363.5,
+        previousProfit: 196.38,
+        currentProfit: 234.7,
       },
       {
         name: "Henrique",
-        previousRevenue: 95,
-        currentRevenue: 165,
-        previousProfit: 66.02,
-        currentProfit: 82.85,
+        previousRevenue: 165,
+        currentRevenue: 150,
+        previousProfit: 82.85,
+        currentProfit: 98.34,
       },
       {
         name: "Unifor",
-        previousRevenue: 15,
-        currentRevenue: 65,
-        previousProfit: 7.98,
-        currentProfit: 33.33,
+        previousRevenue: 65,
+        currentRevenue: 30,
+        previousProfit: 33.33,
+        currentProfit: 30,
       },
     ],
     volumeRows: [
-      { metric: "Un. vendidas", previous: "99", current: "120", delta: "+21" },
-      { metric: "Un. perdidas", previous: "2", current: "6", delta: "+4" },
-      { metric: "Invest. compra", previous: "R$ 344,00", current: "R$ 405,00", delta: "+R$ 61" },
+      { metric: "Un. vendidas", previous: "120", current: "109", delta: "−11" },
+      { metric: "Un. perdidas", previous: "6", current: "3", delta: "−3" },
+      { metric: "Invest. compra", previous: "R$ 405,00", current: "R$ 392,00", delta: "−R$ 13" },
       {
-        metric: "Capital Henrique",
-        previous: "R$ 143,50",
-        current: "R$ 96,00",
-        delta: "−R$ 47,50",
+        metric: "Capital família",
+        previous: "R$ 96,00",
+        current: "R$ 211,50",
+        delta: "+R$ 115,50",
       },
     ],
     footerNote:
-      "Semana atual = última semana útil fechada (10–14/08). Lucro usado = diary operational_profit; canais = sales.department.",
+      "Semana atual = 17–21/08. Lucro = diary operational_profit; canais = sales.department; fat. = revenue_received.",
   },
 };
 
 async function main() {
   if (process.env.CONFIRM_RETRATO !== "1") {
     console.log("Dry-run. Defina CONFIRM_RETRATO=1 para gravar.");
-    console.log(JSON.stringify({ periodKey: WEEK_1014.periodKey, title: WEEK_1014.title }, null, 2));
+    console.log(JSON.stringify({ periodKey: WEEK_1721.periodKey, title: WEEK_1721.title }, null, 2));
     return;
   }
-  const review = await upsertPeriodReview(WEEK_1014);
+  const review = await upsertPeriodReview(WEEK_1721);
   console.log("OK Retrato publicado:", review.id, review.periodKey, review.title);
 }
 
