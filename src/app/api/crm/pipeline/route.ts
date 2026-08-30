@@ -41,7 +41,7 @@ export async function GET() {
       stages.filter((s) => !s.isWon && !s.isLost).map((s) => s.id),
     );
     const proposalStageIds = new Set(
-      stages.filter((s) => s.slug === "proposal" || s.slug === "negotiation").map((s) => s.id),
+      stages.filter((s) => s.slug === "negotiation").map((s) => s.id),
     );
     const wonStageIds = new Set(stages.filter((s) => s.isWon).map((s) => s.id));
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);

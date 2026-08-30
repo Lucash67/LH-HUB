@@ -40,7 +40,7 @@ export function CrmHomeClient() {
 
   const cards = [
     { label: "Leads abertos", value: kpis ? String(kpis.openLeads) : "…" },
-    { label: "Em proposta / negociação", value: kpis ? String(kpis.inProposal) : "…" },
+    { label: "Em negociação", value: kpis ? String(kpis.inProposal) : "…" },
     {
       label: "Ganhos no mês",
       value: kpis

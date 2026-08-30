@@ -2,7 +2,21 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCorners,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Stage = {
   id: string;
@@ -34,6 +48,97 @@ function formatBrl(value: string | number) {
   });
 }
 
+function StageColumn({
+  stage,
+  children,
+}: {
+  stage: Stage;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `stage:${stage.id}`,
+    data: { stageId: stage.id },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex w-72 shrink-0 flex-col rounded-2xl border bg-[#12141c] transition",
+        isOver ? "border-emerald-400/50 bg-emerald-500/5" : "border-white/10",
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DealCard({
+  deal,
+  stages,
+  onMoveToStage,
+}: {
+  deal: Deal;
+  stages: Stage[];
+  onMoveToStage: (dealId: string, stageId: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: deal.id,
+    data: { deal },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.35 : 1,
+      }}
+      className="rounded-xl border border-emerald-500/15 bg-[#1a1c24] p-3"
+    >
+      <div className="flex items-start gap-1.5">
+        <button
+          type="button"
+          className="mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-[#737373] hover:bg-white/5 hover:text-white active:cursor-grabbing"
+          aria-label="Arrastar negócio"
+          {...listeners}
+          {...attributes}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/crm/negocios/${deal.id}`}
+            className="block text-sm font-medium text-white hover:text-emerald-300"
+          >
+            {deal.title}
+          </Link>
+          <p className="mt-1 text-xs text-[#A0A0A0]">
+            {deal.contactName ?? "Sem contato"} · {formatBrl(deal.value)}
+          </p>
+          <label className="mt-2 block">
+            <span className="sr-only">Mover para estágio</span>
+            <select
+              value={deal.stageId}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (next && next !== deal.stageId) onMoveToStage(deal.id, next);
+              }}
+              className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-2 py-1.5 text-[11px] text-[#F5F6FA] outline-none focus:border-emerald-500/50"
+            >
+              {stages.map((s) => (
+                <option key={s.id} value={s.id}>
+                  Mover → {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CrmPipelineBoard() {
   const [columns, setColumns] = useState<Column[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -46,6 +151,11 @@ export function CrmPipelineBoard() {
   const [value, setValue] = useState("");
   const [contactId, setContactId] = useState("");
   const [source, setSource] = useState("");
+  const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
 
   const load = useCallback(async () => {
     setError(null);
@@ -78,13 +188,10 @@ export function CrmPipelineBoard() {
     };
   }, [load]);
 
-  async function moveDeal(dealId: string, direction: -1 | 1) {
+  async function moveDealToStage(dealId: string, stageId: string) {
     const flat = columns.flatMap((c) => c.deals.map((d) => ({ ...d, stageId: c.stage.id })));
     const deal = flat.find((d) => d.id === dealId);
-    if (!deal) return;
-    const idx = stages.findIndex((s) => s.id === deal.stageId);
-    const next = stages[idx + direction];
-    if (!next) return;
+    if (!deal || deal.stageId === stageId) return;
 
     setColumns((prev) =>
       prev.map((col) => ({
@@ -92,8 +199,8 @@ export function CrmPipelineBoard() {
         deals:
           col.stage.id === deal.stageId
             ? col.deals.filter((d) => d.id !== dealId)
-            : col.stage.id === next.id
-              ? [...col.deals, { ...deal, stageId: next.id }]
+            : col.stage.id === stageId
+              ? [...col.deals, { ...deal, stageId }]
               : col.deals,
       })),
     );
@@ -101,13 +208,41 @@ export function CrmPipelineBoard() {
     const res = await fetch(`/api/crm/deals/${dealId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stageId: next.id }),
+      body: JSON.stringify({ stageId }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Não foi possível mover.");
       await load();
     }
+  }
+
+  function onDragStart(event: DragStartEvent) {
+    const deal = event.active.data.current?.deal as Deal | undefined;
+    setActiveDeal(deal ?? null);
+  }
+
+  async function onDragEnd(event: DragEndEvent) {
+    setActiveDeal(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const dealId = String(active.id);
+    let targetStageId: string | null = null;
+    const overId = String(over.id);
+    if (overId.startsWith("stage:")) {
+      targetStageId = overId.slice("stage:".length);
+    } else {
+      const hit = columns.flatMap((c) => c.deals).find((d) => d.id === overId);
+      if (hit) targetStageId = hit.stageId;
+      else {
+        const col = columns.find((c) => c.deals.some((d) => d.id === overId));
+        targetStageId = col?.stage.id ?? null;
+      }
+    }
+
+    if (!targetStageId) return;
+    await moveDealToStage(dealId, targetStageId);
   }
 
   async function onCreate(e: FormEvent) {
@@ -152,6 +287,9 @@ export function CrmPipelineBoard() {
             Pipeline
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight">Kanban de negócios</h1>
+          <p className="mt-1 text-xs text-[#A0A0A0]">
+            Arraste pelo ícone ⋮⋮ ou use “Mover →” em cada card.
+          </p>
         </div>
         <button
           type="button"
@@ -238,64 +376,53 @@ export function CrmPipelineBoard() {
         </form>
       ) : null}
 
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {columns.map((col, colIdx) => (
-          <div
-            key={col.stage.id}
-            className="flex w-64 shrink-0 flex-col rounded-2xl border border-white/10 bg-[#12141c]"
-          >
-            <div className="border-b border-white/5 px-3 py-2">
-              <p className="text-sm font-semibold text-white">{col.stage.label}</p>
-              <p className="text-[11px] text-[#A0A0A0]">
-                {col.deals.length} ·{" "}
-                {formatBrl(col.deals.reduce((a, d) => a + Number(d.value || 0), 0))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => setActiveDeal(null)}
+      >
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {columns.map((col) => (
+            <StageColumn key={col.stage.id} stage={col.stage}>
+              <div className="border-b border-white/5 px-3 py-2">
+                <p className="text-sm font-semibold text-white">{col.stage.label}</p>
+                <p className="text-[11px] text-[#A0A0A0]">
+                  {col.deals.length} ·{" "}
+                  {formatBrl(col.deals.reduce((a, d) => a + Number(d.value || 0), 0))}
+                </p>
+              </div>
+              <div className="flex min-h-[120px] flex-1 flex-col gap-2 p-2">
+                {col.deals.length === 0 ? (
+                  <p className="px-1 py-4 text-center text-xs text-[#737373]">
+                    Solte aqui
+                  </p>
+                ) : (
+                  col.deals.map((deal) => (
+                    <DealCard
+                      key={deal.id}
+                      deal={deal}
+                      stages={stages}
+                      onMoveToStage={moveDealToStage}
+                    />
+                  ))
+                )}
+              </div>
+            </StageColumn>
+          ))}
+        </div>
+        <DragOverlay>
+          {activeDeal ? (
+            <div className="w-64 rounded-xl border border-emerald-400/40 bg-[#1a1c24] p-3 shadow-xl">
+              <p className="text-sm font-medium text-white">{activeDeal.title}</p>
+              <p className="mt-1 text-xs text-[#A0A0A0]">
+                {activeDeal.contactName ?? "Sem contato"} · {formatBrl(activeDeal.value)}
               </p>
             </div>
-            <div className="flex flex-1 flex-col gap-2 p-2">
-              {col.deals.length === 0 ? (
-                <p className="px-1 py-4 text-center text-xs text-[#737373]">Vazio</p>
-              ) : (
-                col.deals.map((deal) => (
-                  <div
-                    key={deal.id}
-                    className="rounded-xl border border-emerald-500/15 bg-[#1a1c24] p-3"
-                  >
-                    <Link
-                      href={`/crm/negocios/${deal.id}`}
-                      className="block text-sm font-medium text-white hover:text-emerald-300"
-                    >
-                      {deal.title}
-                    </Link>
-                    <p className="mt-1 text-xs text-[#A0A0A0]">
-                      {deal.contactName ?? "Sem contato"} · {formatBrl(deal.value)}
-                    </p>
-                    <div className="mt-2 flex gap-1">
-                      <button
-                        type="button"
-                        disabled={colIdx === 0}
-                        onClick={() => moveDeal(deal.id, -1)}
-                        className="rounded-md border border-white/10 p-1 text-[#A0A0A0] hover:bg-white/5 disabled:opacity-30"
-                        aria-label="Mover para trás"
-                      >
-                        <ChevronLeft className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={colIdx === columns.length - 1}
-                        onClick={() => moveDeal(deal.id, 1)}
-                        className="rounded-md border border-white/10 p-1 text-[#A0A0A0] hover:bg-white/5 disabled:opacity-30"
-                        aria-label="Mover para frente"
-                      >
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

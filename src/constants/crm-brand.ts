@@ -15,10 +15,9 @@ export const CRM_NAV = [
 
 /** Estágios padrão — freela sites/softwares. */
 export const CRM_DEFAULT_STAGES = [
-  { slug: "lead", label: "Lead", sortOrder: 10, isWon: false, isLost: false },
+  { slug: "lead", label: "A converter", sortOrder: 10, isWon: false, isLost: false },
   { slug: "qualified", label: "Qualificação", sortOrder: 20, isWon: false, isLost: false },
-  { slug: "proposal", label: "Proposta", sortOrder: 30, isWon: false, isLost: false },
-  { slug: "negotiation", label: "Negociação", sortOrder: 40, isWon: false, isLost: false },
-  { slug: "won", label: "Fechado", sortOrder: 50, isWon: true, isLost: false },
-  { slug: "lost", label: "Perdido", sortOrder: 60, isWon: false, isLost: true },
+  { slug: "negotiation", label: "Negociação", sortOrder: 30, isWon: false, isLost: false },
+  { slug: "won", label: "Fechado", sortOrder: 40, isWon: true, isLost: false },
+  { slug: "lost", label: "Perdido", sortOrder: 50, isWon: false, isLost: true },
 ] as const;
