@@ -27,6 +27,13 @@ const ACCENT = {
     chip: "bg-[#0CD4FF]/10 text-[#67E8F9]",
     cta: "bg-gradient-to-r from-[#0CD4FF]/90 to-[#3882F6] text-[#0b0c14]",
   },
+  emerald: {
+    border: "border-emerald-400/30 hover:border-emerald-400/55",
+    glow: "from-emerald-500/15 via-transparent to-[#7C3CFF]/8",
+    icon: "bg-emerald-500/15 text-emerald-300 ring-emerald-400/25",
+    chip: "bg-emerald-500/10 text-emerald-200",
+    cta: "bg-gradient-to-r from-emerald-500 to-[#3882F6] text-white",
+  },
 } as const;
 
 function ProductCard({ product }: { product: OmniProduct }) {
@@ -167,7 +174,7 @@ export function OmniHub() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

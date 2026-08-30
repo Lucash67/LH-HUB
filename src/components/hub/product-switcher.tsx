@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Seletor discreto: produto atual + volta ao OMNI Hub.
- * Usado no chrome do Business e do Schedule.
+ * Usado no chrome do Business, Schedule e CRM.
  */
 export function ProductSwitcher({
   className,
@@ -18,8 +18,9 @@ export function ProductSwitcher({
   compact?: boolean;
 }) {
   const pathname = usePathname();
-  const current =
-    pathname.startsWith("/schedule")
+  const current = pathname.startsWith("/crm")
+    ? OMNI_PRODUCTS.find((p) => p.id === "crm")
+    : pathname.startsWith("/schedule")
       ? OMNI_PRODUCTS.find((p) => p.id === "schedule")
       : OMNI_PRODUCTS.find((p) => p.id === "business");
 

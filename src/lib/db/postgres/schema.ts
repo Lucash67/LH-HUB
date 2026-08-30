@@ -588,3 +588,4 @@ export const periodReviews = pgTable(
 );
 
 export * from "./schema-engine";
+export * from "./schema-crm";
