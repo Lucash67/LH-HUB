@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { CRM_TEMPERATURES } from "@/constants/crm-brand";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
+import { temperatureAfterStageChange } from "@/lib/crm/deal-temperature";
 import { ensureCrmWorkspace } from "@/lib/crm/ensure-workspace";
 import { crmContacts, crmDeals, crmPipelineStages } from "@/lib/db/postgres/schema-crm";
 import { getPostgresDb } from "@/platform/db";
@@ -15,6 +17,7 @@ const dealPatchSchema = z.object({
   contactId: z.string().uuid().optional().nullable(),
   stageId: z.string().uuid().optional(),
   expectedClose: z.string().optional().nullable(),
+  temperature: z.enum(CRM_TEMPERATURES).optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -42,6 +45,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
         contactPhone: crmContacts.phone,
         stageLabel: crmPipelineStages.label,
         stageSlug: crmPipelineStages.slug,
+        temperature: crmDeals.temperature,
         createdAt: crmDeals.createdAt,
         updatedAt: crmDeals.updatedAt,
       })
@@ -85,6 +89,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return apiError("Negócio não encontrado.", 404);
     }
 
+    let nextStageSlug: string | null = null;
     if (parsed.data.stageId) {
       const [stage] = await db
         .select()
@@ -94,6 +99,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       if (!stage || stage.workspaceId !== workspaceId) {
         return apiError("Estágio inválido.", 400);
       }
+      nextStageSlug = stage.slug;
     }
 
     if (parsed.data.contactId) {
@@ -107,6 +113,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       }
     }
 
+    const nextValue =
+      parsed.data.value !== undefined ? parsed.data.value : Number(current.value || 0);
+    const nextTemperature =
+      parsed.data.temperature ??
+      (nextStageSlug
+        ? temperatureAfterStageChange(nextStageSlug, nextValue, current.temperature)
+        : undefined);
+
     const [deal] = await db
       .update(crmDeals)
       .set({
@@ -119,6 +133,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         ...(parsed.data.expectedClose !== undefined
           ? { expectedClose: parsed.data.expectedClose }
           : {}),
+        ...(nextTemperature !== undefined ? { temperature: nextTemperature } : {}),
         updatedAt: new Date(),
       })
       .where(eq(crmDeals.id, id))

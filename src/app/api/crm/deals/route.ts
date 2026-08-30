@@ -2,6 +2,8 @@ import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
+import { CRM_TEMPERATURES } from "@/constants/crm-brand";
+import { defaultTemperatureForStage } from "@/lib/crm/deal-temperature";
 import { ensureCrmWorkspace, listCrmStages } from "@/lib/crm/ensure-workspace";
 import { crmContacts, crmDeals, crmPipelineStages } from "@/lib/db/postgres/schema-crm";
 import { getPostgresDb } from "@/platform/db";
@@ -15,6 +17,7 @@ const dealCreateSchema = z.object({
   contactId: z.string().uuid().optional().nullable(),
   stageId: z.string().uuid().optional(),
   expectedClose: z.string().optional().nullable(),
+  temperature: z.enum(CRM_TEMPERATURES).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -42,6 +45,7 @@ export async function GET(request: NextRequest) {
           contactPhone: crmContacts.phone,
           stageLabel: crmPipelineStages.label,
           stageSlug: crmPipelineStages.slug,
+          temperature: crmDeals.temperature,
           createdAt: crmDeals.createdAt,
           updatedAt: crmDeals.updatedAt,
         })
@@ -101,6 +105,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const stage = stages.find((s) => s.id === stageId);
+    const temperature =
+      parsed.data.temperature ??
+      defaultTemperatureForStage(stage?.slug ?? "lead", parsed.data.value ?? 0);
+
     const db = await getPostgresDb();
     const [deal] = await db
       .insert(crmDeals)
@@ -112,6 +121,7 @@ export async function POST(request: NextRequest) {
         notes: parsed.data.notes || null,
         contactId: parsed.data.contactId || null,
         stageId,
+        temperature,
         expectedClose: parsed.data.expectedClose || null,
       })
       .returning();

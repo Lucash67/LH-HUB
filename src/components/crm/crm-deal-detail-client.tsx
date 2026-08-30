@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { CRM_TEMPERATURES, CRM_TEMPERATURE_META, type CrmTemperature } from "@/constants/crm-brand";
+import { cn } from "@/lib/utils";
 
 type Stage = { id: string; label: string; slug: string };
 type Contact = { id: string; name: string };
@@ -19,6 +21,7 @@ type Deal = {
   contactEmail: string | null;
   contactPhone: string | null;
   stageLabel: string;
+  temperature: CrmTemperature;
 };
 
 export function CrmDealDetailClient({ dealId }: { dealId: string }) {
@@ -35,6 +38,7 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
     stageId: "",
     contactId: "",
     expectedClose: "",
+    temperature: "neutral" as CrmTemperature,
   });
 
   const load = useCallback(async () => {
@@ -59,6 +63,7 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
       stageId: d.stageId,
       contactId: d.contactId ?? "",
       expectedClose: d.expectedClose ?? "",
+      temperature: (CRM_TEMPERATURES.includes(d.temperature) ? d.temperature : "neutral") as CrmTemperature,
     });
   }, [dealId]);
 
@@ -92,6 +97,7 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
           stageId: form.stageId,
           contactId: form.contactId || null,
           expectedClose: form.expectedClose || null,
+          temperature: form.temperature,
         }),
       });
       const data = await res.json();
@@ -130,6 +136,19 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
           {deal.stageLabel}
           {deal.contactName ? ` · ${deal.contactName}` : ""}
         </p>
+        <p className="mt-2">
+          <span
+            className={cn(
+              "inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+              CRM_TEMPERATURE_META[form.temperature]?.badge ?? CRM_TEMPERATURE_META.neutral.badge,
+            )}
+          >
+            {CRM_TEMPERATURE_META[form.temperature]?.label ?? "Neutro"}
+          </span>
+          <span className="ml-2 text-xs text-[#A0A0A0]">
+            {CRM_TEMPERATURE_META[form.temperature]?.hint}
+          </span>
+        </p>
       </div>
 
       {error ? (
@@ -161,6 +180,22 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
             className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-3 py-2 text-sm outline-none focus:border-emerald-500/50"
           />
+        </label>
+        <label className="block text-sm">
+          <span className="mb-1 block text-[#A0A0A0]">Temperatura</span>
+          <select
+            value={form.temperature}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, temperature: e.target.value as CrmTemperature }))
+            }
+            className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-3 py-2 text-sm outline-none focus:border-emerald-500/50"
+          >
+            {CRM_TEMPERATURES.map((t) => (
+              <option key={t} value={t}>
+                {CRM_TEMPERATURE_META[t].label} — {CRM_TEMPERATURE_META[t].hint}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block text-sm">
           <span className="mb-1 block text-[#A0A0A0]">Estágio</span>

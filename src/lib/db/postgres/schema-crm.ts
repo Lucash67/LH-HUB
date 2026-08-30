@@ -116,6 +116,8 @@ export const crmDeals = crmSchema.table(
     value: numeric("value", { precision: 12, scale: 2 }).notNull().default("0"),
     source: text("source"),
     notes: text("notes"),
+    /** alerta | hot | warm | cold | neutral | won | lost */
+    temperature: text("temperature").notNull().default("neutral"),
     expectedClose: date("expected_close"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
