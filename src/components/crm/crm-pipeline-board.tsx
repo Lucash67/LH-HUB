@@ -16,6 +16,7 @@ import {
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus } from "lucide-react";
+import { CRM_STAGE_HINTS } from "@/constants/crm-brand";
 import { cn } from "@/lib/utils";
 
 type Stage = {
@@ -392,6 +393,11 @@ export function CrmPipelineBoard() {
                   {col.deals.length} ·{" "}
                   {formatBrl(col.deals.reduce((a, d) => a + Number(d.value || 0), 0))}
                 </p>
+                {CRM_STAGE_HINTS[col.stage.slug as keyof typeof CRM_STAGE_HINTS] ? (
+                  <p className="mt-1 text-[11px] leading-snug text-[#737373]">
+                    {CRM_STAGE_HINTS[col.stage.slug as keyof typeof CRM_STAGE_HINTS]}
+                  </p>
+                ) : null}
               </div>
               <div className="flex min-h-[120px] flex-1 flex-col gap-2 p-2">
                 {col.deals.length === 0 ? (
