@@ -65,4 +65,61 @@ Observação operacional: revisar o cardápio e definir novas estratégias de ve
 
 ---
 
-_Última atualização: 2026-08-23_
+## 3. Integração Mercado Pago → Registro do Dia (automático)
+
+**Status:** Pausado para retomar depois · intenção confirmada 2026-08-24  
+**Prioridade sugerida:** alta (reduz atrito diário do PIX)
+
+### Contexto
+
+Vendas de salgados por PIX caem no Mercado Pago. Hoje o operador anota nome/valor no rascunho à mão (ex.: OBS 24/08). Objetivo: integrar o MP ao OMNI Business e tornar o fluxo **realmente automático** — sem inventar venda sozinho, mas eliminando a digitação do PIX.
+
+### Visão do fluxo
+
+1. OMNI busca/recebe PIX do dia (API + webhook)
+2. Lista candidata (nome · valor · hora)
+3. Confirmação rápida (sabor, canal Acal/Unifor/Henrique; espécie/fiado/perda continuam manuais)
+4. Grava no Registro do Dia / diário como hoje
+
+### Fases sugeridas
+
+- [ ] Fase 1 — Só leitura + conciliação do dia (bater PIX com rascunho)
+- [ ] Fase 2 — Pré-preencher vendas pagas no Registro do Dia
+- [ ] Fase 3 — Webhook em tempo real (aviso quando cair PIX)
+- [ ] Fase 4 (opcional) — QR/checkout OMNI
+
+### Invariantes
+
+- MP **não cria venda** sem confirmação humana
+- Espécie, fiado, perda e sabor continuam no fluxo operacional atual
+- Credenciais MP só em secrets (nunca no repo)
+
+### Onde consultar
+
+- App: **Ideias** → “Integrar Mercado Pago (PIX automático)”
+- Este arquivo (seção 3)
+- Conversa: intenção de avançar e automatizar de verdade
+
+---
+
+## 4. Continuação OMNI Schedule + Hub (pausado)
+
+**Status:** Pausado para retomar depois · 2026-08-24  
+**Prioridade sugerida:** alta (segundo produto do ecossistema)
+
+### Onde paramos
+
+- Fundação entregue: schema `schedule.*`, shell `/schedule`, Hub `/hub`, onboarding, sessão OMNI única
+- Business preservado; Schedule ainda sem CRUD completo
+
+### Próximo ao retomar
+
+1. Organização · 2. Serviços/equipe/horários · 3. Appointments · 4. Agenda · 5. Booking público · 6. Presets Barbearia
+
+### Onde consultar
+
+- `docs/sprints/future-backlog.md` (esta seção) · código `src/app/schedule/**`
+
+---
+
+_Última atualização: 2026-08-24_
