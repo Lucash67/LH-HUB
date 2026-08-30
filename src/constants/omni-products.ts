@@ -1,10 +1,11 @@
 import {
   BriefcaseBusiness,
   CalendarDays,
+  Kanban,
   type LucideIcon,
 } from "lucide-react";
 
-export type OmniProductId = "business" | "schedule";
+export type OmniProductId = "business" | "schedule" | "crm";
 
 export type OmniProductStatus = "available" | "coming_soon";
 
@@ -19,7 +20,7 @@ export interface OmniProduct {
   status: OmniProductStatus;
   icon: LucideIcon;
   /** Accent hint for card differentiation (same OMNI DNA). */
-  accent: "purple" | "cyan";
+  accent: "purple" | "cyan" | "emerald";
 }
 
 /**
@@ -51,6 +52,18 @@ export const OMNI_PRODUCTS: OmniProduct[] = [
     status: "available",
     icon: CalendarDays,
     accent: "cyan",
+  },
+  {
+    id: "crm",
+    name: "OMNI CRM",
+    shortName: "CRM",
+    description: "Pipeline, leads e conversão de clientes.",
+    highlights: ["Pipeline", "Contatos", "Negócios", "Funil"],
+    href: "/crm",
+    cta: "Acessar CRM",
+    status: "available",
+    icon: Kanban,
+    accent: "emerald",
   },
 ];
 

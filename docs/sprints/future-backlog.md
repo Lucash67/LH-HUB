@@ -65,4 +65,32 @@ Observação operacional: revisar o cardápio e definir novas estratégias de ve
 
 ---
 
-_Última atualização: 2026-08-23_
+## 5. OMNI CRM — próximos passos
+
+**Status:** Fundação + pipeline entregues (schema `crm.*`, kanban, contatos, APIs) · 2026-08-30  
+**Prioridade sugerida:** evoluir após uso real no freela
+
+### Já entregue
+
+- Produto no Hub (`/crm`) com accent emerald, shell e ProductSwitcher
+- Schema isolado `crm.*` (workspaces, contacts, pipeline_stages, deals) — sem misturar com Business
+- Pipeline kanban (mover estágios + criar negócio) + lista de contatos + detalhe do deal
+- Bootstrap `ensureCrmWorkspace` + estágios padrão (Lead → … → Fechado/Perdido)
+
+### Próxima fase
+
+- [ ] Automações / e-mail / WhatsApp
+- [ ] Multi-pipeline e UI de estágios customizados
+- [ ] Relatórios avançados do funil
+- [ ] Ligação opcional com OMNI Business (Salgados) — só se fizer sentido
+- [ ] Equipe / permissões além de owner
+- [ ] Editar nome do workspace em Configurações
+
+### Onde consultar
+
+- App: `/crm`, `/crm/pipeline`, `/crm/contatos`
+- Schema: `src/lib/db/postgres/schema-crm.ts` · migration `0011_crm_schema.sql`
+
+---
+
+_Última atualização: 2026-08-30_
