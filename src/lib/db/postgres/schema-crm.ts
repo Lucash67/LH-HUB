@@ -128,3 +128,29 @@ export const crmDeals = crmSchema.table(
     contactIdx: index("idx_crm_deals_contact").on(t.contactId),
   }),
 );
+
+/** Rascunhos / pitchs agendados para envio manual no dia e hora certos. */
+export const crmMessageDrafts = crmSchema.table(
+  "message_drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => crmWorkspaces.id, { onDelete: "cascade" }),
+    contactId: uuid("contact_id").references(() => crmContacts.id, { onDelete: "set null" }),
+    dealId: uuid("deal_id").references(() => crmDeals.id, { onDelete: "set null" }),
+    kind: text("kind").notNull().default("pitch_inicial"),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+    status: text("status").notNull().default("scheduled"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    wsWhenIdx: index("idx_crm_messages_ws_when").on(t.workspaceId, t.scheduledFor),
+    wsStatusIdx: index("idx_crm_messages_ws_status").on(t.workspaceId, t.status),
+    contactIdx: index("idx_crm_messages_contact").on(t.contactId),
+  }),
+);

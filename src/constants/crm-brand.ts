@@ -9,6 +9,7 @@ export const CRM_COPY = {
 export const CRM_NAV = [
   { href: "/crm", label: "Início", exact: true as const },
   { href: "/crm/norte", label: "Norte", exact: false as const },
+  { href: "/crm/mensagens", label: "Mensagens", exact: false as const },
   { href: "/crm/pipeline", label: "Pipeline", exact: false as const },
   { href: "/crm/contatos", label: "Contatos", exact: false as const },
   { href: "/crm/configuracoes", label: "Configurações", exact: false as const },
@@ -114,3 +115,20 @@ export const CRM_STAGE_HEADER_UI: Record<string, string> = {
   won: "text-emerald-200",
   lost: "text-zinc-300",
 };
+
+export const CRM_MESSAGE_KINDS = [
+  { slug: "pitch_inicial", label: "Pitch inicial" },
+  { slug: "follow_up", label: "Follow-up" },
+  { slug: "qualificacao", label: "Qualificação" },
+  { slug: "carinho", label: "Carinho / cliente" },
+  { slug: "outro", label: "Outro" },
+] as const;
+
+export type CrmMessageKind = (typeof CRM_MESSAGE_KINDS)[number]["slug"];
+export const CRM_MESSAGE_KIND_SLUGS = CRM_MESSAGE_KINDS.map((k) => k.slug) as [
+  CrmMessageKind,
+  ...CrmMessageKind[],
+];
+
+export const CRM_MESSAGE_STATUSES = ["scheduled", "draft", "sent", "cancelled"] as const;
+export type CrmMessageStatus = (typeof CRM_MESSAGE_STATUSES)[number];

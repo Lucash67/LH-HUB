@@ -147,14 +147,24 @@ function ActionCard({
 
 export function CrmNorteClient() {
   const [plan, setPlan] = useState<NortePlan | null>(null);
+  const [dueMessages, setDueMessages] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/crm/norte");
+    const [res, msgRes] = await Promise.all([fetch("/api/crm/norte"), fetch("/api/crm/messages")]);
     const data = await res.json();
+    const msgData = await msgRes.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error ?? "Falha no Norte.");
     setPlan(data.plan);
+    const list = Array.isArray(msgData.messages) ? msgData.messages : [];
+    const now = Date.now();
+    setDueMessages(
+      list.filter(
+        (m: { status?: string; scheduledFor?: string | null }) =>
+          m.status !== "sent" && m.scheduledFor && new Date(m.scheduledFor).getTime() <= now,
+      ).length,
+    );
   }, []);
 
   useEffect(() => {
@@ -214,6 +224,21 @@ export function CrmNorteClient() {
               Não é pra fazer o funil inteiro. É pra saber a próxima jogada — e como
               abordar. {plan ? `Hoje é ${plan.weekday}.` : ""}
             </p>
+            {dueMessages > 0 ? (
+              <Link
+                href="/crm/mensagens"
+                className="mt-3 inline-flex text-sm font-medium text-amber-300 hover:underline"
+              >
+                {dueMessages} pitch{dueMessages > 1 ? "s" : ""} na hora de mandar →
+              </Link>
+            ) : (
+              <Link
+                href="/crm/mensagens"
+                className="mt-3 inline-flex text-sm font-medium text-emerald-300/90 hover:underline"
+              >
+                Abrir rascunhos e agenda de mensagens →
+              </Link>
+            )}
           </div>
         </div>
       </div>
