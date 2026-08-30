@@ -93,4 +93,35 @@ Observação operacional: revisar o cardápio e definir novas estratégias de ve
 
 ---
 
+## 6. OMNI Schedule — próximos passos
+
+**Status:** Fase 1 (fundação) · 2026-08-30  
+**Prioridade sugerida:** seguir o gap analysis aprovado
+
+### Já entregue
+
+- Schema `schedule.*` + migration `0014_schedule_mvp.sql` (org fields, appointment_services, org hours, exceptions scope/kind, public_token)
+- Shell Design Masters (sidebar desktop + bottom nav mobile) + gate `/schedule/onboarding`
+- Health com estado de org/onboarding — GET não cria organização
+- Horários: herança org → profissional (sem cópia física)
+
+### Próxima fase (não iniciar automaticamente)
+
+- [ ] Fase 2 — Onboarding interno (5 passos persistentes, presets opt-in)
+- [ ] Fase 3 — Catálogo (serviços + equipe)
+- [ ] Fase 4 — Engine de disponibilidade
+- [ ] Fase 5 — Clientes
+- [ ] Fase 6 — Appointments + Novo Agendamento
+- [ ] Fase 7 — Agenda
+- [ ] Fase 8 — Home operacional
+- [ ] Fase 9 — Booking público
+- [ ] Fase 10 — Mobile / QA
+
+### Onde consultar
+
+- App: `/schedule`, `/schedule/onboarding`
+- Schema: `src/lib/db/postgres/schema-schedule.ts` · migrations `0010` + `0014`
+
+---
+
 _Última atualização: 2026-08-30_

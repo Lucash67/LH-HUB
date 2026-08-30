@@ -6,6 +6,9 @@
  *
  * Verticalização via `organizations.business_type` (ex.: barber_shop) —
  * entidades genéricas, sem tabelas barber_*.
+ *
+ * Horários: profissional sem working_hours herda organization_working_hours;
+ * com working_hours próprios, faz override. Nunca copiar org → profissional.
  */
 import {
   boolean,
@@ -43,6 +46,10 @@ export const APPOINTMENT_STATUSES = [
 
 export const APPOINTMENT_SOURCES = ["dashboard", "public_booking"] as const;
 
+export const SCHEDULE_EXCEPTION_SCOPES = ["organization", "professional"] as const;
+
+export const SCHEDULE_EXCEPTION_KINDS = ["unavailable", "available"] as const;
+
 /** Estabelecimento / tenant do Schedule (≠ public.businesses do Business). */
 export const scheduleOrganizations = scheduleSchema.table(
   "organizations",
@@ -53,7 +60,13 @@ export const scheduleOrganizations = scheduleSchema.table(
     businessType: text("business_type").notNull().default("barber_shop"),
     timezone: text("timezone").notNull().default("America/Fortaleza"),
     phone: text("phone"),
+    email: text("email"),
+    address: text("address"),
+    description: text("description"),
+    logoUrl: text("logo_url"),
     active: boolean("active").notNull().default(true),
+    onboardingStep: integer("onboarding_step").notNull().default(0),
+    onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -159,11 +172,31 @@ export const scheduleCustomers = scheduleSchema.table(
   },
   (t) => ({
     orgIdx: index("idx_sch_customers_org").on(t.organizationId),
-    orgPhoneIdx: index("idx_sch_customers_org_phone").on(t.organizationId, t.phone),
+    orgPhoneIdx: uniqueIndex("idx_sch_customers_org_phone_unique").on(t.organizationId, t.phone),
   }),
 );
 
-/** Horário recorrente semanal (0=dom … 6=sáb). */
+/**
+ * Horário semanal da organização (base).
+ * Profissional sem linhas em working_hours herda estes intervalos.
+ */
+export const scheduleOrganizationWorkingHours = scheduleSchema.table(
+  "organization_working_hours",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => scheduleOrganizations.id, { onDelete: "cascade" }),
+    weekday: integer("weekday").notNull(),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+  },
+  (t) => ({
+    orgWeekIdx: index("idx_sch_org_hours_org_weekday").on(t.organizationId, t.weekday),
+  }),
+);
+
+/** Horário recorrente semanal do profissional (0=dom … 6=sáb). Override da org. */
 export const scheduleWorkingHours = scheduleSchema.table(
   "working_hours",
   {
@@ -183,7 +216,11 @@ export const scheduleWorkingHours = scheduleSchema.table(
   }),
 );
 
-/** Exceções / bloqueios em data específica. */
+/**
+ * Exceções em data específica.
+ * scope=organization + professional_id null → fechamento/extra da casa.
+ * kind=available → disponibilidade extraordinária.
+ */
 export const scheduleAvailabilityExceptions = scheduleSchema.table(
   "availability_exceptions",
   {
@@ -191,18 +228,19 @@ export const scheduleAvailabilityExceptions = scheduleSchema.table(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => scheduleOrganizations.id, { onDelete: "cascade" }),
-    professionalId: uuid("professional_id")
-      .notNull()
-      .references(() => scheduleProfessionals.id, { onDelete: "cascade" }),
+    professionalId: uuid("professional_id").references(() => scheduleProfessionals.id, {
+      onDelete: "cascade",
+    }),
     exceptionDate: date("exception_date").notNull(),
     startTime: time("start_time"),
     endTime: time("end_time"),
-    /** true = indisponível no intervalo (ou dia inteiro se times null). */
-    isUnavailable: boolean("is_unavailable").notNull().default(true),
+    scope: text("scope").notNull().default("professional"),
+    kind: text("kind").notNull().default("unavailable"),
     reason: text("reason"),
   },
   (t) => ({
     profDateIdx: index("idx_sch_avail_exc_prof_date").on(t.professionalId, t.exceptionDate),
+    orgDateIdx: index("idx_sch_avail_exc_org_date").on(t.organizationId, t.exceptionDate),
   }),
 );
 
@@ -219,16 +257,14 @@ export const scheduleAppointments = scheduleSchema.table(
     professionalId: uuid("professional_id")
       .notNull()
       .references(() => scheduleProfessionals.id, { onDelete: "restrict" }),
-    serviceId: uuid("service_id")
-      .notNull()
-      .references(() => scheduleServices.id, { onDelete: "restrict" }),
     startAt: timestamp("start_at", { withTimezone: true }).notNull(),
     endAt: timestamp("end_at", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("pending"),
-    /** Snapshot do preço no momento do agendamento. */
+    /** Total dos snapshots em appointment_services. */
     price: numeric("price", { precision: 12, scale: 2 }).notNull(),
     notes: text("notes"),
     source: text("source").notNull().default("dashboard"),
+    publicToken: uuid("public_token").notNull().defaultRandom(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -236,5 +272,29 @@ export const scheduleAppointments = scheduleSchema.table(
     orgStartIdx: index("idx_sch_appointments_org_start").on(t.organizationId, t.startAt),
     profStartIdx: index("idx_sch_appointments_prof_start").on(t.professionalId, t.startAt),
     statusIdx: index("idx_sch_appointments_status").on(t.organizationId, t.status),
+    publicTokenIdx: uniqueIndex("idx_sch_appointments_public_token").on(t.publicToken),
+  }),
+);
+
+/** Linhas do atendimento — snapshots para histórico se o serviço for desativado. */
+export const scheduleAppointmentServices = scheduleSchema.table(
+  "appointment_services",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => scheduleOrganizations.id, { onDelete: "cascade" }),
+    appointmentId: uuid("appointment_id")
+      .notNull()
+      .references(() => scheduleAppointments.id, { onDelete: "cascade" }),
+    serviceId: uuid("service_id").references(() => scheduleServices.id, { onDelete: "set null" }),
+    serviceNameSnapshot: text("service_name_snapshot").notNull(),
+    durationMinutesSnapshot: integer("duration_minutes_snapshot").notNull(),
+    priceSnapshot: numeric("price_snapshot", { precision: 12, scale: 2 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => ({
+    apptIdx: index("idx_sch_appt_services_appt").on(t.appointmentId),
+    orgIdx: index("idx_sch_appt_services_org").on(t.organizationId),
   }),
 );

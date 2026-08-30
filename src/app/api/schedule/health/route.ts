@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import postgres from "postgres";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
+import {
+  getScheduleContext,
+  needsScheduleOnboarding,
+  toPublicScheduleOrganization,
+} from "@/lib/schedule/context";
 import { getDatabaseUrl } from "@/platform/db/config";
 
-/** Healthcheck do produto Schedule — confirma schema isolado sem tocar no Business. */
+/** Healthcheck do produto Schedule — schema isolado, sem criar organização. */
 export async function GET() {
   const auth = await requireApiSession();
   if (isAuthFailure(auth)) return auth;
@@ -18,12 +23,16 @@ export async function GET() {
       FROM information_schema.tables
       WHERE table_schema = 'schedule'
     `;
+    const ctx = await getScheduleContext(auth.id);
     return NextResponse.json({
       product: "OMNI Schedule",
       schema: "schedule",
       ready: found.length > 0,
       tables: tables[0]?.n ?? 0,
       userId: auth.id,
+      organization: toPublicScheduleOrganization(ctx.organization),
+      role: ctx.role,
+      needsOnboarding: needsScheduleOnboarding(ctx),
     });
   } catch (error) {
     console.error("Schedule health error:", error);

@@ -5,7 +5,14 @@ import { OMNI_HUB_PATH } from "@/constants/omni-products";
 import { OMNI_ONBOARDING_PATH } from "@/lib/omni-onboarding";
 import { resolvePostLoginPath } from "@/lib/auth/safe-next-path";
 
-const PUBLIC_PREFIXES = ["/login", "/api/auth", OMNI_ONBOARDING_PATH];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/api/auth",
+  OMNI_ONBOARDING_PATH,
+  "/agendar",
+  "/agendamento",
+  "/api/schedule/public",
+];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/_next")) return true;
