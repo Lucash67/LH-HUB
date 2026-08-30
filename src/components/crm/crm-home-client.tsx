@@ -59,8 +59,8 @@ export function CrmHomeClient() {
           {CRM_COPY.homeHint}
         </h1>
         <p className="mt-2 max-w-xl text-sm text-[#A0A0A0]">
-          Funil do seu freela de sites e softwares — contatos e negócios isolados do
-          OMNI Business.
+          Funil do seu freela de sites, fluxos e softwares. O Norte diz a próxima
+          jogada — o pipeline guarda o mapa.
         </p>
       </div>
 
@@ -86,11 +86,17 @@ export function CrmHomeClient() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          href="/crm/pipeline"
+          href="/crm/norte"
           className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-[#3882F6] px-4 py-2.5 text-sm font-semibold text-white"
         >
-          Abrir pipeline
+          Abrir o Norte
           <ArrowRight className="h-4 w-4" />
+        </Link>
+        <Link
+          href="/crm/pipeline"
+          className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-[#F5F6FA] hover:bg-white/10"
+        >
+          Pipeline
         </Link>
         <Link
           href="/crm/contatos"

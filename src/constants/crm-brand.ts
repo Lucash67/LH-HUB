@@ -8,6 +8,7 @@ export const CRM_COPY = {
 
 export const CRM_NAV = [
   { href: "/crm", label: "Início", exact: true as const },
+  { href: "/crm/norte", label: "Norte", exact: false as const },
   { href: "/crm/pipeline", label: "Pipeline", exact: false as const },
   { href: "/crm/contatos", label: "Contatos", exact: false as const },
   { href: "/crm/configuracoes", label: "Configurações", exact: false as const },
