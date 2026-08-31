@@ -11,6 +11,14 @@ type Kpis = {
   wonThisMonth: number;
   wonValueThisMonth: number;
   pipelineValue: number;
+  potentialGains: number;
+  toConvertCount: number;
+  toConvertValue: number;
+  restOpenCount: number;
+  restOpenValue: number;
+  qualifiedCount: number;
+  qualifiedValue: number;
+  negotiationValue: number;
 };
 
 function formatBrl(value: number) {
@@ -82,6 +90,30 @@ export function CrmHomeClient() {
             <p className="mt-2 text-2xl font-bold text-white">{card.value}</p>
           </div>
         ))}
+        <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 sm:col-span-2 lg:col-span-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-200">
+            Ganhos potenciais
+          </p>
+          <p className="mt-2 text-3xl font-bold text-white">
+            {kpis ? formatBrl(kpis.potentialGains) : "…"}
+          </p>
+          <p className="mt-1 text-sm text-[#C8C8C8]">
+            Se fechar tudo que ainda está aberto no funil.
+          </p>
+          {kpis ? (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#A0A0A0]">
+              <span>
+                A converter · {kpis.toConvertCount} · {formatBrl(kpis.toConvertValue)}
+              </span>
+              <span>
+                Qualificação · {kpis.qualifiedCount} · {formatBrl(kpis.qualifiedValue)}
+              </span>
+              <span>
+                Negociação · {kpis.inProposal} · {formatBrl(kpis.negotiationValue)}
+              </span>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -110,11 +142,6 @@ export function CrmHomeClient() {
         >
           Contatos
         </Link>
-        {kpis ? (
-          <span className="text-sm text-[#A0A0A0]">
-            Pipeline aberto: {formatBrl(kpis.pipelineValue)}
-          </span>
-        ) : null}
       </div>
     </div>
   );

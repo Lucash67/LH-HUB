@@ -47,8 +47,17 @@ export async function GET() {
     const wonStageIds = new Set(stages.filter((s) => s.isWon).map((s) => s.id));
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
+    const leadStageIds = new Set(stages.filter((s) => s.slug === "lead").map((s) => s.id));
+    const qualifiedStageIds = new Set(
+      stages.filter((s) => s.slug === "qualified").map((s) => s.id),
+    );
     const openDeals = deals.filter((d) => openStageIds.has(d.stageId));
+    const toConvert = deals.filter((d) => leadStageIds.has(d.stageId));
+    const restOpen = deals.filter(
+      (d) => openStageIds.has(d.stageId) && !leadStageIds.has(d.stageId),
+    );
     const inProposal = deals.filter((d) => proposalStageIds.has(d.stageId));
+    const qualified = deals.filter((d) => qualifiedStageIds.has(d.stageId));
     const wonThisMonth = deals.filter(
       (d) => wonStageIds.has(d.stageId) && new Date(d.updatedAt) >= monthStart,
     );
@@ -66,6 +75,14 @@ export async function GET() {
         wonThisMonth: wonThisMonth.length,
         wonValueThisMonth: sumValue(wonThisMonth),
         pipelineValue: sumValue(openDeals),
+        potentialGains: sumValue(openDeals),
+        toConvertCount: toConvert.length,
+        toConvertValue: sumValue(toConvert),
+        restOpenCount: restOpen.length,
+        restOpenValue: sumValue(restOpen),
+        qualifiedCount: qualified.length,
+        qualifiedValue: sumValue(qualified),
+        negotiationValue: sumValue(inProposal),
       },
     });
   } catch (error) {
