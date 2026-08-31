@@ -48,8 +48,6 @@ type Deal = {
 
 type Column = { stage: Stage; deals: Deal[] };
 
-type Contact = { id: string; name: string };
-
 function formatBrl(value: string | number) {
   return Number(value || 0).toLocaleString("pt-BR", {
     style: "currency",
@@ -187,14 +185,14 @@ function DealCard({
 export function CrmPipelineBoard() {
   const [columns, setColumns] = useState<Column[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState("");
   const [value, setValue] = useState("");
-  const [contactId, setContactId] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactReach, setContactReach] = useState("");
   const [source, setSource] = useState("");
   const [temperature, setTemperature] = useState<CrmTemperature>("cold");
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
@@ -205,14 +203,9 @@ export function CrmPipelineBoard() {
 
   const load = useCallback(async () => {
     setError(null);
-    const [pipeRes, contactsRes] = await Promise.all([
-      fetch("/api/crm/pipeline"),
-      fetch("/api/crm/contacts"),
-    ]);
+    const pipeRes = await fetch("/api/crm/pipeline");
     const pipe = await pipeRes.json();
-    const contactsData = await contactsRes.json();
     if (!pipeRes.ok) throw new Error(pipe.error ?? "Falha no pipeline.");
-    if (!contactsRes.ok) throw new Error(contactsData.error ?? "Falha nos contatos.");
     const mapped: Column[] = (pipe.columns ?? []).map((col: Column) => ({
       ...col,
       deals: (col.deals ?? []).map((d: Deal) => ({
@@ -222,7 +215,6 @@ export function CrmPipelineBoard() {
     }));
     setColumns(mapped);
     setStages(pipe.stages ?? []);
-    setContacts((contactsData.contacts ?? []).map((c: Contact) => ({ id: c.id, name: c.name })));
   }, []);
 
   useEffect(() => {
@@ -337,7 +329,8 @@ export function CrmPipelineBoard() {
         body: JSON.stringify({
           title,
           value: value ? Number(value) : 0,
-          contactId: contactId || null,
+          contactName: contactName || undefined,
+          contactReach: contactReach || undefined,
           source: source || undefined,
           temperature,
         }),
@@ -346,7 +339,8 @@ export function CrmPipelineBoard() {
       if (!res.ok) throw new Error(data.error ?? "Falha ao criar.");
       setTitle("");
       setValue("");
-      setContactId("");
+      setContactName("");
+      setContactReach("");
       setSource("");
       setTemperature("cold");
       setShowForm(false);
@@ -432,19 +426,22 @@ export function CrmPipelineBoard() {
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block text-[#A0A0A0]">Contato</span>
-            <select
-              value={contactId}
-              onChange={(e) => setContactId(e.target.value)}
+            <span className="mb-1 block text-[#A0A0A0]">Nome do lead</span>
+            <input
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-3 py-2 text-sm outline-none focus:border-emerald-500/50"
-            >
-              <option value="">Sem contato</option>
-              {contacts.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Quem é a pessoa"
+            />
+          </label>
+          <label className="block text-sm sm:col-span-2">
+            <span className="mb-1 block text-[#A0A0A0]">Telefone ou link</span>
+            <input
+              value={contactReach}
+              onChange={(e) => setContactReach(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-3 py-2 text-sm outline-none focus:border-emerald-500/50"
+              placeholder="WhatsApp, Instagram, site…"
+            />
           </label>
           <label className="block text-sm">
             <span className="mb-1 block text-[#A0A0A0]">Temperatura</span>

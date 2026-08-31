@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { CRM_TEMPERATURES } from "@/constants/crm-brand";
+import { parseContactReach } from "@/lib/crm/contact-reach";
 import { defaultTemperatureForStage } from "@/lib/crm/deal-temperature";
 import { ensureCrmWorkspace, listCrmStages } from "@/lib/crm/ensure-workspace";
 import { crmContacts, crmDeals, crmPipelineStages } from "@/lib/db/postgres/schema-crm";
@@ -15,6 +16,8 @@ const dealCreateSchema = z.object({
   source: z.string().trim().optional(),
   notes: z.string().optional(),
   contactId: z.string().uuid().optional().nullable(),
+  contactName: z.string().trim().optional(),
+  contactReach: z.string().trim().optional(),
   stageId: z.string().uuid().optional(),
   expectedClose: z.string().optional().nullable(),
   temperature: z.enum(CRM_TEMPERATURES).optional(),
@@ -93,16 +96,33 @@ export async function POST(request: NextRequest) {
       return apiError("Pipeline sem estágios. Recarregue a página.", 400);
     }
 
-    if (parsed.data.contactId) {
+    let contactId = parsed.data.contactId || null;
+    if (contactId) {
       const db = await getPostgresDb();
       const [contact] = await db
         .select({ id: crmContacts.id, workspaceId: crmContacts.workspaceId })
         .from(crmContacts)
-        .where(eq(crmContacts.id, parsed.data.contactId))
+        .where(eq(crmContacts.id, contactId))
         .limit(1);
       if (!contact || contact.workspaceId !== workspaceId) {
         return apiError("Contato inválido.", 400);
       }
+    } else if (parsed.data.contactName || parsed.data.contactReach) {
+      const reach = parseContactReach(parsed.data.contactReach);
+      const name = (parsed.data.contactName || parsed.data.title).trim();
+      const notes = reach.link ? `Link: ${reach.link}` : null;
+      const db = await getPostgresDb();
+      const [created] = await db
+        .insert(crmContacts)
+        .values({
+          workspaceId,
+          name,
+          phone: reach.phone,
+          notes,
+          contactType: "lead",
+        })
+        .returning({ id: crmContacts.id });
+      contactId = created?.id ?? null;
     }
 
     const stage = stages.find((s) => s.id === stageId);
@@ -119,7 +139,7 @@ export async function POST(request: NextRequest) {
         value: String(parsed.data.value ?? 0),
         source: parsed.data.source || null,
         notes: parsed.data.notes || null,
-        contactId: parsed.data.contactId || null,
+        contactId,
         stageId,
         temperature,
         expectedClose: parsed.data.expectedClose || null,
