@@ -131,6 +131,7 @@ export default function BancoLucroPage() {
   const frictionGap = openPendings + lossesImpact;
   const practicalBalance = general ? data.practicalBalance : scopedBalance;
   const cashFlow = general ? data.cashFlow : scopedCashFlow;
+  const ledgerAdjustment = general ? (data.ledgerAdjustment ?? 0) : 0;
 
   return (
     <ModuleShell title="Cofrinho" subtitle="Lucro acumulado da operação">
@@ -218,6 +219,10 @@ export default function BancoLucroPage() {
             <p className="mt-1 text-3xl font-black text-brand-gradient">{formatCurrency(systemBalance)}</p>
             <p className="mt-1 text-xs text-text-muted">
               Lucro dos diários · {general ? data.operationalDays : scopedDays} dias
+              {general && Math.abs(ledgerAdjustment) > 0.001
+                ? ` · ajuste ${formatCurrency(ledgerAdjustment)}`
+                : ""}
+              {general ? " · seg–sex" : ""}
             </p>
           </div>
 

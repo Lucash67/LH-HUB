@@ -7,6 +7,7 @@ import {
 import { listDiaryEntries } from "@/lib/diary-service";
 import { listSettingsMap, upsertSetting } from "@/platform/db/repositories/settings-repository";
 import { isAllBusinesses, SALGADOS_BUSINESS_ID } from "@/lib/business-units";
+import { isOperationalDay } from "@/lib/operational-calendar";
 import { listSalesEnriched } from "@/platform/db/repositories/sale-repository";
 import { SALGADO_UNIT_PRICE } from "@/lib/day-registration/pricing";
 
@@ -14,6 +15,8 @@ import { SALGADO_UNIT_PRICE } from "@/lib/day-registration/pricing";
 export const PROFIT_BANK_UNIT_SALE_PRICE = SALGADO_UNIT_PRICE;
 
 const PRACTICAL_KEY_PREFIX = "profit_bank_practical_";
+/** Ajuste manual do ledger (ex.: alinhar ao extrato sem reescrever diários). */
+const LEDGER_ADJ_KEY_PREFIX = "profit_bank_ledger_adjustment_";
 
 export interface ProfitBankDayCashFlow {
   /** PIX/cartão no seu extrato no próprio dia da venda. */
@@ -92,6 +95,11 @@ export interface ProfitBankView {
   frictionGap: number;
   /** Quebra do dinheiro: PIX próprio × espécie × outros canais × quits. */
   cashFlow: ProfitBankCashFlowTotals;
+  /**
+   * Ajuste de ledger (pode ser negativo) para alinhar ao extrato
+   * sem apagar dias reais — ex.: centavos / atrito residual.
+   */
+  ledgerAdjustment: number;
 }
 
 type EnrichedSale = Awaited<ReturnType<typeof listSalesEnriched>>[number];
@@ -194,17 +202,36 @@ function sumCashFlows(flows: ProfitBankDayCashFlow[]): ProfitBankCashFlowTotals 
   };
 }
 
+function scopeBusinessId(businessId: string): string {
+  return isAllBusinesses(businessId) ? SALGADOS_BUSINESS_ID : businessId;
+}
+
 function practicalKey(businessId: string): string {
   const slug = isAllBusinesses(businessId) ? "all" : businessId;
   return `${PRACTICAL_KEY_PREFIX}${slug}`;
 }
 
+function ledgerAdjKey(businessId: string): string {
+  return `${LEDGER_ADJ_KEY_PREFIX}${scopeBusinessId(businessId)}`;
+}
+
+function parseSettingNumber(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(typeof raw === "string" ? raw.replace(/^"|"$/g, "") : raw);
+  return Number.isFinite(n) ? n : null;
+}
+
 async function readPracticalBalance(businessId: string): Promise<number | null> {
   const map = await listSettingsMap();
   const raw = map[practicalKey(businessId)] ?? map[`${PRACTICAL_KEY_PREFIX}${SALGADOS_BUSINESS_ID}`];
-  if (raw == null || raw === "") return null;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
+  return parseSettingNumber(raw);
+}
+
+async function readLedgerAdjustment(businessId: string): Promise<number> {
+  const map = await listSettingsMap();
+  const raw = map[ledgerAdjKey(businessId)] ?? map[`${LEDGER_ADJ_KEY_PREFIX}${SALGADOS_BUSINESS_ID}`];
+  const n = parseSettingNumber(raw);
+  return n == null ? 0 : Math.round(n * 100) / 100;
 }
 
 /** Atualiza o saldo prático (extrato) do cofrinho. */
@@ -213,18 +240,33 @@ export async function setPracticalProfitBankBalance(
   amount: number,
 ): Promise<void> {
   const key = practicalKey(isAllBusinesses(businessId) ? SALGADOS_BUSINESS_ID : businessId);
-  await upsertSetting(key, String(Math.round(amount * 100) / 100));
+  // Preferir chave canônica por slug do negócio (salgados), não "all".
+  const canonical = `${PRACTICAL_KEY_PREFIX}${scopeBusinessId(businessId)}`;
+  await upsertSetting(canonical, String(Math.round(amount * 100) / 100));
+  if (key !== canonical) {
+    await upsertSetting(key, String(Math.round(amount * 100) / 100));
+  }
+}
+
+export async function setProfitBankLedgerAdjustment(
+  businessId: string,
+  amount: number,
+): Promise<void> {
+  await upsertSetting(ledgerAdjKey(businessId), String(Math.round(amount * 100) / 100));
 }
 
 export async function getProfitBankView(businessId: string): Promise<ProfitBankView> {
-  const [metricsMap, diaryEntries, sales, practicalStored] = await Promise.all([
+  const calId = scopeBusinessId(businessId);
+  const [metricsMap, diaryEntries, sales, practicalStored, ledgerAdjustment] = await Promise.all([
     buildOperationalDayMetrics(businessId),
     listDiaryEntries(businessId).catch(() => []),
     listSalesEnriched(businessId).catch(() => []),
     readPracticalBalance(businessId),
+    readLedgerAdjustment(businessId),
   ]);
 
-  const rows = sortOperationalDays(metricsMap);
+  // Cofrinho Salgados: só dias operacionais (seg–sex). Sábado/domingo (ex.: 08/08 só pai) ficam fora.
+  const rows = sortOperationalDays(metricsMap).filter((row) => isOperationalDay(row.date, calId));
   const diaryByDate = new Map(diaryEntries.map((e) => [e.date, e]));
   const cashFlowByDate = buildCashFlowByDate(sales);
 
@@ -263,6 +305,13 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
     };
   });
 
+  // Aplica ajuste de ledger no saldo acumulado (último ponto + totais).
+  if (ledgerAdjustment !== 0 && history.length > 0) {
+    const last = history[history.length - 1]!;
+    last.balance = Math.round((last.balance + ledgerAdjustment) * 100) / 100;
+  }
+  balance = Math.round((balance + ledgerAdjustment) * 100) / 100;
+
   // Dias só com quitação (sem operação no diário) ainda entram no total de quits.
   const historyDates = new Set(history.map((d) => d.date));
   const orphanFlows: ProfitBankDayCashFlow[] = [];
@@ -288,7 +337,7 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
 
   const lossesImpact = lossesUnits * PROFIT_BANK_UNIT_SALE_PRICE;
   const totalRevenue = history.reduce((s, d) => s + d.revenue, 0);
-  const totalProfit = history.reduce((s, d) => s + d.profit, 0);
+  const totalProfit = Math.round((history.reduce((s, d) => s + d.profit, 0) + ledgerAdjustment) * 100) / 100;
   const totalCosts = history.reduce((s, d) => s + d.costs, 0);
   const theoreticalBalance = balance + openPendings + lossesImpact;
   const frictionGap = openPendings + lossesImpact;
@@ -315,5 +364,6 @@ export async function getProfitBankView(businessId: string): Promise<ProfitBankV
     theoreticalBalance,
     frictionGap,
     cashFlow,
+    ledgerAdjustment,
   };
 }
