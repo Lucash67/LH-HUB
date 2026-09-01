@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { ensureCrmWorkspace } from "@/lib/crm/ensure-workspace";
-import { crmContacts } from "@/lib/db/postgres/schema-crm";
+import { crmContacts, crmDeals } from "@/lib/db/postgres/schema-crm";
 import { getPostgresDb } from "@/platform/db";
 import { apiError } from "@/shared/api-messages";
 
@@ -27,7 +27,27 @@ export async function GET() {
       .from(crmContacts)
       .where(eq(crmContacts.workspaceId, workspaceId))
       .orderBy(desc(crmContacts.updatedAt));
-    return NextResponse.json({ contacts });
+    const deals = await db
+      .select({
+        contactId: crmDeals.contactId,
+        serviceUrl: crmDeals.serviceUrl,
+        updatedAt: crmDeals.updatedAt,
+      })
+      .from(crmDeals)
+      .where(eq(crmDeals.workspaceId, workspaceId))
+      .orderBy(desc(crmDeals.updatedAt));
+    const urlByContact = new Map<string, string>();
+    for (const deal of deals) {
+      if (deal.contactId && deal.serviceUrl && !urlByContact.has(deal.contactId)) {
+        urlByContact.set(deal.contactId, deal.serviceUrl);
+      }
+    }
+    return NextResponse.json({
+      contacts: contacts.map((c) => ({
+        ...c,
+        serviceUrl: urlByContact.get(c.id) ?? null,
+      })),
+    });
   } catch (error) {
     console.error("CRM contacts GET error:", error);
     return apiError("Não foi possível carregar os contatos.");

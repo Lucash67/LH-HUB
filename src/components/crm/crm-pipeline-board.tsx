@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus } from "lucide-react";
+import { GripVertical, Plus, ExternalLink } from "lucide-react";
 import {
   CRM_STAGE_COLUMN_UI,
   CRM_STAGE_HEADER_UI,
@@ -44,6 +44,7 @@ type Deal = {
   contactName: string | null;
   source: string | null;
   temperature: CrmTemperature;
+  serviceUrl: string | null;
 };
 
 type Column = { stage: Stage; deals: Deal[] };
@@ -145,6 +146,17 @@ function DealCard({
             {deal.contactName ?? "Sem contato"} · {formatBrl(deal.value)}
           </p>
           <p className="mt-1 text-[11px] leading-snug text-[#C8C8C8]">{meta.hint}</p>
+          {deal.serviceUrl ? (
+            <a
+              href={deal.serviceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 hover:text-emerald-200"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Abrir site
+            </a>
+          ) : null}
           <label className="mt-2 block">
             <span className="sr-only">Temperatura</span>
             <select
@@ -194,6 +206,7 @@ export function CrmPipelineBoard() {
   const [contactName, setContactName] = useState("");
   const [contactReach, setContactReach] = useState("");
   const [source, setSource] = useState("");
+  const [serviceUrl, setServiceUrl] = useState("");
   const [temperature, setTemperature] = useState<CrmTemperature>("cold");
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
 
@@ -332,6 +345,7 @@ export function CrmPipelineBoard() {
           contactName: contactName || undefined,
           contactReach: contactReach || undefined,
           source: source || undefined,
+          serviceUrl: serviceUrl || undefined,
           temperature,
         }),
       });
@@ -342,6 +356,7 @@ export function CrmPipelineBoard() {
       setContactName("");
       setContactReach("");
       setSource("");
+      setServiceUrl("");
       setTemperature("cold");
       setShowForm(false);
       await load();
@@ -457,7 +472,16 @@ export function CrmPipelineBoard() {
               ))}
             </select>
           </label>
-          <label className="block text-sm">
+          <label className="block text-sm sm:col-span-2">
+            <span className="mb-1 block text-[#A0A0A0]">Link do site / serviço</span>
+            <input
+              value={serviceUrl}
+              onChange={(e) => setServiceUrl(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-3 py-2 text-sm outline-none focus:border-emerald-500/50"
+              placeholder="https://cliente.vercel.app"
+            />
+          </label>
+          <label className="block text-sm sm:col-span-2">
             <span className="mb-1 block text-[#A0A0A0]">Origem</span>
             <input
               value={source}

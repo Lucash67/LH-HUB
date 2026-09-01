@@ -5,6 +5,7 @@ import { CRM_TEMPERATURES } from "@/constants/crm-brand";
 import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session";
 import { temperatureAfterStageChange } from "@/lib/crm/deal-temperature";
 import { ensureCrmWorkspace } from "@/lib/crm/ensure-workspace";
+import { normalizeServiceUrl } from "@/lib/crm/service-url";
 import { crmContacts, crmDeals, crmPipelineStages } from "@/lib/db/postgres/schema-crm";
 import { getPostgresDb } from "@/platform/db";
 import { apiError } from "@/shared/api-messages";
@@ -18,6 +19,7 @@ const dealPatchSchema = z.object({
   stageId: z.string().uuid().optional(),
   expectedClose: z.string().optional().nullable(),
   temperature: z.enum(CRM_TEMPERATURES).optional(),
+  serviceUrl: z.string().trim().optional().nullable(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -46,6 +48,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
         stageLabel: crmPipelineStages.label,
         stageSlug: crmPipelineStages.slug,
         temperature: crmDeals.temperature,
+        serviceUrl: crmDeals.serviceUrl,
         createdAt: crmDeals.createdAt,
         updatedAt: crmDeals.updatedAt,
       })
@@ -132,6 +135,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         ...(parsed.data.stageId !== undefined ? { stageId: parsed.data.stageId } : {}),
         ...(parsed.data.expectedClose !== undefined
           ? { expectedClose: parsed.data.expectedClose }
+          : {}),
+        ...(parsed.data.serviceUrl !== undefined
+          ? { serviceUrl: normalizeServiceUrl(parsed.data.serviceUrl) }
           : {}),
         ...(nextTemperature !== undefined ? { temperature: nextTemperature } : {}),
         updatedAt: new Date(),

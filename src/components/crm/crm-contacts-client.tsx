@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { ExternalLink, Plus } from "lucide-react";
 
 type Contact = {
   id: string;
@@ -11,6 +11,7 @@ type Contact = {
   company: string | null;
   contactType: string;
   notes: string | null;
+  serviceUrl: string | null;
 };
 
 const emptyForm = {
@@ -215,6 +216,7 @@ export function CrmContactsClient() {
             <tr>
               <th className="px-3 py-2 font-semibold">Nome</th>
               <th className="hidden px-3 py-2 font-semibold sm:table-cell">Contato</th>
+              <th className="hidden px-3 py-2 font-semibold md:table-cell">Site</th>
               <th className="px-3 py-2 font-semibold">Tipo</th>
               <th className="px-3 py-2 font-semibold" />
             </tr>
@@ -222,7 +224,7 @@ export function CrmContactsClient() {
           <tbody>
             {contacts.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-8 text-center text-[#737373]">
+                <td colSpan={5} className="px-3 py-8 text-center text-[#737373]">
                   Nenhum contato ainda. Crie o primeiro lead.
                 </td>
               </tr>
@@ -238,6 +240,21 @@ export function CrmContactsClient() {
                   <td className="hidden px-3 py-3 text-[#A0A0A0] sm:table-cell">
                     <p>{c.email || "—"}</p>
                     <p className="text-xs">{c.phone || ""}</p>
+                  </td>
+                  <td className="hidden px-3 py-3 md:table-cell">
+                    {c.serviceUrl ? (
+                      <a
+                        href={c.serviceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Abrir
+                      </a>
+                    ) : (
+                      <span className="text-xs text-[#737373]">—</span>
+                    )}
                   </td>
                   <td className="px-3 py-3">
                     <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-300">

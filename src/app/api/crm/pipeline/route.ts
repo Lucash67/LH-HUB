@@ -25,6 +25,7 @@ export async function GET() {
         contactId: crmDeals.contactId,
         contactName: crmContacts.name,
         temperature: crmDeals.temperature,
+        serviceUrl: crmDeals.serviceUrl,
         createdAt: crmDeals.createdAt,
         updatedAt: crmDeals.updatedAt,
       })

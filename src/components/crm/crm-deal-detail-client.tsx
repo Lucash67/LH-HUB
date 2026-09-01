@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { CRM_TEMPERATURES, CRM_TEMPERATURE_META, type CrmTemperature } from "@/constants/crm-brand";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ type Deal = {
   contactPhone: string | null;
   stageLabel: string;
   temperature: CrmTemperature;
+  serviceUrl: string | null;
 };
 
 export function CrmDealDetailClient({ dealId }: { dealId: string }) {
@@ -39,6 +41,7 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
     contactId: "",
     expectedClose: "",
     temperature: "neutral" as CrmTemperature,
+    serviceUrl: "",
   });
 
   const load = useCallback(async () => {
@@ -64,6 +67,7 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
       contactId: d.contactId ?? "",
       expectedClose: d.expectedClose ?? "",
       temperature: (CRM_TEMPERATURES.includes(d.temperature) ? d.temperature : "neutral") as CrmTemperature,
+      serviceUrl: d.serviceUrl ?? "",
     });
   }, [dealId]);
 
@@ -98,6 +102,7 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
           contactId: form.contactId || null,
           expectedClose: form.expectedClose || null,
           temperature: form.temperature,
+          serviceUrl: form.serviceUrl || null,
         }),
       });
       const data = await res.json();
@@ -149,6 +154,17 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
             {CRM_TEMPERATURE_META[form.temperature]?.hint}
           </span>
         </p>
+        {form.serviceUrl ? (
+          <a
+            href={form.serviceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-500/90 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Abrir site / serviço
+          </a>
+        ) : null}
       </div>
 
       {error ? (
@@ -233,6 +249,15 @@ export function CrmDealDetailClient({ dealId }: { dealId: string }) {
             value={form.expectedClose}
             onChange={(e) => setForm((f) => ({ ...f, expectedClose: e.target.value }))}
             className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-3 py-2 text-sm outline-none focus:border-emerald-500/50"
+          />
+        </label>
+        <label className="block text-sm sm:col-span-2">
+          <span className="mb-1 block text-[#A0A0A0]">Link do site / serviço</span>
+          <input
+            value={form.serviceUrl}
+            onChange={(e) => setForm((f) => ({ ...f, serviceUrl: e.target.value }))}
+            className="w-full rounded-lg border border-white/10 bg-[#0b0c14] px-3 py-2 text-sm outline-none focus:border-emerald-500/50"
+            placeholder="https://cliente.vercel.app"
           />
         </label>
         <label className="block text-sm sm:col-span-2">

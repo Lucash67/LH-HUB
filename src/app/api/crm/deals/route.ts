@@ -6,6 +6,7 @@ import { CRM_TEMPERATURES } from "@/constants/crm-brand";
 import { parseContactReach } from "@/lib/crm/contact-reach";
 import { defaultTemperatureForStage } from "@/lib/crm/deal-temperature";
 import { ensureCrmWorkspace, listCrmStages } from "@/lib/crm/ensure-workspace";
+import { normalizeServiceUrl } from "@/lib/crm/service-url";
 import { crmContacts, crmDeals, crmPipelineStages } from "@/lib/db/postgres/schema-crm";
 import { getPostgresDb } from "@/platform/db";
 import { apiError } from "@/shared/api-messages";
@@ -21,6 +22,7 @@ const dealCreateSchema = z.object({
   stageId: z.string().uuid().optional(),
   expectedClose: z.string().optional().nullable(),
   temperature: z.enum(CRM_TEMPERATURES).optional(),
+  serviceUrl: z.string().trim().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -49,6 +51,7 @@ export async function GET(request: NextRequest) {
           stageLabel: crmPipelineStages.label,
           stageSlug: crmPipelineStages.slug,
           temperature: crmDeals.temperature,
+          serviceUrl: crmDeals.serviceUrl,
           createdAt: crmDeals.createdAt,
           updatedAt: crmDeals.updatedAt,
         })
@@ -142,6 +145,7 @@ export async function POST(request: NextRequest) {
         contactId,
         stageId,
         temperature,
+        serviceUrl: normalizeServiceUrl(parsed.data.serviceUrl),
         expectedClose: parsed.data.expectedClose || null,
       })
       .returning();

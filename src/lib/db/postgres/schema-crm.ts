@@ -118,6 +118,8 @@ export const crmDeals = crmSchema.table(
     notes: text("notes"),
     /** alerta | hot | warm | cold | neutral | won | lost */
     temperature: text("temperature").notNull().default("neutral"),
+    /** URL do site/serviço entregue ou em construção. */
+    serviceUrl: text("service_url"),
     expectedClose: date("expected_close"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
