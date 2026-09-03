@@ -161,9 +161,13 @@ export default function DashboardPage() {
           itemsSold={metrics.itemsSoldToday}
           uniqueBuyers={metrics.customersToday}
           profitUnitsInsight={metrics.profitUnitsInsight}
-          flavors={charts.flavors}
+          topClients={charts.topClients}
           payments={charts.payments}
-          copy={scopeCopy}
+          copy={{
+            ...scopeCopy,
+            topClientsSubtitle: payload.data.topClientsSubtitle,
+            topClientsValueSuffix: payload.data.isGeneralView ? "compras" : "na semana",
+          }}
         />
       </div>
     </ModuleShell>

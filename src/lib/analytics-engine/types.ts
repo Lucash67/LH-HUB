@@ -39,6 +39,8 @@ export interface PaymentBreakdown {
   pix: number;
   card: number;
   cash: number;
+  /** Valor em aberto (fiado / pendente / parcial não recebida). */
+  fiado: number;
 }
 
 export interface PeriodMetrics {

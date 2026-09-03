@@ -18,7 +18,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { HUB_COLORS } from "@/constants/hub-brand";
 
-const COLORS = [HUB_COLORS.purple, HUB_COLORS.cyan, HUB_COLORS.blue, "#22C55E"];
+const COLORS = [HUB_COLORS.purple, HUB_COLORS.cyan, "#22C55E", "#F59E0B", HUB_COLORS.blue];
 const BRAND_PRIMARY = HUB_COLORS.purple;
 const BRAND_SECONDARY = HUB_COLORS.cyan;
 
@@ -210,36 +210,45 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
   );
 }
 
-interface TopProductsProps {
-  products: Array<{ label: string; value: number }>;
+interface TopClientsProps {
+  clients: Array<{ label: string; value: number }>;
   subtitle?: string;
+  /** Ex.: "na semana" — aparece ao lado da contagem. */
+  valueSuffix?: string;
 }
 
-export function TopProductsCard({ products, subtitle = "Este mês" }: TopProductsProps) {
-  const max = Math.max(...products.map((p) => p.value), 1);
+/** Ranking de clientes por vezes compradas (tickets). */
+export function TopClientsCard({
+  clients,
+  subtitle = "Este mês",
+  valueSuffix = "compras",
+}: TopClientsProps) {
+  const max = Math.max(...clients.map((c) => c.value), 1);
 
   return (
     <div className="card-surface p-4 sm:p-6">
       <div className="mb-4 sm:mb-6">
-        <h3 className="text-sm font-semibold text-text-primary">Top produtos</h3>
+        <h3 className="text-sm font-semibold text-text-primary">Top clientes</h3>
         <p className="mt-0.5 text-xs text-text-muted">{subtitle}</p>
       </div>
       <div className="space-y-4">
-        {products.length === 0 ? (
+        {clients.length === 0 ? (
           <p className="text-sm text-text-muted">Sem vendas no período</p>
         ) : (
-          products.slice(0, 5).map((product, i) => (
-            <div key={product.label}>
-              <div className="mb-1.5 flex items-center justify-between text-sm">
-                <span className="text-text-secondary">
-                  {i + 1}. {product.label}
+          clients.slice(0, 5).map((client, i) => (
+            <div key={client.label}>
+              <div className="mb-1.5 flex items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate text-text-secondary">
+                  {i + 1}. {client.label}
                 </span>
-                <span className="font-medium text-text-primary">{product.value}</span>
+                <span className="shrink-0 font-medium text-text-primary">
+                  {client.value} {valueSuffix}
+                </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-surface-elevated">
                 <div
                   className="h-full rounded-full bg-brand-gradient transition-all duration-500"
-                  style={{ width: `${(product.value / max) * 100}%` }}
+                  style={{ width: `${(client.value / max) * 100}%` }}
                 />
               </div>
             </div>

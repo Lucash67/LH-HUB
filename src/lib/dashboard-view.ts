@@ -2,7 +2,6 @@ import { format, parseISO, subDays, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getMonthRange, getWeekRange, formatCurrency } from "@/lib/utils";
 import {
-  canonicalSalgadosFlavor,
   isSaleExcludedFromMix,
 } from "@/lib/salgados-flavors";
 import {
@@ -159,12 +158,13 @@ export interface DashboardChartPoint {
 
 export interface DashboardViewData {
   metrics: DashboardViewMetrics;
-  charts: {
-    revenue: DashboardChartPoint[];
-    sales: DashboardChartPoint[];
-    payments: DashboardChartPoint[];
-    flavors: DashboardChartPoint[];
-  };
+charts: {
+      revenue: DashboardChartPoint[];
+      sales: DashboardChartPoint[];
+      payments: DashboardChartPoint[];
+      /** Top clientes por vezes compradas (no dia: base = quem comprou no dia, ranking = semana). */
+      topClients: DashboardChartPoint[];
+    };
   isGeneralView: boolean;
   profitGrowthVsYesterday: number;
   operationResult: OperationResult;
@@ -173,7 +173,7 @@ export interface DashboardViewData {
   alerts: DashboardActionableAlert[];
   priorities: DashboardPriority[];
   customerInsight: CustomerDayInsight;
-  topProductsSubtitle: string;
+  topClientsSubtitle: string;
   dayComparison: DayComparisonContext;
 }
 
@@ -288,19 +288,47 @@ function allOperationalDates(sales: DashboardSale[]): string[] {
   return Array.from(new Set(sales.map((s) => s.date))).sort();
 }
 
-function flavorBreakdown(salesList: DashboardSale[]): DashboardChartPoint[] {
-  const counts = new Map<string, number>();
-  for (const sale of salesList) {
+/**
+ * Top clientes: quem comprou no dia filtrado, ordenados pela qtde de compras (tickets) na semana.
+ * Em visão geral/período, `seedSales` = `scopeSales` → ranking do próprio período.
+ */
+function topClientsPurchaseCounts(
+  seedSales: DashboardSale[],
+  scopeSales: DashboardSale[],
+  limit = 5,
+): DashboardChartPoint[] {
+  const seedIds = new Set<string>();
+  for (const sale of seedSales) {
+    if (!sale.clientId || !sale.client?.name) continue;
+    if (isUnknownClientName(sale.client.name)) continue;
     if (isSaleExcludedFromMix(sale)) continue;
-    for (const item of sale.items ?? []) {
-      const flavor = canonicalSalgadosFlavor(item.product?.name ?? "");
-      if (!flavor) continue;
-      counts.set(flavor, (counts.get(flavor) ?? 0) + item.quantity);
-    }
+    seedIds.add(sale.clientId);
   }
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, value]) => ({ label, value }));
+  if (seedIds.size === 0) return [];
+
+  const counts = new Map<string, { name: string; count: number }>();
+  for (const sale of scopeSales) {
+    if (!sale.clientId || !seedIds.has(sale.clientId)) continue;
+    if (!sale.client?.name || isUnknownClientName(sale.client.name)) continue;
+    if (isSaleExcludedFromMix(sale)) continue;
+    const row = counts.get(sale.clientId);
+    if (row) row.count += 1;
+    else counts.set(sale.clientId, { name: sale.client.name, count: 1 });
+  }
+
+  return Array.from(counts.values())
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pt-BR"))
+    .slice(0, limit)
+    .map(({ name, count }) => ({ label: name, value: count }));
+}
+
+function paymentChartPoints(payments: ReturnType<typeof paymentBreakdown>): DashboardChartPoint[] {
+  return [
+    { label: "PIX", value: payments.pix },
+    { label: "Dinheiro", value: payments.cash },
+    { label: "Fiado", value: payments.fiado },
+    { label: "Cartão", value: payments.card },
+  ];
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -763,12 +791,8 @@ function buildGeneralDashboardView(
     charts: {
       revenue: charts.revenue,
       sales: charts.sales,
-      payments: [
-        { label: "PIX", value: payments.pix },
-        { label: "Cartão", value: payments.card },
-        { label: "Dinheiro", value: payments.cash },
-      ],
-      flavors: flavorBreakdown(sales),
+      payments: paymentChartPoints(payments),
+      topClients: topClientsPurchaseCounts(sales, sales),
     },
     profitGrowthVsYesterday: 0,
     operationResult: buildOperationResult(
@@ -793,7 +817,7 @@ function buildGeneralDashboardView(
       topBuyer: null,
       summary: buyersLabel,
     },
-    topProductsSubtitle: scopeLabel,
+    topClientsSubtitle: scopeLabel,
     dayComparison: { enabled: false, label: "", isNonOperationalDay: false },
   };
 }
@@ -1006,12 +1030,11 @@ export function buildDashboardView(
     charts: {
       revenue: revenueChart,
       sales: salesChart,
-      payments: [
-        { label: "PIX", value: payments.pix },
-        { label: "Cartão", value: payments.card },
-        { label: "Dinheiro", value: payments.cash },
-      ],
-      flavors: flavorBreakdown(daySales),
+      payments: paymentChartPoints(payments),
+      topClients: topClientsPurchaseCounts(
+        daySales,
+        sales.filter((s) => s.date >= weekStart && s.date <= weekEnd),
+      ),
     },
     profitGrowthVsYesterday: dayComparison.enabled
       ? computeGrowth(profitToday, profitCompare)
@@ -1022,7 +1045,9 @@ export function buildDashboardView(
     alerts: buildActionableAlerts(daySales, diary),
     priorities: buildPriorities(diary),
     customerInsight: buildCustomerDayInsight(daySales),
-    topProductsSubtitle: isViewingTodayContext(context) ? "Hoje" : format(anchor, "dd/MM/yyyy"),
+    topClientsSubtitle: isViewingTodayContext(context)
+      ? "Hoje · compras na semana"
+      : `${format(anchor, "dd/MM/yyyy")} · compras na semana`,
     dayComparison,
   };
 }

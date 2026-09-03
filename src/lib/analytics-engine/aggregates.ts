@@ -66,12 +66,20 @@ export function paymentBreakdown(
     paymentStatus?: string | null;
   }>,
 ): PaymentBreakdown {
-  const amount = (s: (typeof sales)[number]) => saleReceivedAmount(s);
-  return {
-    pix: sales.filter((s) => s.paymentMethod === "pix").reduce((s, v) => s + amount(v), 0),
-    card: sales.filter((s) => s.paymentMethod === "card").reduce((s, v) => s + amount(v), 0),
-    cash: sales.filter((s) => s.paymentMethod === "cash").reduce((s, v) => s + amount(v), 0),
-  };
+  const out: PaymentBreakdown = { pix: 0, card: 0, cash: 0, fiado: 0 };
+
+  for (const sale of sales) {
+    const received = saleReceivedAmount(sale);
+    const open = Math.max(0, sale.totalAmount - received);
+    if (open > 0) out.fiado += open;
+    if (received <= 0) continue;
+
+    if (sale.paymentMethod === "card") out.card += received;
+    else if (sale.paymentMethod === "cash") out.cash += received;
+    else out.pix += received; // pix (default) e métodos desconhecidos
+  }
+
+  return out;
 }
 
 export function itemsSoldFromEmbedded(sales: Array<{ items?: Array<{ quantity: number }> }>): number {

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { DollarSign, Package, Target, TrendingUp, Users } from "lucide-react";
 import { PulseMetric } from "@/components/dashboard/pulse-metric";
-import { TopProductsCard, ChartCard } from "@/components/charts/chart-card";
+import { TopClientsCard, ChartCard } from "@/components/charts/chart-card";
 import { formatCurrency } from "@/lib/utils";
 
 export interface DashboardScopeCopy {
@@ -15,6 +15,9 @@ export interface DashboardScopeCopy {
   buyersSubtext: string;
   chartsSubtitle: string;
   profitPhrase: string;
+  /** Subtítulo do ranking de clientes (ex.: compras na semana). */
+  topClientsSubtitle?: string;
+  topClientsValueSuffix?: string;
 }
 
 interface DashboardGeneralViewProps {
@@ -26,7 +29,7 @@ interface DashboardGeneralViewProps {
   itemsSold: number;
   uniqueBuyers: number;
   profitUnitsInsight?: string | null;
-  flavors: Array<{ label: string; value: number }>;
+  topClients: Array<{ label: string; value: number }>;
   payments: Array<{ label: string; value: number }>;
   copy?: DashboardScopeCopy;
 }
@@ -51,11 +54,13 @@ export function DashboardGeneralView({
   itemsSold,
   uniqueBuyers,
   profitUnitsInsight = null,
-  flavors,
+  topClients,
   payments,
   copy = DEFAULT_COPY,
 }: DashboardGeneralViewProps) {
   const showUnitsGoal = unitsGoalTarget > 0;
+  const clientsSubtitle = copy.topClientsSubtitle ?? copy.chartsSubtitle;
+  const clientsSuffix = copy.topClientsValueSuffix ?? "compras";
 
   return (
     <div className="space-y-5">
@@ -143,7 +148,11 @@ export function DashboardGeneralView({
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <TopProductsCard products={flavors} subtitle={copy.chartsSubtitle} />
+        <TopClientsCard
+          clients={topClients}
+          subtitle={clientsSubtitle}
+          valueSuffix={clientsSuffix}
+        />
         <ChartCard
           data={payments.filter((p) => p.value > 0)}
           title="Como pagaram"
