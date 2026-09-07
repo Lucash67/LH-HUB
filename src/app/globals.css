@@ -172,7 +172,10 @@
   }
 
   .bg-brand-gradient {
+    background-color: #7c3cff;
     background-image: var(--brand-gradient);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
   }
 
   .dashboard-mesh {
