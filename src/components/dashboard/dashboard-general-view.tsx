@@ -3,8 +3,10 @@
 import { motion } from "framer-motion";
 import { DollarSign, Package, Target, TrendingUp, Users } from "lucide-react";
 import { PulseMetric } from "@/components/dashboard/pulse-metric";
+import { WeekUnitsTableCard } from "@/components/dashboard/week-units-table-card";
 import { TopClientsCard, ChartCard } from "@/components/charts/chart-card";
 import { formatCurrency } from "@/lib/utils";
+import type { WeekUnitsPanel } from "@/lib/dashboard-view";
 
 export interface DashboardScopeCopy {
   heroEyebrow: string;
@@ -31,6 +33,7 @@ interface DashboardGeneralViewProps {
   profitUnitsInsight?: string | null;
   topClients: Array<{ label: string; value: number }>;
   payments: Array<{ label: string; value: number }>;
+  weekUnits: WeekUnitsPanel;
   copy?: DashboardScopeCopy;
 }
 
@@ -56,6 +59,7 @@ export function DashboardGeneralView({
   profitUnitsInsight = null,
   topClients,
   payments,
+  weekUnits,
   copy = DEFAULT_COPY,
 }: DashboardGeneralViewProps) {
   const showUnitsGoal = unitsGoalTarget > 0;
@@ -153,12 +157,17 @@ export function DashboardGeneralView({
           subtitle={clientsSubtitle}
           valueSuffix={clientsSuffix}
         />
+        <WeekUnitsTableCard panel={weekUnits} />
+      </div>
+
+      <div className="max-w-md">
         <ChartCard
           data={payments.filter((p) => p.value > 0)}
           title="Como pagaram"
           subtitle={copy.chartsSubtitle}
           type="pie"
-          height={220}
+          height={140}
+          compact
         />
       </div>
     </div>

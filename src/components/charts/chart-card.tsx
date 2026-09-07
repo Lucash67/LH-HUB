@@ -29,6 +29,8 @@ interface ChartCardProps {
   type?: "area" | "bar" | "pie";
   height?: number;
   showLegend?: boolean;
+  /** Pie mais compacto (menos destaque visual). */
+  compact?: boolean;
 }
 
 function formatTooltipValue(entry: { value: number; name?: string }): string {
@@ -67,7 +69,15 @@ function formatAxisValue(value: number): string {
   return String(Math.round(value));
 }
 
-export function ChartCard({ data, title, subtitle, type = "area", height = 260, showLegend }: ChartCardProps) {
+export function ChartCard({
+  data,
+  title,
+  subtitle,
+  type = "area",
+  height = 260,
+  showLegend,
+  compact = false,
+}: ChartCardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -78,9 +88,14 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
     revenue: d.revenue ?? d.value,
   }));
 
+  const pieInner = compact ? 28 : 55;
+  const pieOuter = compact ? 48 : 85;
+  const chartHeight = compact && type === "pie" ? Math.min(height, 140) : height;
+  const mobileHeight = compact && type === "pie" ? 120 : 210;
+
   return (
-    <div className="card-surface p-4 sm:p-6">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-2 sm:mb-6">
+    <div className={`card-surface ${compact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
+      <div className={`mb-3 flex flex-wrap items-start justify-between gap-2 ${compact ? "sm:mb-3" : "sm:mb-6"}`}>
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
           {subtitle && <p className="mt-0.5 text-xs text-text-muted">{subtitle}</p>}
@@ -100,8 +115,13 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
       </div>
       {/* Altura menor no celular sem depender de JS: variável CSS + breakpoint. */}
       <div
-        className="h-[210px] sm:h-[var(--chart-height)]"
-        style={{ "--chart-height": `${height}px` } as React.CSSProperties}
+        className="sm:h-[var(--chart-height)]"
+        style={
+          {
+            "--chart-height": `${chartHeight}px`,
+            height: `${mobileHeight}px`,
+          } as React.CSSProperties
+        }
       >
       {!mounted ? (
         <div className="h-full animate-pulse rounded-lg bg-surface-elevated" />
@@ -176,8 +196,8 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={85}
+                innerRadius={pieInner}
+                outerRadius={pieOuter}
                 paddingAngle={3}
                 dataKey="value"
                 nameKey="name"
@@ -194,7 +214,7 @@ export function ChartCard({ data, title, subtitle, type = "area", height = 260, 
       )}
       </div>
       {type === "pie" && mounted && (
-        <div className="mt-4 space-y-2">
+        <div className={`mt-3 space-y-1.5 ${compact ? "sm:mt-3" : "mt-4 space-y-2"}`}>
           {chartData.map((item, i) => (
             <div key={item.name} className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-2 text-text-secondary">

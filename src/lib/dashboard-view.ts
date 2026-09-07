@@ -1,4 +1,4 @@
-import { format, parseISO, subDays, getDay } from "date-fns";
+import { format, parseISO, subDays, getDay, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getMonthRange, getWeekRange, formatCurrency } from "@/lib/utils";
 import {
@@ -156,6 +156,32 @@ export interface DashboardChartPoint {
   profit?: number;
 }
 
+/** Unidades vendidas dia a dia da semana (seg–dom) do contexto atual. */
+export interface WeekUnitsDayRow {
+  date: string;
+  /** Ex.: Seg, Ter */
+  weekday: string;
+  /** Ex.: 31/08 */
+  dayLabel: string;
+  units: number;
+  /** Dia âncora (o dia que você está vendo). */
+  isFocus: boolean;
+  /** Fora da janela do período filtrado. */
+  outOfScope: boolean;
+}
+
+export interface WeekUnitsPanel {
+  available: boolean;
+  /** Quando available=false. */
+  notice: string | null;
+  weekStart: string;
+  weekEnd: string;
+  /** Ex.: 31/08 – 05/09 */
+  rangeLabel: string;
+  rows: WeekUnitsDayRow[];
+  total: number;
+}
+
 export interface DashboardViewData {
   metrics: DashboardViewMetrics;
 charts: {
@@ -175,6 +201,8 @@ charts: {
   customerInsight: CustomerDayInsight;
   topClientsSubtitle: string;
   dayComparison: DayComparisonContext;
+  /** Tabela de unidades da semana (ou aviso se a janela não permitir). */
+  weekUnits: WeekUnitsPanel;
 }
 
 export interface DayComparisonContext {
@@ -291,6 +319,7 @@ function allOperationalDates(sales: DashboardSale[]): string[] {
 /**
  * Top clientes: quem comprou no dia filtrado, ordenados pela qtde de compras (tickets) na semana.
  * Em visão geral/período, `seedSales` = `scopeSales` → ranking do próprio período.
+ * Exclui canal Henrique (pai) — Lucas não controla essas vendas.
  */
 function topClientsPurchaseCounts(
   seedSales: DashboardSale[],
@@ -301,6 +330,7 @@ function topClientsPurchaseCounts(
   for (const sale of seedSales) {
     if (!sale.clientId || !sale.client?.name) continue;
     if (isUnknownClientName(sale.client.name)) continue;
+    if (isHenriqueClientName(sale.client.name)) continue;
     if (isSaleExcludedFromMix(sale)) continue;
     seedIds.add(sale.clientId);
   }
@@ -310,6 +340,7 @@ function topClientsPurchaseCounts(
   for (const sale of scopeSales) {
     if (!sale.clientId || !seedIds.has(sale.clientId)) continue;
     if (!sale.client?.name || isUnknownClientName(sale.client.name)) continue;
+    if (isHenriqueClientName(sale.client.name)) continue;
     if (isSaleExcludedFromMix(sale)) continue;
     const row = counts.get(sale.clientId);
     if (row) row.count += 1;
@@ -320,6 +351,118 @@ function topClientsPurchaseCounts(
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "pt-BR"))
     .slice(0, limit)
     .map(({ name, count }) => ({ label: name, value: count }));
+}
+
+/** Cliente do canal pai / Henrique — fora do ranking que o operador controla. */
+function isHenriqueClientName(name: string): boolean {
+  const n = normalizeClientLabel(name);
+  return n.includes("henrique");
+}
+
+function eachDateInclusive(from: string, to: string): string[] {
+  const dates: string[] = [];
+  let cursor = parseISO(from);
+  const end = parseISO(to);
+  while (cursor <= end) {
+    dates.push(format(cursor, "yyyy-MM-dd"));
+    cursor = addDays(cursor, 1);
+  }
+  return dates;
+}
+
+function unitsOnDate(
+  date: string,
+  sales: DashboardSale[],
+  dayMetrics?: OperationalDayMetricsLike[] | null,
+): number {
+  const fromDiary = dayMetrics?.find((d) => d.date === date)?.units;
+  if (fromDiary != null && fromDiary > 0) return fromDiary;
+  if (fromDiary === 0) return 0;
+  return itemsSoldFromEmbedded(salesOnDate(sales, date));
+}
+
+function unavailableWeekUnits(notice: string): WeekUnitsPanel {
+  return {
+    available: false,
+    notice,
+    weekStart: "",
+    weekEnd: "",
+    rangeLabel: "",
+    rows: [],
+    total: 0,
+  };
+}
+
+/**
+ * Unidades vendidas da semana (seg–dom).
+ * - Dia: sempre disponível (semana do dia em foco).
+ * - Período: só se from/to caírem na mesma semana civil.
+ * - Geral: aviso.
+ */
+function buildWeekUnitsPanel(
+  context: TemporalViewContext,
+  sales: DashboardSale[],
+  dayMetrics?: OperationalDayMetricsLike[] | null,
+  focusDate?: string,
+): WeekUnitsPanel {
+  if (context.mode === "general") {
+    return unavailableWeekUnits(
+      "Na visão geral não dá para mostrar as unidades de uma semana específica. Escolha um dia ou um período dentro de uma única semana (seg–dom).",
+    );
+  }
+
+  let weekStart: string;
+  let weekEnd: string;
+  let scopeFrom: string | null = null;
+  let scopeTo: string | null = null;
+  let anchor = focusDate ?? context.viewDate;
+
+  if (context.mode === "range") {
+    scopeFrom = context.dateFrom;
+    scopeTo = context.dateTo;
+    const weekOfFrom = getWeekRange(parseISO(context.dateFrom));
+    const weekOfTo = getWeekRange(parseISO(context.dateTo));
+    if (weekOfFrom.start !== weekOfTo.start) {
+      return unavailableWeekUnits(
+        "Nesta janela de período não é possível mostrar as unidades vendidas de uma semana. O intervalo cobre mais de uma semana — escolha um dia ou um período contido em uma única semana (seg–dom).",
+      );
+    }
+    weekStart = weekOfFrom.start;
+    weekEnd = weekOfFrom.end;
+    anchor = context.dateFrom;
+  } else {
+    const week = getWeekRange(parseISO(anchor));
+    weekStart = week.start;
+    weekEnd = week.end;
+  }
+
+  const rows: WeekUnitsDayRow[] = eachDateInclusive(weekStart, weekEnd).map((date) => {
+    const outOfScope =
+      scopeFrom != null && scopeTo != null && (date < scopeFrom || date > scopeTo);
+    const units = outOfScope ? 0 : unitsOnDate(date, sales, dayMetrics);
+    const parsed = parseISO(date);
+    return {
+      date,
+      weekday: format(parsed, "EEE", { locale: ptBR }).replace(".", ""),
+      dayLabel: format(parsed, "dd/MM"),
+      units,
+      isFocus: date === anchor,
+      outOfScope,
+    };
+  });
+
+  const total = rows.filter((r) => !r.outOfScope).reduce((s, r) => s + r.units, 0);
+  const rangeLabel = `${format(parseISO(weekStart), "dd/MM")} – ${format(parseISO(weekEnd), "dd/MM")}`;
+
+  return {
+    available: true,
+    notice: null,
+    weekStart,
+    weekEnd,
+    rangeLabel,
+    rows,
+    total,
+  };
 }
 
 function paymentChartPoints(payments: ReturnType<typeof paymentBreakdown>): DashboardChartPoint[] {
@@ -707,6 +850,7 @@ function buildGeneralDashboardView(
   scopeLabel = "Histórico completo",
   dailyUnitsGoal = 0,
   businessId?: string,
+  weekUnits?: WeekUnitsPanel,
 ): DashboardViewData {
   // Diário homologado é a fonte oficial de receita/lucro; vendas ficam para mix/pagamentos.
   const hasDiaryMetrics = !!dayMetrics && dayMetrics.length > 0;
@@ -819,6 +963,11 @@ function buildGeneralDashboardView(
     },
     topClientsSubtitle: scopeLabel,
     dayComparison: { enabled: false, label: "", isNonOperationalDay: false },
+    weekUnits:
+      weekUnits ??
+      unavailableWeekUnits(
+        "Na visão geral não dá para mostrar as unidades de uma semana específica. Escolha um dia ou um período dentro de uma única semana (seg–dom).",
+      ),
   };
 }
 
@@ -887,6 +1036,7 @@ export function buildDashboardView(
       "Histórico completo",
       dailyUnitsGoal,
       businessId,
+      buildWeekUnitsPanel(context, sales, dayMetrics),
     );
   }
 
@@ -905,6 +1055,7 @@ export function buildDashboardView(
       scopeLabel,
       dailyUnitsGoal,
       businessId,
+      buildWeekUnitsPanel(context, sales, dayMetrics),
     );
   }
 
@@ -1049,6 +1200,7 @@ export function buildDashboardView(
       ? "Hoje · compras na semana"
       : `${format(anchor, "dd/MM/yyyy")} · compras na semana`,
     dayComparison,
+    weekUnits: buildWeekUnitsPanel(context, sales, dayMetrics, viewDate),
   };
 }
 

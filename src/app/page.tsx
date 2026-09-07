@@ -163,6 +163,7 @@ export default function DashboardPage() {
           profitUnitsInsight={metrics.profitUnitsInsight}
           topClients={charts.topClients}
           payments={charts.payments}
+          weekUnits={payload.data.weekUnits}
           copy={{
             ...scopeCopy,
             topClientsSubtitle: payload.data.topClientsSubtitle,
