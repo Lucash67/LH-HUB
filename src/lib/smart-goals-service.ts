@@ -1,4 +1,5 @@
 import { format, subMonths } from "date-fns";
+import { and, eq, gte, lte, ne } from "drizzle-orm";
 import {
   fetchActiveProducts,
   fetchItemsForSales,
@@ -7,13 +8,52 @@ import {
 import { sumPendingRevenue } from "@/lib/analytics-engine/client";
 import { isAllBusinesses } from "@/lib/business-units";
 import { getDiaryEntry } from "@/lib/diary-service";
+import { dailyInvestments, operationDays } from "@/lib/db/postgres/schema";
 import { buildOperationalDayMetrics } from "@/lib/operational-day-metrics";
+import { getPostgresDb } from "@/platform/db";
+import { toDbBusinessId } from "@/platform/db/business-id";
+import { queryAll } from "@/platform/db/query";
 import { fetchMetricGoals } from "@/platform/db/data-access/metrics";
 import {
   buildSmartGoalsView,
   type SmartGoalsView,
   type StoredGoalTarget,
 } from "@/lib/smart-goals-view";
+
+/** Soma investimento de terceiros/família por data (exclui capital próprio). */
+async function loadThirdPartyCostByDate(
+  businessId: string,
+  dateGte: string,
+  dateLte: string,
+): Promise<Record<string, number>> {
+  const db = await getPostgresDb();
+  const rows = await queryAll(
+    db
+      .select({
+        date: operationDays.operationDate,
+        amount: dailyInvestments.amount,
+        sourceType: dailyInvestments.sourceType,
+      })
+      .from(dailyInvestments)
+      .innerJoin(operationDays, eq(dailyInvestments.operationDayId, operationDays.id))
+      .where(
+        and(
+          eq(operationDays.businessId, toDbBusinessId(businessId)),
+          gte(operationDays.operationDate, dateGte),
+          lte(operationDays.operationDate, dateLte),
+          ne(dailyInvestments.sourceType, "own_capital"),
+        ),
+      ),
+  );
+
+  const byDate: Record<string, number> = {};
+  for (const row of rows) {
+    const date = row.date;
+    const amount = Number(row.amount) || 0;
+    byDate[date] = Math.round(((byDate[date] ?? 0) + amount) * 100) / 100;
+  }
+  return byDate;
+}
 
 export async function getSmartGoalsView(
   businessId: string,
@@ -33,11 +73,12 @@ export async function getSmartGoalsView(
     (lastOperationalDate && lastOperationalDate <= today ? lastOperationalDate : today);
   const from = format(subMonths(new Date(ref), 3), "yyyy-MM-dd");
 
-  const [scopedSales, products, diary, goalRows] = await Promise.all([
+  const [scopedSales, products, diary, goalRows, thirdPartyCostByDate] = await Promise.all([
     fetchScopedSales({ businessId, dateGte: from, dateLte: ref }),
     fetchActiveProducts(businessId),
     getDiaryEntry(businessId, ref),
     fetchMetricGoals(businessId),
+    loadThirdPartyCostByDate(businessId, from, ref).catch(() => ({}) as Record<string, number>),
   ]);
   const saleIds = scopedSales.map((s) => s.id).filter(Boolean) as string[];
   const items = await fetchItemsForSales(saleIds);
@@ -76,6 +117,7 @@ export async function getSmartGoalsView(
       amountReceived: s.amountReceived,
       paymentStatus: s.paymentStatus,
       profit: s.profit,
+      department: s.department,
     })),
     items: items.map((i) => ({
       saleId: i.saleId,
@@ -95,5 +137,6 @@ export async function getSmartGoalsView(
       : undefined,
     dayMetrics,
     storedGoals,
+    thirdPartyCostByDate,
   });
 }

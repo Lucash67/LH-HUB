@@ -14,6 +14,15 @@ import {
   saleReceivedAmount,
 } from "@/lib/analytics-engine/client";
 import { SALGADOS_BUSINESS_ID } from "@/lib/business-units";
+import {
+  evaluateSalgadosMixDiscipline,
+  isHenriqueDepartment,
+  SALGADOS_DAILY_THIRD_PARTY_COST_MAX,
+  SALGADOS_DAILY_UNITS_GOAL,
+  SALGADOS_GOAL_DAYS_PER_WEEK,
+  usesSalgadosProfitGoals,
+  type SalgadosMixDisciplineStatus,
+} from "@/lib/salgados-profit-goals";
 import { getWeekRange, getMonthRange } from "@/lib/utils";
 
 export type TrendDirection = "growing" | "stable" | "declining";
@@ -146,6 +155,17 @@ export interface SmartGoalsView {
   recommendations: GoalRecommendation[];
   avgUnitPrice: number;
   avgUnitProfit: number;
+  /** Disciplina de mix + teto de terceiros (Salgados). Null em outros negócios. */
+  mixDiscipline: SalgadosMixDisciplineStatus | null;
+  /** Acumulado da semana (seg–ref) para a mesma disciplina. */
+  mixDisciplineWeek: {
+    acalUniforUnits: number;
+    henriqueUnits: number;
+    totalUnits: number;
+    thirdPartyCost: number;
+    targetTotal: number;
+    thirdPartyMaxWeek: number;
+  } | null;
 }
 
 export interface StoredGoalTarget {
@@ -166,12 +186,15 @@ export interface SmartGoalsInput {
     amountReceived?: number | null;
     paymentStatus?: string | null;
     profit: number;
+    department?: string | null;
   }>;
   items: Array<{ saleId?: string; productId: string; quantity: number }>;
   productNameById: (id: string) => string;
   avgPrice: number;
   avgCost: number;
   pendingRevenue: number;
+  /** Custo de capital de terceiros (familia) por data YYYY-MM-DD. */
+  thirdPartyCostByDate?: Record<string, number>;
   diaryInsights?: {
     manualInsights?: string;
     lossReason?: string;
@@ -240,7 +263,7 @@ export function suggestDailyTarget(
   const recent = rows.slice(-5);
 
   if (recent.length === 0) {
-    const fallback = diaryGoal ?? 12;
+    const fallback = diaryGoal ?? (usesSalgadosProfitGoals(businessId) ? SALGADOS_DAILY_UNITS_GOAL : 12);
     rationale.push("Histórico insuficiente — usando meta do Diário Operacional.");
     return { units: fallback, revenue: fallback * 5, rationale };
   }
@@ -844,6 +867,8 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
   const challenges = buildChallenges(daily, streak, comparisons);
   const recommendations = buildRecommendations(input, daily, productGoals);
 
+  const mix = buildMixDiscipline(input, referenceDate, weekStart);
+
   const editable = {
     daily: buildEditableSlot("daily", storedDaily, suggestedDaily, effectiveDaily, dailySource),
     weekly: buildEditableSlot(
@@ -889,5 +914,84 @@ export function buildSmartGoalsView(input: SmartGoalsInput): SmartGoalsView {
     recommendations,
     avgUnitPrice,
     avgUnitProfit,
+    mixDiscipline: mix.day,
+    mixDisciplineWeek: mix.week,
+  };
+}
+
+function channelUnitsForDate(
+  input: SmartGoalsInput,
+  date: string,
+): { acalUnifor: number; henrique: number } {
+  const itemsBySale = new Map<string, number>();
+  for (const item of input.items) {
+    if (!item.saleId) continue;
+    itemsBySale.set(item.saleId, (itemsBySale.get(item.saleId) ?? 0) + item.quantity);
+  }
+
+  let acalUnifor = 0;
+  let henrique = 0;
+  for (const sale of input.sales) {
+    if (sale.date !== date || !sale.id) continue;
+    const units = itemsBySale.get(sale.id) ?? 0;
+    // Acal+Unifor juntos = tudo que não é canal Henrique.
+    if (isHenriqueDepartment(sale.department)) henrique += units;
+    else acalUnifor += units;
+  }
+  return { acalUnifor, henrique };
+}
+
+function buildMixDiscipline(
+  input: SmartGoalsInput,
+  referenceDate: string,
+  weekStart: string,
+): {
+  day: SalgadosMixDisciplineStatus | null;
+  week: SmartGoalsView["mixDisciplineWeek"];
+} {
+  if (!usesSalgadosProfitGoals(input.businessId)) {
+    return { day: null, week: null };
+  }
+
+  const dayChannels = channelUnitsForDate(input, referenceDate);
+  const dayThird = input.thirdPartyCostByDate?.[referenceDate] ?? 0;
+  const day = evaluateSalgadosMixDiscipline({
+    acalUniforUnits: dayChannels.acalUnifor,
+    henriqueUnits: dayChannels.henrique,
+    thirdPartyCost: dayThird,
+  });
+
+  let weekAcal = 0;
+  let weekHenrique = 0;
+  let weekThird = 0;
+  const dates = new Set<string>();
+  for (const sale of input.sales) {
+    if (sale.date >= weekStart && sale.date <= referenceDate) dates.add(sale.date);
+  }
+  for (const d of Object.keys(input.thirdPartyCostByDate ?? {})) {
+    if (d >= weekStart && d <= referenceDate) dates.add(d);
+  }
+  for (const d of Array.from(dates)) {
+    const ch = channelUnitsForDate(input, d);
+    weekAcal += ch.acalUnifor;
+    weekHenrique += ch.henrique;
+    weekThird += input.thirdPartyCostByDate?.[d] ?? 0;
+  }
+
+  const weekOpDays = Math.max(
+    1,
+    Array.from(dates).filter((d) => isOperationalDay(d, input.businessId)).length,
+  );
+
+  return {
+    day,
+    week: {
+      acalUniforUnits: weekAcal,
+      henriqueUnits: weekHenrique,
+      totalUnits: weekAcal + weekHenrique,
+      thirdPartyCost: Math.round(weekThird * 100) / 100,
+      targetTotal: SALGADOS_DAILY_UNITS_GOAL * SALGADOS_GOAL_DAYS_PER_WEEK,
+      thirdPartyMaxWeek: SALGADOS_DAILY_THIRD_PARTY_COST_MAX * weekOpDays,
+    },
   };
 }

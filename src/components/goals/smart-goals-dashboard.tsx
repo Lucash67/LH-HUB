@@ -7,6 +7,7 @@ import { GoalBreakdownGrid } from "@/components/goals/goal-breakdown-grid";
 import { GoalSimulator } from "@/components/goals/goal-simulator";
 import { GoalMotivationPanel } from "@/components/goals/goal-motivation-panel";
 import { GoalTargetEditor } from "@/components/goals/goal-target-editor";
+import { MixDisciplineCard } from "@/components/goals/mix-discipline-card";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import type { SmartGoalsView } from "@/lib/smart-goals-view";
 import { Target, Calendar, CalendarDays, TrendingUp } from "lucide-react";
@@ -107,6 +108,10 @@ export function SmartGoalsDashboard({ view }: SmartGoalsDashboardProps) {
           }
         />
       </div>
+
+      {view.mixDiscipline && view.mixDisciplineWeek ? (
+        <MixDisciplineCard day={view.mixDiscipline} week={view.mixDisciplineWeek} />
+      ) : null}
 
       <GoalStreakComparison streak={view.streak} comparisons={view.comparisons} />
 
