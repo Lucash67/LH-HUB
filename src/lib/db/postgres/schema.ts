@@ -606,7 +606,7 @@ export const periodReviews = pgTable(
   }),
 );
 
-/** Galeria de design/arte — arquivos e metadados por negócio. */
+/** Galeria de design/arte — pastas/itens com um ou vários arquivos. */
 export const galleryAssets = pgTable(
   "gallery_assets",
   {
@@ -625,6 +625,8 @@ export const galleryAssets = pgTable(
     mimeType: text("mime_type"),
     byteSize: integer("byte_size"),
     hasFile: boolean("has_file").notNull().default(false),
+    fileCount: integer("file_count").notNull().default(0),
+    sortOrder: integer("sort_order").notNull().default(0),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -638,6 +640,10 @@ export const galleryAssets = pgTable(
       table.businessId,
       table.category,
     ),
+    businessSortIdx: index("idx_gallery_assets_business_sort").on(
+      table.businessId,
+      table.sortOrder,
+    ),
     byteSizeCheck: check(
       "gallery_assets_byte_size_check",
       sql`${table.byteSize} IS NULL OR ${table.byteSize} >= 0`,
@@ -645,13 +651,27 @@ export const galleryAssets = pgTable(
   }),
 );
 
-export const galleryAssetFiles = pgTable("gallery_asset_files", {
-  assetId: uuid("asset_id")
-    .primaryKey()
-    .references(() => galleryAssets.id, { onDelete: "cascade" }),
-  content: bytea("content").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const galleryFiles = pgTable(
+  "gallery_files",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => galleryAssets.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    content: bytea("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    assetSortIdx: index("idx_gallery_files_asset_sort").on(table.assetId, table.sortOrder),
+  }),
+);
+
+/** @deprecated use galleryFiles — mantido só se algum import antigo restar. */
+export const galleryAssetFiles = galleryFiles;
 
 export * from "./schema-engine";
 export * from "./schema-crm";

@@ -5,16 +5,20 @@ import { withTenantScope } from "@/lib/auth/with-tenant-api";
 import { requireTenantBusinessWrite } from "@/lib/auth/tenant-scope";
 import {
   GALLERY_MAX_BYTES,
+  GALLERY_MAX_FILES_PER_ASSET,
   galleryMetaSchema,
   isAllowedGalleryMime,
   type GalleryCategory,
 } from "@/lib/galeria/types";
 import {
-  attachGalleryFile,
+  addGalleryFiles,
   createGalleryAsset,
   deleteGalleryAsset,
+  deleteGalleryFile,
   getGalleryAsset,
   listGalleryAssets,
+  reorderGalleryAssets,
+  reorderGalleryFiles,
   updateGalleryAssetMeta,
 } from "@/platform/db/repositories/gallery-repository";
 
@@ -64,11 +68,15 @@ export async function POST(request: NextRequest) {
           createdBy: auth.id,
         });
 
-        const file = form.get("file");
-        if (file instanceof File && file.size > 0) {
-          const attached = await attachUploadedFile(businessId, asset.id, file);
-          if (attached instanceof NextResponse) return attached;
-          return NextResponse.json({ item: attached }, { status: 201 });
+        const packed = await collectUploadedFiles(form);
+        if (packed instanceof NextResponse) return packed;
+        if (packed.length > 0) {
+          const updated = await addGalleryFiles({
+            businessId,
+            assetId: asset.id,
+            files: packed,
+          });
+          return NextResponse.json({ item: updated ?? asset }, { status: 201 });
         }
 
         return NextResponse.json({ item: asset }, { status: 201 });
@@ -76,6 +84,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    // Reorder assets
+    if (Array.isArray(body.orderedIds)) {
+      return await withTenantScope(auth, body.businessId, async (scope) => {
+        const businessId = requireTenantBusinessWrite(scope, body.businessId);
+        const items = await reorderGalleryAssets(businessId, body.orderedIds as string[]);
+        return NextResponse.json({ items });
+      });
+    }
+
     return await withTenantScope(auth, body.businessId, async (scope) => {
       const businessId = requireTenantBusinessWrite(scope, body.businessId);
       const parsed = galleryMetaSchema.safeParse(body);
@@ -135,11 +153,18 @@ export async function PUT(request: NextRequest) {
           notes: parsed.data.notes,
         });
 
-        const file = form.get("file");
-        if (file instanceof File && file.size > 0) {
-          const attached = await attachUploadedFile(businessId, assetId, file);
-          if (attached instanceof NextResponse) return attached;
-          return NextResponse.json({ item: attached });
+        const packed = await collectUploadedFiles(form);
+        if (packed instanceof NextResponse) return packed;
+        if (packed.length > 0) {
+          if (existing.fileCount + packed.length > GALLERY_MAX_FILES_PER_ASSET) {
+            return apiError(`Máximo de ${GALLERY_MAX_FILES_PER_ASSET} arquivos por pasta.`, 400);
+          }
+          const updated = await addGalleryFiles({
+            businessId,
+            assetId,
+            files: packed,
+          });
+          return NextResponse.json({ item: updated });
         }
 
         const fresh = await getGalleryAsset(businessId, assetId);
@@ -150,6 +175,23 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     return await withTenantScope(auth, body.businessId, async (scope) => {
       const businessId = requireTenantBusinessWrite(scope, body.businessId);
+
+      if (body.action === "reorder-files" && body.id && Array.isArray(body.orderedFileIds)) {
+        const item = await reorderGalleryFiles(
+          businessId,
+          body.id,
+          body.orderedFileIds as string[],
+        );
+        if (!item) return apiError("Item não encontrado.", 404);
+        return NextResponse.json({ item });
+      }
+
+      if (body.action === "delete-file" && body.id && body.fileId) {
+        const item = await deleteGalleryFile(businessId, body.id, body.fileId);
+        if (!item) return apiError("Item não encontrado.", 404);
+        return NextResponse.json({ item });
+      }
+
       const parsed = galleryMetaSchema.safeParse(body);
       if (!parsed.success) {
         return apiError(parsed.error.issues[0]?.message ?? "Dados inválidos.", 400);
@@ -196,22 +238,26 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-async function attachUploadedFile(businessId: string, assetId: string, file: File) {
-  if (file.size > GALLERY_MAX_BYTES) {
-    return apiError("Arquivo acima de 4 MB. Compacte ou envie em partes menores.", 400);
+async function collectUploadedFiles(form: FormData) {
+  const entries = form.getAll("file").concat(form.getAll("files"));
+  const files: Array<{ fileName: string; mimeType: string; content: Buffer }> = [];
+  for (const entry of entries) {
+    if (!(entry instanceof File) || entry.size <= 0) continue;
+    if (entry.size > GALLERY_MAX_BYTES) {
+      return apiError(`“${entry.name}” passa de 4 MB. Compacte o arquivo.`, 400);
+    }
+    const mime = entry.type || "application/octet-stream";
+    if (!isAllowedGalleryMime(mime)) {
+      return apiError(`Tipo não suportado: ${entry.name}`, 400);
+    }
+    files.push({
+      fileName: entry.name,
+      mimeType: mime,
+      content: Buffer.from(await entry.arrayBuffer()),
+    });
   }
-  const mime = file.type || "application/octet-stream";
-  if (!isAllowedGalleryMime(mime)) {
-    return apiError("Tipo de arquivo não suportado. Use imagem, PDF, ZIP ou Office.", 400);
+  if (files.length > GALLERY_MAX_FILES_PER_ASSET) {
+    return apiError(`Máximo de ${GALLERY_MAX_FILES_PER_ASSET} arquivos por vez.`, 400);
   }
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const updated = await attachGalleryFile({
-    businessId,
-    assetId,
-    fileName: file.name,
-    mimeType: mime,
-    content: buffer,
-  });
-  if (!updated) return apiError("Item não encontrado.", 404);
-  return updated;
+  return files;
 }

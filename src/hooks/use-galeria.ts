@@ -35,14 +35,14 @@ export function useGaleria() {
       title: string;
       category: GalleryCategory;
       notes?: string;
-      file?: File | null;
+      files?: File[];
     }) => {
       const form = new FormData();
       form.set("businessId", activeBusinessId);
       form.set("title", input.title);
       form.set("category", input.category);
       form.set("notes", input.notes ?? "");
-      if (input.file) form.set("file", input.file);
+      for (const f of input.files ?? []) form.append("files", f);
       const res = await fetch("/api/galeria", { method: "POST", body: form });
       const data = (await res.json().catch(() => null)) as
         | { item?: GalleryAsset; error?: string }
@@ -54,19 +54,37 @@ export function useGaleria() {
     [activeBusinessId, refresh],
   );
 
-  const attachFile = useCallback(
-    async (
-      id: string,
-      file: File,
-      meta?: { title?: string; category?: GalleryCategory; notes?: string },
-    ) => {
+  const updateMeta = useCallback(
+    async (input: {
+      id: string;
+      title: string;
+      category: GalleryCategory;
+      notes?: string;
+    }) => {
+      const res = await fetch("/api/galeria", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: activeBusinessId, ...input }),
+      });
+      const data = (await res.json().catch(() => null)) as
+        | { item?: GalleryAsset; error?: string }
+        | null;
+      if (!res.ok) throw new Error(data?.error ?? "Não foi possível salvar");
+      await refresh();
+      return data?.item;
+    },
+    [activeBusinessId, refresh],
+  );
+
+  const addFiles = useCallback(
+    async (id: string, files: File[], meta?: { title?: string; category?: GalleryCategory; notes?: string }) => {
       const form = new FormData();
       form.set("businessId", activeBusinessId);
       form.set("id", id);
       if (meta?.title) form.set("title", meta.title);
       if (meta?.category) form.set("category", meta.category);
       if (meta?.notes != null) form.set("notes", meta.notes);
-      form.set("file", file);
+      for (const f of files) form.append("files", f);
       const res = await fetch("/api/galeria", { method: "PUT", body: form });
       const data = (await res.json().catch(() => null)) as
         | { item?: GalleryAsset; error?: string }
@@ -74,6 +92,52 @@ export function useGaleria() {
       if (!res.ok) throw new Error(data?.error ?? "Não foi possível anexar");
       await refresh();
       return data?.item;
+    },
+    [activeBusinessId, refresh],
+  );
+
+  const reorderItems = useCallback(
+    async (orderedIds: string[]) => {
+      setItems((prev) => {
+        const byId = new Map(prev.map((i) => [i.id, i]));
+        return orderedIds.map((id, idx) => {
+          const item = byId.get(id)!;
+          return { ...item, sortOrder: idx };
+        }).filter(Boolean);
+      });
+      const res = await fetch("/api/galeria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: activeBusinessId, orderedIds }),
+      });
+      if (!res.ok) {
+        await refresh();
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "Não foi possível reordenar");
+      }
+      const data = (await res.json()) as { items: GalleryAsset[] };
+      setItems(data.items ?? []);
+    },
+    [activeBusinessId, refresh],
+  );
+
+  const deleteFile = useCallback(
+    async (assetId: string, fileId: string) => {
+      const res = await fetch("/api/galeria", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId: activeBusinessId,
+          action: "delete-file",
+          id: assetId,
+          fileId,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "Não foi possível remover o arquivo");
+      }
+      await refresh();
     },
     [activeBusinessId, refresh],
   );
@@ -95,6 +159,7 @@ export function useGaleria() {
 
   return {
     items,
+    setItems,
     loading,
     error,
     canWrite,
@@ -102,7 +167,12 @@ export function useGaleria() {
     activeBusinessId,
     refresh,
     createItem,
-    attachFile,
+    updateMeta,
+    addFiles,
+    reorderItems,
+    deleteFile,
     removeItem,
+    /** @deprecated */
+    attachFile: async (id: string, file: File) => addFiles(id, [file]),
   };
 }

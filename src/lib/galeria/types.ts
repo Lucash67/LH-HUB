@@ -29,26 +29,42 @@ export const galleryMetaSchema = z.object({
 
 export type GalleryMetaInput = z.infer<typeof galleryMetaSchema>;
 
+export interface GalleryFileMeta {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  byteSize: number;
+  sortOrder: number;
+  previewUrl: string;
+  downloadUrl: string;
+  isImage: boolean;
+}
+
 export interface GalleryAsset {
   id: string;
   businessId: string;
   title: string;
   category: GalleryCategory;
   notes: string;
+  /** Capa / primeiro arquivo (compat). */
   fileName: string | null;
   mimeType: string | null;
   byteSize: number | null;
   hasFile: boolean;
+  fileCount: number;
+  sortOrder: number;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
-  /** URL relativa para preview/download autenticado. */
   previewUrl: string | null;
   downloadUrl: string | null;
+  files: GalleryFileMeta[];
 }
 
-/** Limite alinhado ao body do Vercel Hobby (~4,5 MB). */
+/** Limite por arquivo (Vercel Hobby ~4,5 MB body total no request). */
 export const GALLERY_MAX_BYTES = 4 * 1024 * 1024;
+/** Máximo de arquivos por pasta/item. */
+export const GALLERY_MAX_FILES_PER_ASSET = 20;
 
 export const GALLERY_ALLOWED_MIME_PREFIXES = [
   "image/",

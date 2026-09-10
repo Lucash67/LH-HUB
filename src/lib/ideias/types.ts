@@ -13,7 +13,7 @@ export const IDEA_KIND_LABELS: Record<IdeaKind, string> = {
 };
 
 export const IDEA_STATUS_LABELS: Record<IdeaStatus, string> = {
-  open: "Aberta",
+  open: "Pendente",
   done: "Feita",
   archived: "Arquivada",
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Archive,
   Check,
@@ -46,17 +46,15 @@ export default function IdeiasPage() {
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return items.filter((item) => {
-      if (kindFilter !== "all" && item.kind !== kindFilter) return false;
-      if (!showArchived && item.status === "archived") return false;
-      if (!q) return true;
-      return (
-        item.title.toLowerCase().includes(q) || item.body.toLowerCase().includes(q)
-      );
-    });
-  }, [items, query, kindFilter, showArchived]);
+  const q = query.trim().toLowerCase();
+  const filtered = items.filter((item) => {
+    if (kindFilter !== "all" && item.kind !== kindFilter) return false;
+    if (!showArchived && item.status === "archived") return false;
+    if (!q) return true;
+    return (
+      item.title.toLowerCase().includes(q) || item.body.toLowerCase().includes(q)
+    );
+  });
 
   const openItems = filtered.filter((i) => i.status === "open");
   const doneItems = filtered.filter((i) => i.status === "done");
@@ -179,7 +177,7 @@ export default function IdeiasPage() {
         ) : (
           <div className="space-y-6">
             {openItems.length > 0 && (
-              <Section title="Abertas" count={openItems.length}>
+              <Section title="Pendentes" count={openItems.length}>
                 {openItems.map((item) => (
                   <IdeaRow
                     key={item.id}
@@ -299,6 +297,12 @@ function IdeaRow({
   const [kind, setKind] = useState(item.kind);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    setTitle(item.title);
+    setBody(item.body);
+    setKind(item.kind);
+  }, [item.title, item.body, item.kind, item.id, item.updatedAt]);
+
   async function run(fn: () => void | Promise<void>) {
     setBusy(true);
     try {
@@ -316,30 +320,63 @@ function IdeaRow({
         item.status === "done" && "opacity-80",
       )}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
-      >
-        <span
-          className={cn(
-            "mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-            item.kind === "ideia" && "bg-[#7C3CFF]/20 text-[#A78BFA]",
-            item.kind === "demanda" && "bg-[#3882F6]/20 text-[#93C5FD]",
-            item.kind === "observacao" && "bg-[#0CD4FF]/15 text-[#67E8F9]",
-          )}
+      <div className="flex w-full items-start gap-2 px-3 py-3 sm:gap-3 sm:px-4 sm:py-3.5">
+        {(onDone || onReopen) && item.status !== "archived" ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={(e) => {
+              e.stopPropagation();
+              void run(item.status === "done" ? () => onReopen?.() : () => onDone?.());
+            }}
+            className={cn(
+              "mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold transition",
+              item.status === "done"
+                ? "border-[#22C55E]/35 bg-[#22C55E]/15 text-[#4ADE80]"
+                : "border-white/15 bg-white/5 text-white/70 hover:border-[#7C3CFF]/40 hover:text-white",
+            )}
+            aria-label={item.status === "done" ? "Marcar como pendente" : "Marcar como feita"}
+            title={item.status === "done" ? "Pendente" : "Feita"}
+          >
+            <span
+              className={cn(
+                "flex h-3.5 w-3.5 items-center justify-center rounded border",
+                item.status === "done"
+                  ? "border-[#22C55E] bg-[#22C55E] text-black"
+                  : "border-white/40",
+              )}
+            >
+              {item.status === "done" ? <Check className="h-2.5 w-2.5" /> : null}
+            </span>
+            {item.status === "done" ? "Feita" : "Pendente"}
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-start gap-3 text-left"
         >
-          {IDEA_KIND_LABELS[item.kind]}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-white">{item.title || "(sem título)"}</p>
-          {!expanded && item.body && (
-            <p className="mt-0.5 line-clamp-2 text-xs text-white/50">{item.body}</p>
-          )}
-          <p className="mt-1 text-[10px] text-white/35">{IDEA_STATUS_LABELS[item.status]}</p>
-        </div>
-        {item.pinned && <Pin className="mt-1 h-3.5 w-3.5 shrink-0 text-[#0CD4FF]" />}
-      </button>
+          <span
+            className={cn(
+              "mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+              item.kind === "ideia" && "bg-[#7C3CFF]/20 text-[#A78BFA]",
+              item.kind === "demanda" && "bg-[#3882F6]/20 text-[#93C5FD]",
+              item.kind === "observacao" && "bg-[#0CD4FF]/15 text-[#67E8F9]",
+            )}
+          >
+            {IDEA_KIND_LABELS[item.kind]}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-white">{item.title || "(sem título)"}</p>
+            {!expanded && item.body && (
+              <p className="mt-0.5 line-clamp-2 text-xs text-white/50">{item.body}</p>
+            )}
+            <p className="mt-1 text-[10px] text-white/35">{IDEA_STATUS_LABELS[item.status]}</p>
+          </div>
+          {item.pinned && <Pin className="mt-1 h-3.5 w-3.5 shrink-0 text-[#0CD4FF]" />}
+        </button>
+      </div>
 
       {expanded && (
         <div className="space-y-3 border-t border-white/5 px-4 pb-4 pt-3">
