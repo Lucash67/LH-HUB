@@ -356,7 +356,9 @@ export default function GaleriaPage() {
               </select>
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs text-text-muted">Arquivos (opcional, até 4 MB cada)</span>
+              <span className="text-xs text-text-muted">
+                Arquivos (opcional, até 4 MB cada — enviados um a um)
+              </span>
               <input
                 ref={fileInputRef}
                 type="file"
