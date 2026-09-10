@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
+  Eye,
   FileImage,
   FileText,
   Images,
@@ -11,6 +12,7 @@ import {
   Search,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,6 +51,7 @@ export default function GaleriaPage() {
   const [category, setCategory] = useState<GalleryCategory>("arte");
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [previewItem, setPreviewItem] = useState<GalleryAsset | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachInputRef = useRef<HTMLInputElement>(null);
   const [attachTargetId, setAttachTargetId] = useState<string | null>(null);
@@ -69,6 +72,20 @@ export default function GaleriaPage() {
 
   const pendingFile = filtered.filter((i) => !i.hasFile);
   const withFile = filtered.filter((i) => i.hasFile);
+
+  useEffect(() => {
+    if (!previewItem) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewItem(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [previewItem]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -121,6 +138,16 @@ export default function GaleriaPage() {
     }
   }
 
+  function openPreview(item: GalleryAsset) {
+    if (!item.hasFile || !item.previewUrl) return;
+    const mime = item.mimeType ?? "";
+    if (mime.startsWith("image/") || mime === "application/pdf") {
+      setPreviewItem(item);
+      return;
+    }
+    window.open(item.previewUrl, "_blank", "noopener,noreferrer");
+  }
+
   if (loading) {
     return (
       <ModuleShell title="Galeria" subtitle="Design, arte e materiais da operação">
@@ -135,11 +162,7 @@ export default function GaleriaPage() {
       subtitle="Design, arte e materiais da operação"
       actions={
         canWrite ? (
-          <Button
-            type="button"
-            onClick={() => setShowForm((v) => !v)}
-            className="gap-2"
-          >
+          <Button type="button" onClick={() => setShowForm((v) => !v)} className="gap-2">
             <Plus className="h-4 w-4" />
             Novo item
           </Button>
@@ -158,8 +181,8 @@ export default function GaleriaPage() {
 
       <div className="mb-4 space-y-3">
         <p className="max-w-2xl text-sm text-text-secondary">
-          Guarde cardápios, cartazes, anúncios e referências de arte. Os quatro materiais
-          recentes já estão listados — anexe o arquivo final em cada um para baixar depois.
+          Guarde cardápios, cartazes, anúncios e referências de arte. Clique na miniatura ou em
+          Ver para abrir a imagem em tela cheia.
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -276,6 +299,7 @@ export default function GaleriaPage() {
                     key={item.id}
                     item={item}
                     canWrite={canWrite}
+                    onPreview={() => openPreview(item)}
                     onAttach={() => requestAttach(item.id)}
                     onDelete={() => handleDelete(item)}
                   />
@@ -295,6 +319,7 @@ export default function GaleriaPage() {
                     key={item.id}
                     item={item}
                     canWrite={canWrite}
+                    onPreview={() => openPreview(item)}
                     onAttach={() => requestAttach(item.id)}
                     onDelete={() => handleDelete(item)}
                   />
@@ -304,34 +329,125 @@ export default function GaleriaPage() {
           )}
         </div>
       )}
+
+      {previewItem?.previewUrl ? (
+        <GalleryLightbox item={previewItem} onClose={() => setPreviewItem(null)} />
+      ) : null}
     </ModuleShell>
+  );
+}
+
+function GalleryLightbox({
+  item,
+  onClose,
+}: {
+  item: GalleryAsset;
+  onClose: () => void;
+}) {
+  const isImage = (item.mimeType ?? "").startsWith("image/");
+  const isPdf = item.mimeType === "application/pdf";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.title}
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#12121B] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">{item.title}</p>
+            <p className="truncate text-xs text-white/55">
+              {GALLERY_CATEGORY_LABELS[item.category]}
+              {item.fileName ? ` · ${item.fileName}` : ""}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {item.downloadUrl ? (
+              <a
+                href={item.downloadUrl}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white/10"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Baixar
+              </a>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-white/15 p-1.5 text-white hover:bg-white/10"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-black/40 p-3 sm:p-5">
+          {isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.previewUrl!}
+              alt={item.title}
+              className="max-h-[min(80vh,900px)] w-auto max-w-full rounded-lg object-contain"
+            />
+          ) : isPdf ? (
+            <iframe
+              title={item.title}
+              src={item.previewUrl!}
+              className="h-[min(80vh,900px)] w-full rounded-lg bg-white"
+            />
+          ) : (
+            <p className="text-sm text-white/70">Pré-visualização indisponível para este tipo.</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
 function AssetCard({
   item,
   canWrite,
+  onPreview,
   onAttach,
   onDelete,
 }: {
   item: GalleryAsset;
   canWrite: boolean;
+  onPreview: () => void;
   onAttach: () => void;
   onDelete: () => void;
 }) {
   const isImage = (item.mimeType ?? "").startsWith("image/");
+  const canPreview =
+    item.hasFile &&
+    !!item.previewUrl &&
+    (isImage || item.mimeType === "application/pdf" || !!item.previewUrl);
   const created = format(parseISO(item.createdAt), "dd MMM yyyy", { locale: ptBR });
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-surface-border bg-surface-card">
-      <div className="relative flex h-36 items-center justify-center bg-surface-elevated/60">
+      <button
+        type="button"
+        disabled={!item.hasFile || !item.previewUrl}
+        onClick={onPreview}
+        className={cn(
+          "relative flex h-36 items-center justify-center bg-surface-elevated/60",
+          item.hasFile && item.previewUrl
+            ? "cursor-zoom-in transition hover:brightness-110"
+            : "cursor-default",
+        )}
+        aria-label={item.hasFile ? `Ver ${item.title}` : item.title}
+      >
         {item.hasFile && isImage && item.previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.previewUrl}
-            alt={item.title}
-            className="h-full w-full object-cover"
-          />
+          <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
         ) : item.hasFile ? (
           <FileText className="h-10 w-10 text-[#7C3CFF]" />
         ) : (
@@ -340,7 +456,13 @@ function AssetCard({
         <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
           {GALLERY_CATEGORY_LABELS[item.category]}
         </span>
-      </div>
+        {canPreview && isImage ? (
+          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
+            <Eye className="h-3 w-3" />
+            Ver
+          </span>
+        ) : null}
+      </button>
 
       <div className="flex flex-1 flex-col gap-2 p-3.5">
         <div>
@@ -357,6 +479,16 @@ function AssetCard({
         </p>
 
         <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
+          {canPreview ? (
+            <button
+              type="button"
+              onClick={onPreview}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#7C3CFF]/35 bg-[#7C3CFF]/10 px-2.5 py-1.5 text-xs font-medium text-[#C4B5FD] hover:bg-[#7C3CFF]/20"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Ver
+            </button>
+          ) : null}
           {item.hasFile && item.downloadUrl ? (
             <a
               href={item.downloadUrl}
