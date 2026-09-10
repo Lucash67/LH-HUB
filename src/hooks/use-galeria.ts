@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useBusinessScope } from "@/hooks/use-business-scope";
+import { withBusinessQuery } from "@/lib/business-units";
 import type { GalleryAsset, GalleryCategory } from "@/lib/galeria/types";
 
 export function useGaleria() {
-  const { activeBusinessId, canWrite, withQuery, writeBlockedMessage } = useBusinessScope();
+  const { activeBusinessId, canWrite, writeBlockedMessage } = useBusinessScope();
   const [items, setItems] = useState<GalleryAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +15,7 @@ export function useGaleria() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(withQuery("/api/galeria"));
+      const res = await fetch(withBusinessQuery("/api/galeria", activeBusinessId));
       if (!res.ok) throw new Error("Falha ao carregar a galeria");
       const data = (await res.json()) as { items: GalleryAsset[] };
       setItems(data.items ?? []);
@@ -23,11 +24,11 @@ export function useGaleria() {
     } finally {
       setLoading(false);
     }
-  }, [withQuery]);
+  }, [activeBusinessId]);
 
   useEffect(() => {
     void refresh();
-  }, [refresh, activeBusinessId]);
+  }, [refresh]);
 
   const createItem = useCallback(
     async (input: {
@@ -54,7 +55,11 @@ export function useGaleria() {
   );
 
   const attachFile = useCallback(
-    async (id: string, file: File, meta?: { title?: string; category?: GalleryCategory; notes?: string }) => {
+    async (
+      id: string,
+      file: File,
+      meta?: { title?: string; category?: GalleryCategory; notes?: string },
+    ) => {
       const form = new FormData();
       form.set("businessId", activeBusinessId);
       form.set("id", id);
@@ -76,7 +81,7 @@ export function useGaleria() {
   const removeItem = useCallback(
     async (id: string) => {
       const res = await fetch(
-        withQuery(`/api/galeria?id=${encodeURIComponent(id)}`),
+        withBusinessQuery(`/api/galeria?id=${encodeURIComponent(id)}`, activeBusinessId),
         { method: "DELETE" },
       );
       if (!res.ok) {
@@ -85,7 +90,7 @@ export function useGaleria() {
       }
       await refresh();
     },
-    [refresh, withQuery],
+    [activeBusinessId, refresh],
   );
 
   return {
@@ -95,7 +100,6 @@ export function useGaleria() {
     canWrite,
     writeBlockedMessage,
     activeBusinessId,
-    withQuery,
     refresh,
     createItem,
     attachFile,
