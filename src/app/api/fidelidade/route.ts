@@ -17,7 +17,6 @@ import {
   getLoyaltyView,
   listLoyaltyClientsForEnroll,
 } from "@/lib/loyalty/loyalty-view";
-import { getLoyaltyWeekBounds } from "@/lib/loyalty/evaluate";
 
 export async function GET(request: NextRequest) {
   const auth = await requireApiSession();
@@ -182,8 +181,4 @@ export async function POST(request: NextRequest) {
     console.error("Loyalty POST error:", error);
     return apiError(error instanceof Error ? error.message : "Falha na fidelidade.");
   }
-}
-
-export function loyaltyWeekHint(dateIso: string) {
-  return getLoyaltyWeekBounds(dateIso);
 }
