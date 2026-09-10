@@ -20,6 +20,7 @@ import {
   PiggyBank,
   ClipboardPaste,
   ScrollText,
+  Images,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +72,7 @@ const NAV_BY_HREF = {
   diario: { href: "/diario", label: "Diário Operacional", icon: BookOpen, paused: true },
   notas: { href: "/notas", label: "Notas", icon: NotebookPen },
   ideias: { href: "/ideias", label: "Ideias", icon: Lightbulb },
+  galeria: { href: "/galeria", label: "Galeria", icon: Images },
   registroDia: { href: "/registro-dia", label: "Registro do Dia", icon: ClipboardPaste },
   calendario: { href: "/calendario", label: "Calendário", icon: Calendar, paused: true },
   configuracoes: { href: "/configuracoes", label: "Configurações", icon: Settings },
@@ -95,6 +97,7 @@ export const NAV_SECTORS: NavSector[] = [
       NAV_BY_HREF.registroDia,
       NAV_BY_HREF.notas,
       NAV_BY_HREF.ideias,
+      NAV_BY_HREF.galeria,
       NAV_BY_HREF.diario,
       NAV_BY_HREF.calendario,
       NAV_BY_HREF.vendas,

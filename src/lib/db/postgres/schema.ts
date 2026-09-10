@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  customType,
   date,
   index,
   integer,
@@ -15,6 +16,24 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+  toDriver(value: Buffer): Buffer {
+    return value;
+  },
+  fromDriver(value: unknown): Buffer {
+    if (Buffer.isBuffer(value)) return value;
+    if (value instanceof Uint8Array) return Buffer.from(value);
+    if (typeof value === "string") {
+      if (value.startsWith("\\x")) return Buffer.from(value.slice(2), "hex");
+      return Buffer.from(value, "base64");
+    }
+    return Buffer.alloc(0);
+  },
+});
 
 export const businesses = pgTable(
   "businesses",
@@ -586,6 +605,53 @@ export const periodReviews = pgTable(
     ),
   }),
 );
+
+/** Galeria de design/arte — arquivos e metadados por negócio. */
+export const galleryAssets = pgTable(
+  "gallery_assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default(""),
+    category: text("category", {
+      enum: ["cardapio", "cartaz", "fidelidade", "anuncio", "arte", "outro"],
+    })
+      .notNull()
+      .default("outro"),
+    notes: text("notes").notNull().default(""),
+    fileName: text("file_name"),
+    mimeType: text("mime_type"),
+    byteSize: integer("byte_size"),
+    hasFile: boolean("has_file").notNull().default(false),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    businessCreatedIdx: index("idx_gallery_assets_business_created").on(
+      table.businessId,
+      table.createdAt,
+    ),
+    businessCategoryIdx: index("idx_gallery_assets_business_category").on(
+      table.businessId,
+      table.category,
+    ),
+    byteSizeCheck: check(
+      "gallery_assets_byte_size_check",
+      sql`${table.byteSize} IS NULL OR ${table.byteSize} >= 0`,
+    ),
+  }),
+);
+
+export const galleryAssetFiles = pgTable("gallery_asset_files", {
+  assetId: uuid("asset_id")
+    .primaryKey()
+    .references(() => galleryAssets.id, { onDelete: "cascade" }),
+  content: bytea("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export * from "./schema-engine";
 export * from "./schema-crm";
