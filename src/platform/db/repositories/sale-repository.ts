@@ -206,6 +206,8 @@ export interface ExecuteSaleInput {
   /** Sobrescreve preço/custo do catálogo (ex.: Registro do Dia com faturamento explícito). */
   unitPrice?: number;
   unitCost?: number;
+  /** Marca comprovante confirmado para fidelidade. */
+  loyaltyConfirmed?: boolean;
 }
 
 export async function executeSaleRecord(input: ExecuteSaleInput): Promise<string> {
@@ -254,6 +256,7 @@ export async function executeSaleRecord(input: ExecuteSaleInput): Promise<string
           totalCost: String(cost),
           profit: String(profit),
           notes: input.notes ?? null,
+          loyaltyConfirmed: input.loyaltyConfirmed ?? false,
           createdAt: now,
           updatedAt: now,
         }),

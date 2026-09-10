@@ -19,6 +19,7 @@ export interface SaleOperationParams {
   notes?: string | null;
   unitPrice?: number;
   unitCost?: number;
+  loyaltyConfirmed?: boolean;
 }
 
 export interface SaleOperationResult {
@@ -58,6 +59,19 @@ export async function executeSaleOperation(params: SaleOperationParams): Promise
         after: { id: saleId },
       },
     ];
+
+    if (params.loyaltyConfirmed && params.clientId) {
+      try {
+        const { applySaleToLoyalty } = await import("@/lib/loyalty/loyalty-service");
+        const { getProductById } = await import("@/platform/db/repositories/product-repository");
+        const product = await getProductById(params.productId);
+        const businessSlug = product?.businessId ?? "salgados";
+        await applySaleToLoyalty({ businessSlug, saleId });
+      } catch (loyaltyErr) {
+        console.warn("Loyalty apply after sale failed:", loyaltyErr);
+      }
+    }
+
     return { saleId, effects };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao registrar venda.";

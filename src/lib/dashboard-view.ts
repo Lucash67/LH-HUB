@@ -48,6 +48,7 @@ export interface DashboardSale {
   totalAmount: number;
   profit: number;
   notes?: string | null;
+  loyaltyConfirmed?: boolean;
   client?: { id: string; name: string } | null;
   items: DashboardSaleItem[];
 }
@@ -77,11 +78,13 @@ export interface DayTimelineEntry {
   id: string;
   time: string;
   clientName: string;
+  clientId: string | null;
   products: string;
   paymentLabel: string;
   amount: number;
   statusLabel: string;
   statusTone: "success" | "warning" | "neutral";
+  loyaltyConfirmed: boolean;
 }
 
 export interface DayTimelineGroup {
@@ -543,11 +546,13 @@ function buildDayTimeline(daySales: DashboardSale[]): DayTimelineGroup[] {
       id: sale.id,
       time: sale.time,
       clientName: sale.client?.name ?? "Sem cliente",
+      clientId: sale.clientId,
       products: formatSaleProducts(sale) || "—",
       paymentLabel: PAYMENT_LABELS[sale.paymentMethod] ?? sale.paymentMethod,
       amount: sale.totalAmount,
       statusLabel: status.label,
       statusTone: status.tone,
+      loyaltyConfirmed: Boolean(sale.loyaltyConfirmed),
     };
     const list = grouped.get(period) ?? [];
     list.push(entry);

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Sun,
@@ -7,13 +8,16 @@ import {
   User,
   Wallet,
   AlertOctagon,
+  Star,
 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { formatSaleShift } from "@/lib/sale-shift";
 import type { DayTimelineGroup } from "@/lib/dashboard-view";
+import { useBusinessScope } from "@/hooks/use-business-scope";
 
 interface SalesDayTimelineProps {
   groups: DayTimelineGroup[];
+  onLoyaltyChange?: () => void;
 }
 
 const PERIOD_META = {
@@ -50,7 +54,37 @@ const STATUS_STYLES = {
   },
 };
 
-export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
+export function SalesDayTimeline({ groups, onLoyaltyChange }: SalesDayTimelineProps) {
+  const { activeBusinessId, canWrite } = useBusinessScope();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function toggleLoyalty(saleId: string, confirmed: boolean) {
+    if (!canWrite) return;
+    setBusyId(saleId);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/fidelidade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "confirm_sale",
+          businessId: activeBusinessId,
+          saleId,
+          confirmed,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Falha na fidelidade");
+      setMsg(json.result?.message ?? json.result?.reason ?? (confirmed ? "Confirmado." : "Removido."));
+      onLoyaltyChange?.();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   if (groups.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-surface-border bg-surface-elevated/50 px-6 py-10 text-center">
@@ -64,6 +98,11 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      {msg && (
+        <p className="rounded-lg border border-brand-green/30 bg-brand-green/5 px-3 py-2 text-xs text-text-secondary">
+          {msg}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-text-muted">
         <span>{totalEntries} movimentações</span>
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -143,6 +182,11 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
                             {isLoss && <AlertOctagon className="mr-1 h-3 w-3" />}
                             {entry.statusLabel}
                           </span>
+                          {entry.loyaltyConfirmed && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                              <Star className="h-3 w-3" /> Fidelidade
+                            </span>
+                          )}
                         </div>
 
                         <p className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
@@ -158,10 +202,28 @@ export function SalesDayTimeline({ groups }: SalesDayTimelineProps) {
                             {entry.paymentLabel}
                           </p>
                         )}
+
+                        {canWrite && entry.clientId && !isLoss && (
+                          <button
+                            type="button"
+                            disabled={busyId === entry.id}
+                            onClick={() => void toggleLoyalty(entry.id, !entry.loyaltyConfirmed)}
+                            className="mt-1 text-[11px] font-medium text-[#0CD4FF] underline-offset-2 hover:underline disabled:opacity-50"
+                          >
+                            {entry.loyaltyConfirmed
+                              ? "Remover da fidelidade"
+                              : "Confirmar comprovante (fidelidade)"}
+                          </button>
+                        )}
                       </div>
 
                       <div className="shrink-0 text-right">
-                        <p className={cn("text-base font-black tracking-tight sm:text-lg", isLoss ? "text-red-400" : styles.amount)}>
+                        <p
+                          className={cn(
+                            "text-base font-black tracking-tight sm:text-lg",
+                            isLoss ? "text-red-400" : styles.amount,
+                          )}
+                        >
                           {isLoss ? "—" : formatCurrency(entry.amount)}
                         </p>
                       </div>

@@ -159,6 +159,8 @@ export const sales = pgTable(
     totalCost: numeric("total_cost", { precision: 12, scale: 2 }).notNull(),
     profit: numeric("profit", { precision: 12, scale: 2 }).notNull(),
     notes: text("notes"),
+    /** Comprovante confirmado para contar no programa de fidelidade. */
+    loyaltyConfirmed: boolean("loyalty_confirmed").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -676,3 +678,4 @@ export const galleryAssetFiles = galleryFiles;
 export * from "./schema-engine";
 export * from "./schema-crm";
 export * from "./schema-schedule";
+export * from "./schema-loyalty";

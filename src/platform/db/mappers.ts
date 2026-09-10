@@ -111,6 +111,7 @@ export function mapSaleRow(row: SqliteSale | PgSale): LegacySale {
       totalCost: toNumber(s.totalCost),
       profit: toNumber(s.profit),
       notes: s.notes,
+      loyaltyConfirmed: Boolean(s.loyaltyConfirmed),
       createdAt: toIsoTimestamp(s.createdAt),
       updatedAt: toIsoTimestamp(s.updatedAt),
     };
@@ -131,6 +132,7 @@ export function mapSaleRow(row: SqliteSale | PgSale): LegacySale {
     totalCost: s.totalCost,
     profit: s.profit,
     notes: s.notes,
+    loyaltyConfirmed: false,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
   };

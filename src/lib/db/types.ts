@@ -73,6 +73,7 @@ export interface LegacySale {
   totalCost: number;
   profit: number;
   notes: string | null;
+  loyaltyConfirmed?: boolean;
   createdAt: string;
   updatedAt: string;
 }

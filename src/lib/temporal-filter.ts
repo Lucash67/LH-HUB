@@ -78,6 +78,7 @@ export const TEMPORAL_FILTER_EXCLUDED_PATHS = [
   "/notas",
   "/ideias",
   "/galeria",
+  "/fidelidade",
   "/schedule",
   "/crm",
   "/hub",
