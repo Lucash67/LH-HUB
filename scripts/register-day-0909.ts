@@ -305,9 +305,9 @@ async function settleDay08Pendings(): Promise<void> {
 
   await upsertDiaryEntry({
     ...entry,
-    profit: 85,
+    profit: 69,
     bonusIncome: 16,
-    bonusIncomeDescription: "Bonificação do Henrique: R$16,00.",
+    bonusIncomeDescription: "Bonificação do Henrique: R$16,00 (já incluída no lucro total R$85).",
     quantitySold: 22,
     quantityLost: 0,
     revenue: { received: 110, pending: 0, total: 110 },
@@ -321,14 +321,14 @@ async function settleDay08Pendings(): Promise<void> {
       "",
       "—— Quitações 09/09 (contam no 08/09) ——",
       "Ana Laura R$5 · Desconhecido R$5 · Desconhecido R$5 = R$15.",
-      "Fat. final 08/09: R$110 · lucro op R$85 (= 110 − 25) · bônus R$16 · cofrinho R$101 · pend. R$0.",
+      "Fat. final 08/09: R$110 · lucro salgados R$69 · bônus R$16 · total/cofrinho R$85 (bônus embutido) · pend. R$0.",
     ]
       .filter(Boolean)
       .join("\n"),
     manualInsights:
-      "3 fiados do 08 quitados em 09/09 sem criar faturamento novo no 09. Lucro op sobe de R$70 para R$85.",
+      "3 fiados do 08 quitados em 09/09 sem criar faturamento novo no 09. Lucro total permanece R$85 (bônus embutido).",
   });
-  console.log("✓ Diário 08/09 → fat R$110 · lucro R$85 · bônus R$16 · pend. R$0");
+  console.log("✓ Diário 08/09 → fat R$110 · lucro total R$85 (69+16) · pend. R$0");
 }
 
 async function main() {
