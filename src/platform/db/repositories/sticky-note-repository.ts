@@ -5,6 +5,12 @@ import { stickyNotes as sqliteStickyNotes } from "@/lib/db/schema";
 import { queryAll, queryOne, queryRun, toDateString, toIsoTimestamp } from "@/platform/db/query";
 import { generateId } from "@/shared/ids/generate-id";
 import type { StickyNote, StickyNoteColor } from "@/lib/sticky-notes/types";
+import {
+  buildWeekdayDraftTemplate,
+  officialDraftNoteTitle,
+  operationalDatesOfYear,
+  stripLeadingDraftDate,
+} from "@/lib/day-registration/weekday-draft-templates";
 
 export interface StickyNoteWriteInput {
   id?: string;
@@ -247,4 +253,85 @@ export async function deleteStickyNote(ownerId: string, id: string): Promise<boo
     .where(and(eq(sqliteStickyNotes.id, id), eq(sqliteStickyNotes.ownerId, ownerId)))
     .run();
   return true;
+}
+
+/**
+ * Garante um bloco vazio em cada dia do ano que ainda não tem nota.
+ * Também tira a data digitada no topo: a data oficial é noteDate.
+ */
+export async function ensureYearDayBlocks(ownerId: string, year = new Date().getFullYear()): Promise<number> {
+  const existing = await listStickyNotes(ownerId, { includeArchived: true });
+  const taken = new Set(
+    existing.filter((n) => !n.archived && n.noteDate).map((n) => n.noteDate as string),
+  );
+  const now = new Date();
+  const template = buildWeekdayDraftTemplate();
+  const missing = operationalDatesOfYear(year).filter((date) => !taken.has(date));
+
+  if (isPostgres()) {
+    const db = await getPostgresDb();
+    for (let i = 0; i < missing.length; i += 40) {
+      const chunk = missing.slice(i, i + 40).map((date) => ({
+        id: generateId(),
+        ownerId,
+        title: officialDraftNoteTitle(date),
+        body: template,
+        color: "mint",
+        noteDate: date,
+        pinned: false,
+        archived: false,
+        sortOrder: 0,
+        clientUpdatedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      }));
+      if (chunk.length > 0) {
+        await queryRun(db.insert(pgStickyNotes).values(chunk));
+      }
+    }
+
+    for (const note of existing) {
+      if (!note.noteDate) continue;
+      const next = stripLeadingDraftDate(note.body);
+      if (next === note.body) continue;
+      await queryRun(
+        db
+          .update(pgStickyNotes)
+          .set({ body: next, updatedAt: now })
+          .where(and(eq(pgStickyNotes.id, note.id), eq(pgStickyNotes.ownerId, ownerId))),
+      );
+    }
+    return missing.length;
+  }
+
+  const db = getSqliteDb();
+  for (const date of missing) {
+    db.insert(sqliteStickyNotes)
+      .values({
+        id: generateId(),
+        ownerId,
+        businessId: null,
+        title: officialDraftNoteTitle(date),
+        body: template,
+        color: "mint",
+        noteDate: date,
+        pinned: false,
+        archived: false,
+        sortOrder: 0,
+        clientUpdatedAt: now.toISOString(),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      })
+      .run();
+  }
+  for (const note of existing) {
+    if (!note.noteDate) continue;
+    const next = stripLeadingDraftDate(note.body);
+    if (next === note.body) continue;
+    db.update(sqliteStickyNotes)
+      .set({ body: next, updatedAt: now.toISOString() })
+      .where(and(eq(sqliteStickyNotes.id, note.id), eq(sqliteStickyNotes.ownerId, ownerId)))
+      .run();
+  }
+  return missing.length;
 }

@@ -33,6 +33,7 @@ import {
   type WeekColumn,
 } from "@/lib/sticky-notes/week-board";
 import { WeekPicker } from "@/components/sticky-notes/week-picker";
+import { stripLeadingDraftDate } from "@/lib/day-registration/weekday-draft-templates";
 
 interface NotesBoardProps {
   notes: StickyNote[];
@@ -103,7 +104,7 @@ function SortableNoteCard({
             <p className="truncate text-[15px] font-medium text-[#e8eaed] sm:text-sm">{note.title}</p>
           ) : null}
           <p className="mt-0.5 line-clamp-4 whitespace-pre-wrap text-[14px] leading-snug text-[#e8eaed]/75 sm:text-[13px]">
-            {note.body.trim() || "Nota vazia"}
+            {stripLeadingDraftDate(note.body).trim() || "Nota vazia"}
           </p>
           <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-[#e8eaed]/40">
             {formatNoteDateLabel(note.noteDate)}
@@ -193,7 +194,9 @@ function appendToDay(notes: StickyNote[], noteId: string, nextDate: string): Sti
   const peers = notes.filter((n) => n.id !== noteId && n.noteDate === nextDate);
   const maxOrder = peers.reduce((m, n) => Math.max(m, n.sortOrder), -1);
   return notes.map((n) =>
-    n.id === noteId ? { ...n, noteDate: nextDate, sortOrder: maxOrder + 1 } : n,
+    n.id === noteId
+      ? { ...n, noteDate: nextDate, body: stripLeadingDraftDate(n.body), sortOrder: maxOrder + 1 }
+      : n,
   );
 }
 
@@ -277,6 +280,7 @@ export function NotesBoard({
         return {
           ...n,
           noteDate: nextDate,
+          body: stripLeadingDraftDate(n.body),
           sortOrder: orderMap.get(n.id) ?? 0,
         };
       }

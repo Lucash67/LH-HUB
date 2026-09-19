@@ -4,6 +4,7 @@ import { isAuthFailure, requireApiSession } from "@/lib/auth/require-api-session
 import { stickyNoteUpsertSchema } from "@/lib/sticky-notes/types";
 import {
   deleteStickyNote,
+  ensureYearDayBlocks,
   listStickyNotes,
   upsertStickyNote,
 } from "@/platform/db/repositories/sticky-note-repository";
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
   if (isAuthFailure(auth)) return auth;
   try {
     const includeArchived = request.nextUrl.searchParams.get("archived") === "1";
+    await ensureYearDayBlocks(auth.id);
     const notes = await listStickyNotes(auth.id, { includeArchived });
     return NextResponse.json({ notes });
   } catch (error) {

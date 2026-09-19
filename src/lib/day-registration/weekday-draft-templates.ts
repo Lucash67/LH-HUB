@@ -9,15 +9,10 @@ function toDate(input: string | Date): Date {
 
 /**
  * Modelo único do rascunho diário (operação Salgados).
- * Só preenche a data; o resto fica para o dia.
+ * A data não entra no texto: vem da coluna / noteDate.
  */
-export function buildWeekdayDraftTemplate(input: string | Date = new Date()): string {
-  const d = toDate(input);
-  const ddMm = format(d, "dd/MM");
-
-  return `${ddMm}
-
-Encomendados hoje:
+export function buildWeekdayDraftTemplate(_input: string | Date = new Date()): string {
+  return `Encomendados hoje:
 
 -  Mistão frito
 -  Carne forno
@@ -95,10 +90,9 @@ Cofrinho dos lucros:
 `;
 }
 
-/** Título padrão das notas de rascunho diário em /notas. */
-export function officialDraftNoteTitle(date: string | Date): string {
-  const d = toDate(date);
-  return `Rascunho oficial ${format(d, "dd/MM/yyyy")} — Salgados`;
+/** Título dos blocos diários. A data não vai no título — fica na coluna. */
+export function officialDraftNoteTitle(_date: string | Date): string {
+  return "Salgados";
 }
 
 /** Detecta se a nota já é o rascunho oficial daquele dia (idempotência). */
@@ -111,16 +105,40 @@ export function isOfficialDraftNote(
   return title.includes("rascunho oficial") || title.startsWith("rascunho ");
 }
 
-/** Datas seg–sex da semana cuja segunda-feira é `weekStart` (yyyy-MM-dd). */
+/** Datas da semana cuja segunda-feira é `weekStart` (seg–dom). */
 export function operationalWeekDates(weekStart: string): string[] {
   const start = parseISO(weekStart);
   const dates: string[] = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     dates.push(format(d, "yyyy-MM-dd"));
   }
   return dates;
+}
+
+/** Todos os dias de um ano civil. A data fica na coluna, não no texto. */
+export function operationalDatesOfYear(year: number): string[] {
+  const dates: string[] = [];
+  const cursor = new Date(year, 0, 1);
+  const end = new Date(year, 11, 31);
+  while (cursor <= end) {
+    dates.push(format(cursor, "yyyy-MM-dd"));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
+/** Remove a data digitada no topo do bloco. A data oficial é a da coluna. */
+export function stripLeadingDraftDate(body: string): string {
+  const lines = body.split(/\r?\n/);
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === "") i += 1;
+  if (i >= lines.length) return body;
+  if (!/^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/.test(lines[i].trim())) return body;
+  lines.splice(i, 1);
+  if (lines[i] === "") lines.splice(i, 1);
+  return lines.join("\n");
 }
 
 export function weekdayShortLabel(date: string | Date): string {

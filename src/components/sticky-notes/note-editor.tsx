@@ -22,7 +22,8 @@ import {
   type StickyNote,
   type StickyNoteColor,
 } from "@/lib/sticky-notes/types";
-import { formatNoteDateLabel } from "@/lib/sticky-notes/week-board";
+import { formatNoteDateLabel, dayColumnLabel } from "@/lib/sticky-notes/week-board";
+import { stripLeadingDraftDate } from "@/lib/day-registration/weekday-draft-templates";
 
 interface NoteEditorProps {
   note: StickyNote;
@@ -106,8 +107,8 @@ export function NoteEditor({
 
   // Rascunho local: evita que o autosave/re-render do board apague teclas (ex.: espaço).
   const [draftTitle, setDraftTitle] = useState(note.title);
-  const [draftBody, setDraftBody] = useState(note.body);
-  const draftRef = useRef({ title: note.title, body: note.body });
+  const [draftBody, setDraftBody] = useState(() => stripLeadingDraftDate(note.body));
+  const draftRef = useRef({ title: note.title, body: stripLeadingDraftDate(note.body) });
   const noteIdRef = useRef(note.id);
 
   const colors = STICKY_NOTE_COLOR_STYLES[note.color] ?? STICKY_NOTE_COLOR_STYLES.default;
@@ -153,8 +154,8 @@ export function NoteEditor({
     flushDraftToParent();
     noteIdRef.current = note.id;
     setDraftTitle(note.title);
-    setDraftBody(note.body);
-    draftRef.current = { title: note.title, body: note.body };
+    setDraftBody(stripLeadingDraftDate(note.body));
+    draftRef.current = { title: note.title, body: stripLeadingDraftDate(note.body) };
     setPast([]);
     setFuture([]);
     skipHistory.current = false;
@@ -358,6 +359,16 @@ export function NoteEditor({
             Concluir
           </button>
         </div>
+
+        {note.noteDate ? (
+          <p className="px-4 pb-1 text-[12px] font-semibold uppercase tracking-wide text-[#0CD4FF] sm:px-7">
+            {dayColumnLabel(note.noteDate)}/{note.noteDate.slice(0, 4)}
+          </p>
+        ) : (
+          <p className="px-4 pb-1 text-[12px] font-medium text-[#e8eaed]/45 sm:px-7">
+            Sem data — arraste o bloco para o dia certo
+          </p>
+        )}
 
         <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-1 sm:px-7 sm:pb-3 sm:pt-2">
           <textarea

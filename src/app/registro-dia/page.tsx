@@ -157,14 +157,14 @@ export default function RegistroDiaPage() {
             <Textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Cole aqui seu rascunho (DD/MM, Encomendados, Histórico de vendas...)"
+              placeholder="Cole aqui seu rascunho (Encomendados, lista de vendas...)"
               className="min-h-[240px] font-mono text-base leading-relaxed sm:min-h-[340px] sm:text-xs xl:min-h-[480px]"
             />
 
             <div className="rounded-lg border border-[#7C3CFF]/20 bg-[#7C3CFF]/5 p-3 text-xs text-text-muted">
               <p className="mb-2 font-medium text-[#0CD4FF]">Seu formato:</p>
               <p>
-                Data (DD/MM) · Encomendados · Henrique · Unifor & Acal · Lista de vendas ·
+                A data é a da coluna em Notas (não escreva no texto) · Encomendados · Henrique · Unifor & Acal · Lista de vendas ·
                 Pendências/Espécie/Fiados/Perdas · OBS · Custo/Faturamento/Lucro/Cofrinho
               </p>
               <p className="mt-2 font-medium text-[#0CD4FF]">Linha de venda:</p>

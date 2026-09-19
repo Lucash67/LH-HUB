@@ -20,7 +20,6 @@ import type { StickyNote } from "@/lib/sticky-notes/types";
 import { currentWeekStart, weekKeyFromDate } from "@/lib/sticky-notes/week-board";
 import {
   buildWeekdayDraftTemplate,
-  isOfficialDraftNote,
   officialDraftNoteTitle,
   operationalWeekDates,
 } from "@/lib/day-registration/weekday-draft-templates";
@@ -97,7 +96,7 @@ export default function NotasPage() {
       let created = 0;
       let skipped = 0;
       for (const date of dates) {
-        const exists = notes.some((n) => !n.archived && isOfficialDraftNote(n, date));
+        const exists = notes.some((n) => !n.archived && n.noteDate === date);
         if (exists) {
           skipped += 1;
           continue;
@@ -110,8 +109,8 @@ export default function NotasPage() {
         });
         created += 1;
       }
-      if (created === 0 && skipped === 5) {
-        setWeekGenMessage("Seg–sex desta semana já têm rascunho oficial.");
+      if (created === 0 && skipped === 7) {
+        setWeekGenMessage("Esta semana já tem um bloco em cada dia.");
       } else {
         setWeekGenMessage(
           `Criados ${created} rascunho(s)${skipped ? ` · ${skipped} já existiam` : ""}.`,
@@ -127,7 +126,7 @@ export default function NotasPage() {
       title="Notas"
       subtitle={
         <span className="hidden sm:inline">
-          Colunas por dia · arraste entre dias ou semanas · autosave
+          Colunas por dia · a data é a da coluna, o ano inteiro · não escreva a data no texto
         </span>
       }
       temporalFilter={false}
@@ -179,7 +178,7 @@ export default function NotasPage() {
                     className="shrink-0 border-[#7C3CFF]/30 bg-[#1a1c24] text-[#e8eaed] hover:bg-[#7C3CFF]/15"
                   >
                     <CalendarPlus className="mr-1.5 h-3.5 w-3.5 text-[#7C3CFF]" />
-                    {generatingWeek ? "Gerando…" : "Gerar seg–sex"}
+                    {generatingWeek ? "Gerando…" : "Gerar semana"}
                   </Button>
                   <NotesFilters
                     open={filtersOpen}
