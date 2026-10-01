@@ -1,7 +1,7 @@
 /**
  * Metas canônicas da operação Salgados (Salty).
  *
- * Lucro: R$60/dia · R$300/semana (5 dias) · R$1.200/mês (20 dias).
+ * Lucro (outubro/2026): R$77/dia · R$385/semana (5 dias) · R$1.600/mês.
  * Quantidade: 22 un/dia · 110/semana · 440/mês
  *   — split: ≥17 Acal+Unifor · ≥5 Henrique · total 22
  * Disciplina de capital: custo de terceiros ≤ R$27/dia
@@ -16,9 +16,9 @@ import {
   isAllBusinesses,
 } from "@/lib/business-units";
 
-export const SALGADOS_DAILY_PROFIT_GOAL = 60;
-export const SALGADOS_WEEKLY_PROFIT_GOAL = 300;
-export const SALGADOS_MONTHLY_PROFIT_GOAL = 1200;
+export const SALGADOS_DAILY_PROFIT_GOAL = 77;
+export const SALGADOS_WEEKLY_PROFIT_GOAL = 385;
+export const SALGADOS_MONTHLY_PROFIT_GOAL = 1600;
 
 /** Volume diário canônico (Acal+Unifor + Henrique). */
 export const SALGADOS_DAILY_UNITS_GOAL = 22;
@@ -45,7 +45,7 @@ export function usesSalgadosProfitGoals(businessId: string | undefined | null): 
   );
 }
 
-/** Alvo de lucro no período = R$60 × dias em que houve operação. */
+/** Alvo de lucro no período = alvo diário × dias em que houve operação. */
 export function salgadosPeriodProfitTarget(operatedDays: number): number {
   return SALGADOS_DAILY_PROFIT_GOAL * Math.max(0, operatedDays);
 }
